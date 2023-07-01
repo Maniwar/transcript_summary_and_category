@@ -318,3 +318,36 @@ if process_button:
     st.subheader("Best Matching Agent Action:")
     st.write("Action:", best_action)
     st.write("Similarity Score:", best_action_score)
+
+
+# Customer: Refund Request
+with st.expander("Customer: Hi, I recently purchased a product from your website, but I'm not satisfied with it at all. The quality is far below my expectations, and it doesn't function properly. I would like to request a refund."):
+    transcript = """
+    <b>Agent:</b> I apologize for the inconvenience caused by the product. I understand your disappointment, and I'm here to assist you with the refund process. To proceed with the refund, I'll need some information from you. Could you please provide me with your order number and the reason for the refund? <br>
+    <b>Customer:</b> Thank you for your understanding. My order number is #987654321, and the reason for the refund is the poor quality and malfunctioning of the product. It doesn't meet the specifications mentioned on your website. <br>
+    <b>Agent:</b> I appreciate you providing the necessary details. I'll initiate the refund process immediately. Please note that it may take a few business days for the refund to be processed and reflect in your account. Is there anything else you would like to add regarding the refund? <br>
+    <b>Customer:</b> No, that's all. I just want to make sure I receive the refund as soon as possible. This experience has been disappointing, and I hope the refund process is hassle-free. <br>
+    <b>Agent:</b> I completely understand your concerns, and I assure you that we'll make the refund process as smooth as possible. Once the refund is processed, you'll receive an email notification confirming the transaction. If you have any further questions or need assistance during the process, please don't hesitate to reach out to us. <br>
+    <b>Customer:</b> Thank you for your assurance. I'll be eagerly waiting for the refund confirmation email. I hope this issue gets resolved without any further complications. <br>
+    <b>Agent:</b> You're welcome. We'll do our best to ensure a prompt resolution for you. Rest assured, I'll personally monitor the refund process and keep you informed of any updates. If you have any additional concerns, feel free to contact us. We appreciate your patience and cooperation. <br>
+    <b>Customer:</b> I appreciate your dedication and support. I look forward to receiving the refund confirmation email soon. Your assistance is greatly appreciated. <br>
+    <b>Agent:</b> It's our pleasure to assist you. We value your satisfaction, and we'll make sure the refund is processed efficiently. Should you require any further assistance or have any other questions, please don't hesitate to let us know. Have a wonderful day! <br>
+    <b>Customer:</b> Thank you once again for your commitment. I hope the refund process goes smoothly. Have a great day too! <br>
+    <b>Agent:</b> Thank you for your kind words. We're committed to resolving this issue to your satisfaction. If there's anything else we can assist you with, please don't hesitate to reach out. Take care and have a fantastic day ahead!"""
+
+    st.write(components.html(transcript, scrolling=True))
+
+    copy_button = """
+    <button class="copy-button" onclick="copyToClipboard()">Copy Transcript</button>
+    <script>
+        function copyToClipboard() {
+            const el = document.createElement('textarea');
+            el.value = document.querySelector('.transcript').innerText;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+        }
+    </script>
+    """
+    st.write(components.html(copy_button, scrolling=False))
