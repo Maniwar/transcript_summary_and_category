@@ -88,7 +88,7 @@ if process_button:
 
     # Define extended categories and subcategories for customer call intents
     customer_categories = {
-        "Product Queries": [
+        "Product Related": [
             "Product Quality",
             "Product Availability",
             "Product Specifications",
