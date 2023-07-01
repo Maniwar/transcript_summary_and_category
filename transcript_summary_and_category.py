@@ -322,8 +322,9 @@ if process_button:
 
 
 # Customer: Refund Request
-with st.expander("Customer: Hi, I recently purchased a product from your website, but I'm not satisfied with it at all. The quality is far below my expectations, and it doesn't function properly. I would like to request a refund."):
+with st.expander("Example script refund for product return"):
     transcript = """
+    <b>Customer:</b> Hi, I recently purchased a product from your website, but I'm not satisfied with it at all. The quality is far below my expectations, and it doesn't function properly. I would like to request a refund.
     <b>Agent:</b> I apologize for the inconvenience caused by the product. I understand your disappointment, and I'm here to assist you with the refund process. To proceed with the refund, I'll need some information from you. Could you please provide me with your order number and the reason for the refund? <br>
     <b>Customer:</b> Thank you for your understanding. My order number is #987654321, and the reason for the refund is the poor quality and malfunctioning of the product. It doesn't meet the specifications mentioned on your website. <br>
     <b>Agent:</b> I appreciate you providing the necessary details. I'll initiate the refund process immediately. Please note that it may take a few business days for the refund to be processed and reflect in your account. Is there anything else you would like to add regarding the refund? <br>
