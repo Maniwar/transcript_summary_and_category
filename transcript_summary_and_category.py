@@ -162,9 +162,7 @@ if process_button:
             "Product",
             "Service",
             "Website/App",
-            "Suggestions",
-            "Promo Code Requests for Feedback",
-            "Refund Requests for Feedback"
+            "Suggestions"
         ],
         "Price Match": [
             "Price Match Requests",
