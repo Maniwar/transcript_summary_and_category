@@ -153,7 +153,7 @@ if process_button:
             "App Errors",
             "Payment Gateway",
             "Accessibility",
-            "Computer Technical Issues",
+            "Computer or Laptop Technical Issues",
             "Browser Compatibility",
             "Security Warnings",
             "Promo Code Requests Due to Technical Issues",
@@ -223,7 +223,7 @@ if process_button:
         "Technical Support": [
             "Supporting Website Navigation",
             "Troubleshooting App Errors",
-            "Transfer to Technical Support Experts",
+            "Troubleshooting Technical Issues",
             "Resolving Payment Gateway Issues",
             "Improving Accessibility",
             "Fixing Browser Compatibility Issues",
