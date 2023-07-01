@@ -223,7 +223,7 @@ if process_button:
         "Technical Support": [
             "Supporting Website Navigation",
             "Troubleshooting App Errors",
-            "Troubleshooting Technical Issues",
+            "Troubleshooting Computer or Laptop Technical Issues",
             "Resolving Payment Gateway Issues",
             "Improving Accessibility",
             "Fixing Browser Compatibility Issues",
