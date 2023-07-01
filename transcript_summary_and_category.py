@@ -321,28 +321,6 @@ if process_button:
 # Customer: Refund Request
 with st.expander("Example script refund for product return"):
     transcript = """
-    <style>
-    .transcript {
-        background-color: #f4f4f4;
-        padding: 10px;
-        border-radius: 5px;
-        font-family: Arial, sans-serif;
-    }
-
-    .copy-button {
-        background-color: #4caf50;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        text-align: center;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 14px;
-        cursor: pointer;
-        border-radius: 5px;
-    }
-    </style>
-
     <div class="transcript">
     <b>Customer:</b> Hi, I recently purchased a product from your website, but I'm not satisfied with it at all. The quality is far below my expectations, and it doesn't function properly. I would like to request a refund. <br>
     <b>Agent:</b> I apologize for the inconvenience caused by the product. I understand your disappointment, and I'm here to assist you with the refund process. To proceed with the refund, I'll need some information from you. Could you please provide me with your order number and the reason for the refund? <br>
@@ -358,17 +336,5 @@ with st.expander("Example script refund for product return"):
     <b>Agent:</b> Thank you for your kind words. We're committed to resolving this issue to your satisfaction. If there's anything else we can assist you with, please don't hesitate to reach out. Take care and have a fantastic day ahead!
     </div>
 
-    <button class="copy-button" onclick="copyToClipboard()">Copy Transcript</button>
-    <script>
-        function copyToClipboard() {
-            const el = document.createElement('textarea');
-            el.value = document.querySelector('.transcript').innerText;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-        }
-    </script>
     """
-
     st.markdown(transcript, unsafe_allow_html=True)
