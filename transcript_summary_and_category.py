@@ -336,3 +336,19 @@ with st.expander("Example script refund for product return"):
 
     """
     st.markdown(transcript, unsafe_allow_html=True)
+
+with st.expander("Example script for product support request"):
+    transcript = """
+    <div class="transcript">
+    <b>Customer:</b> Hello, I recently purchased a laptop from your store, and I'm experiencing some technical difficulties. The laptop keeps randomly shutting down, and the battery life is significantly shorter than expected. I need assistance with troubleshooting and resolving these issues. <br>
+    <b>Agent:</b> I apologize for the inconvenience you're facing with the laptop. I understand the frustration it must be causing. Thank you for bringing this to our attention. To assist you further, could you please provide me with your order number and a detailed description of the issues you're encountering? <br>
+    <b>Customer:</b> Thank you for your prompt response. My order number is #987654321, and as mentioned, the laptop shuts down unexpectedly, even when the battery is charged, and the battery life lasts for only an hour, despite the advertised longer duration. <br>
+    <b>Agent:</b> Thank you for sharing the details. I apologize for the inconvenience caused by the laptop's performance. To address these issues, I'll connect you with our technical support team, who will guide you through the troubleshooting process and help resolve the concerns. They will reach out to you shortly via email with further instructions and assistance. <br>
+    <b>Customer:</b> I appreciate your assistance and prompt action. I look forward to hearing from the technical support team. I hope we can resolve these issues quickly. <br>
+    <b>Agent:</b> We understand the importance of resolving these issues promptly for you. Our technical support team will work diligently to assist you and find a resolution. If you have any additional questions or need further support during the process, please don't hesitate to reach out to them. Thank you for your patience and cooperation. <br>
+    <b>Customer:</b> Thank you for your dedication and support. I'll reach out to the technical support team as needed. I hope we can resolve these issues satisfactorily. <br>
+    <b>Agent:</b> You're welcome. We're committed to ensuring your satisfaction and resolving these technical difficulties. Should you require any further assistance or have any other questions, please feel free to contact us. We appreciate your cooperation and look forward to resolving these issues for you.
+    </div>
+
+    """
+    st.markdown(transcript, unsafe_allow_html=True)
