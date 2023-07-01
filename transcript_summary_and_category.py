@@ -188,21 +188,18 @@ if process_button:
             "Service Customization",
             "Improving Service Experience"
         ],
-        "Order Management": [
+        "Order Support": [
             "Order Status Updates",
-            "Handling Returns",
-            "Processing Return Related Refunds",
+            "Processing a Return related Refund",
             "Processing Order Cancellations",
             "Organizing Product Exchanges",
             "Assisting with Order Modifications",
             "Helping with Bulk Orders",
             "Customizing Orders",
-        ],
-        "Billing and Invoice Assistance": [
             "Handling Unauthorized Payments",
             "Resolving Billing Errors",
             "Explaining Invoices",
-            "Processing Refunds",
+            "Processing Non-return related Refund",
             "Issuing Promo Codes"
         ],
         "Payment Assistance": [
