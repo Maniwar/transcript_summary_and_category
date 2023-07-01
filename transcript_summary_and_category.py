@@ -320,6 +320,7 @@ if process_button:
     st.write("Similarity Score:", best_action_score)
 
 
+
 # Customer: Refund Request
 with st.expander("Customer: Hi, I recently purchased a product from your website, but I'm not satisfied with it at all. The quality is far below my expectations, and it doesn't function properly. I would like to request a refund."):
     transcript = """
@@ -335,7 +336,7 @@ with st.expander("Customer: Hi, I recently purchased a product from your website
     <b>Customer:</b> Thank you once again for your commitment. I hope the refund process goes smoothly. Have a great day too! <br>
     <b>Agent:</b> Thank you for your kind words. We're committed to resolving this issue to your satisfaction. If there's anything else we can assist you with, please don't hesitate to reach out. Take care and have a fantastic day ahead!"""
 
-    st.write(components.html(transcript, scrolling=True))
+    st.markdown(transcript, unsafe_allow_html=True)
 
     copy_button = """
     <button class="copy-button" onclick="copyToClipboard()">Copy Transcript</button>
@@ -350,3 +351,4 @@ with st.expander("Customer: Hi, I recently purchased a product from your website
         }
     </script>
     """
+    st.write(copy_button, unsafe_allow_html=True)
