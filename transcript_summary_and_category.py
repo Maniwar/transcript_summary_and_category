@@ -350,4 +350,3 @@ with st.expander("Customer: Hi, I recently purchased a product from your website
         }
     </script>
     """
-    st.write(components.html(copy_button, scrolling=False))
