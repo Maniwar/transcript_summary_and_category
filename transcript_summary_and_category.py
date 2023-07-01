@@ -320,11 +320,33 @@ if process_button:
     st.write("Similarity Score:", best_action_score)
 
 
-
 # Customer: Refund Request
 with st.expander("Example script refund for product return"):
     transcript = """
-    <b>Customer:</b> Hi, I recently purchased a product from your website, but I'm not satisfied with it at all. The quality is far below my expectations, and it doesn't function properly. I would like to request a refund.
+    <style>
+    .transcript {
+        background-color: #f4f4f4;
+        padding: 10px;
+        border-radius: 5px;
+        font-family: Arial, sans-serif;
+    }
+
+    .copy-button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 14px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+    </style>
+
+    <div class="transcript">
+    <b>Customer:</b> Hi, I recently purchased a product from your website, but I'm not satisfied with it at all. The quality is far below my expectations, and it doesn't function properly. I would like to request a refund. <br>
     <b>Agent:</b> I apologize for the inconvenience caused by the product. I understand your disappointment, and I'm here to assist you with the refund process. To proceed with the refund, I'll need some information from you. Could you please provide me with your order number and the reason for the refund? <br>
     <b>Customer:</b> Thank you for your understanding. My order number is #987654321, and the reason for the refund is the poor quality and malfunctioning of the product. It doesn't meet the specifications mentioned on your website. <br>
     <b>Agent:</b> I appreciate you providing the necessary details. I'll initiate the refund process immediately. Please note that it may take a few business days for the refund to be processed and reflect in your account. Is there anything else you would like to add regarding the refund? <br>
@@ -335,11 +357,9 @@ with st.expander("Example script refund for product return"):
     <b>Customer:</b> I appreciate your dedication and support. I look forward to receiving the refund confirmation email soon. Your assistance is greatly appreciated. <br>
     <b>Agent:</b> It's our pleasure to assist you. We value your satisfaction, and we'll make sure the refund is processed efficiently. Should you require any further assistance or have any other questions, please don't hesitate to let us know. Have a wonderful day! <br>
     <b>Customer:</b> Thank you once again for your commitment. I hope the refund process goes smoothly. Have a great day too! <br>
-    <b>Agent:</b> Thank you for your kind words. We're committed to resolving this issue to your satisfaction. If there's anything else we can assist you with, please don't hesitate to reach out. Take care and have a fantastic day ahead!"""
+    <b>Agent:</b> Thank you for your kind words. We're committed to resolving this issue to your satisfaction. If there's anything else we can assist you with, please don't hesitate to reach out. Take care and have a fantastic day ahead!
+    </div>
 
-    st.markdown(transcript, unsafe_allow_html=True)
-
-    copy_button = """
     <button class="copy-button" onclick="copyToClipboard()">Copy Transcript</button>
     <script>
         function copyToClipboard() {
@@ -352,4 +372,5 @@ with st.expander("Example script refund for product return"):
         }
     </script>
     """
-    st.write(copy_button, unsafe_allow_html=True)
+
+    st.markdown(transcript, unsafe_allow_html=True)
