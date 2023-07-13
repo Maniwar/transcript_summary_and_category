@@ -21,6 +21,7 @@ def initialize_t5_model():
     return model, tokenizer
 
 # Function to preprocess the text
+@st.cache
 def preprocess_text(text):
     # Convert to string if input is a real number
     if isinstance(text, float) and math.isfinite(text):
@@ -32,8 +33,8 @@ def preprocess_text(text):
     # Return the text without removing stop words
     return text.strip()
 
-
 # Function for ML summarization
+@st.cache_resource  # Cache the ML summarization function as a resource
 def ml_summarize(text, model, tokenizer):
     inputs = tokenizer.encode("summarize: " + text, return_tensors="pt", max_length=512, truncation=True)
     outputs = model.generate(inputs, max_length=150, min_length=40, num_beams=4, early_stopping=True)
@@ -41,6 +42,7 @@ def ml_summarize(text, model, tokenizer):
     return summary
 
 # Function to compute semantic similarity
+@st.cache
 def compute_semantic_similarity(embedding1, embedding2):
     return cosine_similarity(embedding1.reshape(1, -1), embedding2.reshape(1, -1))[0][0]
 
