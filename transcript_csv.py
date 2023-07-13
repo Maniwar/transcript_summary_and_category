@@ -4,7 +4,7 @@ import base64
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from transformers import T5ForConditionalGeneration, T5Tokenizer
-import chartdet
+import chardet
 
 # Initialize BERT model
 @st.cache_resource  # Cache the BERT model as a resource
