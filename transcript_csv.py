@@ -9,12 +9,12 @@ import io
 import math
 
 # Initialize BERT model
-@st.cache_resource  # Cache the BERT model as a resource
+@st.cache_resource(allow_output_mutation=True)  # Cache the BERT model as a resource
 def initialize_bert_model():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
 # Initialize T5 model and tokenizer
-@st.cache_resource  # Cache the T5 model and tokenizer as resources
+@st.cache_resource(allow_output_mutation=True)  # Cache the T5 model and tokenizer as resources
 def initialize_t5_model():
     model = T5ForConditionalGeneration.from_pretrained('t5-base')
     tokenizer = T5Tokenizer.from_pretrained('t5-base')
@@ -34,7 +34,7 @@ def preprocess_text(text):
     return text.strip()
 
 # Function for ML summarization
-@st.cache_resource  # Cache the ML summarization function as a resource
+@st.cache_resource(allow_output_mutation=True)  # Cache the ML summarization function as a resource
 def ml_summarize(text, model, tokenizer):
     inputs = tokenizer.encode("summarize: " + text, return_tensors="pt", max_length=512, truncation=True)
     outputs = model.generate(inputs, max_length=150, min_length=40, num_beams=4, early_stopping=True)
@@ -103,7 +103,6 @@ if transcript_file is not None:
 
     st.subheader("Agent Summary:")
     st.write(agent_summary)
-
     # Define extended categories and subcategories for customer call intents
     customer_categories = {
         "Product Related": [
