@@ -33,7 +33,6 @@ def preprocess_text(text):
     return text.strip()
 
 
-
 # Function for ML summarization
 def ml_summarize(text, model, tokenizer):
     inputs = tokenizer.encode("summarize: " + text, return_tensors="pt", max_length=512, truncation=True)
@@ -62,7 +61,7 @@ if transcript_file is not None:
         df = pd.read_csv(io.BytesIO(raw_data), encoding=encoding)
     except UnicodeDecodeError:
         st.error("Error: Unable to decode the CSV file. Please try a different encoding type.")
-    
+
     # Display a dropdown to select the transcript column
     selected_column = st.selectbox("Select transcript column", df.columns)
 
@@ -70,38 +69,38 @@ if transcript_file is not None:
     transcript_lines = df[selected_column].tolist()
 
     # Preprocess the transcript lines
-    transcript_lines = [preprocess_text(str(line)) for line in transcript_lines if isinstance(line, str) and line.strip() or isinstance(line, float) and math.isfinite(line)]
-
-
-    # Split the transcript into agent and customer comments
-    agent_comments = []
-    customer_comments = []
-    for line in transcript_lines:
-        if line.startswith("Agent:"):
-            agent_comments.append(line[6:].strip())
-        elif line.startswith("Customer:"):
-            customer_comments.append(line[9:].strip())
-
-    # Preprocess agent and customer comments
-    agent_comments = [preprocess_text(comment) for comment in agent_comments]
-    customer_comments = [preprocess_text(comment) for comment in customer_comments]
-
-    # Concatenate agent and customer comments
-    agent_text = ' '.join(agent_comments)
-    customer_text = ' '.join(customer_comments)
+    transcript_lines = [preprocess_text(str(line)) for line in transcript_lines if
+                        isinstance(line, str) and line.strip() or isinstance(line, float) and math.isfinite(line)]
 
     # Initialize BERT model and T5 model
     bert_model = initialize_bert_model()
     t5_model, t5_tokenizer = initialize_t5_model()
 
-    # ML summarization for agent and customer parts
-    agent_summary = ml_summarize(agent_text, t5_model, t5_tokenizer)
-    customer_summary = ml_summarize(customer_text, t5_model, t5_tokenizer)
+    # Create empty lists to store summaries
+    agent_summaries = []
+    customer_summaries = []
 
+    # Process each line separately
+    for line in transcript_lines:
+        # Preprocess the line
+        line = preprocess_text(str(line))
+
+        # Split the line into agent and customer comments
+        if line.startswith("Agent:"):
+            agent_comment = line[6:].strip()
+            agent_summaries.append(ml_summarize(agent_comment, t5_model, t5_tokenizer))
+        elif line.startswith("Customer:"):
+            customer_comment = line[9:].strip()
+            customer_summaries.append(ml_summarize(customer_comment, t5_model, t5_tokenizer))
+
+    # Join the agent and customer summaries
+    agent_summary = ' '.join(agent_summaries)
+    customer_summary = ' '.join(customer_summaries)
+
+    # Display the agent and customer summaries
     st.subheader("Customer Summary:")
     st.write(customer_summary)
 
-    # Display the agent and customer summaries
     st.subheader("Agent Summary:")
     st.write(agent_summary)
 
@@ -269,7 +268,6 @@ if transcript_file is not None:
     if new_category_name and new_category_subcategories:
         customer_categories_edited[new_category_name] = new_category_subcategories.split("\n")
 
-
     # Edit Agent categories
     st.sidebar.header("Edit Agent Categories")
     agent_categories_edited = {}
@@ -342,5 +340,3 @@ if transcript_file is not None:
     b64 = base64.b64encode(csv_data.encode()).decode()
     href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
     st.markdown(href, unsafe_allow_html=True)
-
-
