@@ -160,6 +160,8 @@ if transcript_file is not None:
         keyword_embeddings = [bert_model.encode(keyword) for keyword in customer_categories_edited[new_category_name]]
         category_embeddings[new_category_name] = keyword_embeddings
 
+    threshold = st.sidebar.slider("Threshold", min_value=0.0, max_value=1.0, value=0.7, step=0.05)
+
     # Main processing
     if start_processing:
         # Create a progress bar in the main layout
@@ -198,17 +200,20 @@ if transcript_file is not None:
                 customer_intent_scores[intent] = embedding_scores
 
             # Find the best matching customer category for each line in the batch
-            best_customer_categories = np.argmax(customer_intent_scores, axis=1)
+            best_customer_categories = []
             best_customer_keywords = []
             best_customer_scores = []
-            for i, intent in enumerate(best_customer_categories):
-                intent_scores = customer_intent_scores[intent][i]
-                keyword_index = np.argmax(intent_scores, default=0)
-                best_customer_keyword = customer_categories_edited[intent][keyword_index]
-                best_customer_keywords.append(best_customer_keyword)
-                best_customer_scores.append(max(intent_scores, default=0))
+            for intent in customer_intent_scores.keys():
+                intent_scores = customer_intent_scores[intent]
+                max_score = np.max(intent_scores)
+                if max_score >= threshold:
+                    keyword_index = np.argmax(intent_scores)
+                    best_customer_keyword = customer_categories_edited[intent][keyword_index]
+                    best_customer_categories.append(intent)
+                    best_customer_keywords.append(best_customer_keyword)
+                    best_customer_scores.append(max_score)
 
-            # Add the categorizations to the dataframe for the current batch
+            # Add the categorizations to the DataFrame for the current batch
             df.at[batch_start:batch_end, "Best Matching Customer Category"] = best_customer_categories
             df.at[batch_start:batch_end, "Best Matching Customer Keyword"] = best_customer_keywords
             df.at[batch_start:batch_end, "Best Matching Customer Score"] = best_customer_scores
@@ -217,7 +222,7 @@ if transcript_file is not None:
         progress_bar.progress(1.0)
         progress_text.text('Processing complete!')
 
-        # Display the processed dataframe
+        # Display the processed DataFrame
         st.subheader("Processed Data")
         st.dataframe(df)
 
@@ -226,21 +231,3 @@ if transcript_file is not None:
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
-
-AxisError: axis 1 is out of bounds for array of dimension 1
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 201, in <module>
-    best_customer_categories = np.argmax(customer_intent_scores, axis=1)
-                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "<__array_function__ internals>", line 200, in argmax
-File "C:\Python311\Lib\site-packages\numpy\core\fromnumeric.py", line 1242, in argmax
-    return _wrapfunc(a, 'argmax', axis=axis, out=out, **kwds)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\numpy\core\fromnumeric.py", line 54, in _wrapfunc
-    return _wrapit(obj, method, *args, **kwds)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\numpy\core\fromnumeric.py", line 43, in _wrapit
-    result = getattr(asarray(obj), method)(*args, **kwds)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
