@@ -284,56 +284,72 @@ if transcript_file is not None:
     # Initialize BERT model
     model = initialize_bert_model()
 
-    # Compute embeddings for customer categories and subcategories
-    customer_embeddings = {}
-    for category, subcategories in customer_categories_edited.items():
-        for subcategory in subcategories:
-            embedding = model.encode(subcategory)
-            customer_embeddings[category + ' - ' + subcategory] = embedding
+    # Process button
+if st.sidebar.button('Start Processing'):
+    # Create a progress bar
+    progress_bar = st.sidebar.progress(0)
+    progress_text = st.sidebar.empty()
 
-    # Compute semantic similarity scores between agent summary and customer intents
-    intent_scores = {}
-    agent_summary_embedding = model.encode(agent_summary)
-    for intent, embedding in customer_embeddings.items():
-        score = compute_semantic_similarity(agent_summary_embedding, embedding)
-        intent_scores[intent] = score
+    # Calculate the number of steps to update the progress bar
+    num_steps = len(df)
+    step_size = 1 / num_steps
 
-    # Find the best matching intent
-    best_intent = max(intent_scores, key=intent_scores.get)
-    best_intent_score = intent_scores[best_intent]
+    # Initialize the progress
+    progress = 0
 
-    # Compute embeddings for agent actions
-    agent_embeddings = {}
-    for category, subcategories in agent_categories_edited.items():
-        for subcategory in subcategories:
-            embedding = model.encode(subcategory)
-            agent_embeddings[category + ' - ' + subcategory] = embedding
+    # Process each line separately
+    for i, row in df.iterrows():
+        # Update the progress bar
+        progress += step_size
+        progress_bar.progress(progress)
+        progress_text.text(f'Processing: {int(progress * 100)}%')
 
-    # Compute semantic similarity scores between customer summary and agent actions
-    action_scores = {}
-    customer_summary_embedding = model.encode(customer_summary)
-    for action, embedding in agent_embeddings.items():
-        score = compute_semantic_similarity(customer_summary_embedding, embedding)
-        action_scores[action] = score
+        # Extract the transcript line from the selected column
+        line = row[selected_column]
+        
+        # Preprocess the line
+        line = preprocess_text(str(line))
 
-    # Find the best matching action
-    best_action = max(action_scores, key=action_scores.get)
-    best_action_score = action_scores[best_action]
+        # Split the line into agent and customer comments
+        if line.startswith("Agent:"):
+            agent_comment = line[6:].strip()
+            agent_summary = ml_summarize(agent_comment, t5_model, t5_tokenizer)
+        elif line.startswith("Customer:"):
+            customer_comment = line[9:].strip()
+            customer_summary = ml_summarize(customer_comment, t5_model, t5_tokenizer)
 
-    # Display the best matching intent and action
-    st.subheader("Best Matching Customer Intent:")
-    st.write("Intent:", best_intent)
-    st.write("Similarity Score:", best_intent_score)
+        # Compute semantic similarity scores between agent summary and customer intents
+        intent_scores = {}
+        agent_summary_embedding = model.encode(agent_summary)
+        for intent, embedding in customer_embeddings.items():
+            score = compute_semantic_similarity(agent_summary_embedding, embedding)
+            intent_scores[intent] = score
 
-    st.subheader("Best Matching Agent Action:")
-    st.write("Action:", best_action)
-    st.write("Similarity Score:", best_action_score)
+        # Find the best matching intent
+        best_intent = max(intent_scores, key=intent_scores.get)
+        best_intent_score = intent_scores[best_intent]
 
-    # Create new columns for the summaries and categorizations
-    df["Agent Summary"] = agent_summary
-    df["Customer Summary"] = customer_summary
-    df["Best Matching Customer Intent"] = best_intent
-    df["Best Matching Agent Action"] = best_action
+        # Compute semantic similarity scores between customer summary and agent actions
+        action_scores = {}
+        customer_summary_embedding = model.encode(customer_summary)
+        for action, embedding in agent_embeddings.items():
+            score = compute_semantic_similarity(customer_summary_embedding, embedding)
+            action_scores[action] = score
+
+        # Find the best matching action
+        best_action = max(action_scores, key=action_scores.get)
+        best_action_score = action_scores[best_action]
+
+        # Add the summaries and categorizations to the dataframe
+        df.at[i, "Agent Summary"] = agent_summary
+        df.at[i, "Customer Summary"] = customer_summary
+        df.at[i, "Best Matching Customer Intent"] = best_intent
+        df.at[i, "Best Matching Agent Action"] = best_action
+
+    # When all data is processed, set the progress bar to 100%
+    progress_bar.progress(1.0)
+    progress_text.text('Processing complete!')
+
 
     # Generate a download link for the updated CSV file
     csv_data = df.to_csv(index=False, encoding='utf-8-sig')
