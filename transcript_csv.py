@@ -13,6 +13,18 @@ import numpy as np
 def initialize_bert_model():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
+# Function to preprocess the text
+def preprocess_text(text):
+    # Convert to string if input is a real number
+    if isinstance(text, float) and math.isfinite(text):
+        text = str(text)
+
+    # Remove unnecessary characters and weird characters
+    text = text.encode('ascii', 'ignore').decode('utf-8')
+
+    # Return the text without removing stop words
+    return text.strip()
+
 # Streamlit interface
 st.title("👨‍💻 Chat Transcript Categorization")
 
