@@ -203,15 +203,25 @@ if transcript_file is not None:
             best_customer_categories = []
             best_customer_keywords = []
             best_customer_scores = []
-            for intent in customer_intent_scores.keys():
-                intent_scores = customer_intent_scores[intent]
-                max_score = np.max(intent_scores)
+            for i, line_scores in enumerate(customer_intent_scores.values()):
+                max_score = np.max(line_scores)
                 if max_score >= threshold:
-                    keyword_index = np.argmax(intent_scores)
+                    intent = list(customer_intent_scores.keys())[i]
+                    keyword_index = np.argmax(line_scores)
                     best_customer_keyword = customer_categories_edited[intent][keyword_index]
                     best_customer_categories.append(intent)
                     best_customer_keywords.append(best_customer_keyword)
                     best_customer_scores.append(max_score)
+                else:
+                    best_customer_categories.append("")
+                    best_customer_keywords.append("")
+                    best_customer_scores.append(0.0)
+
+            # Pad the lists to match the batch size
+            while len(best_customer_categories) < batch_size:
+                best_customer_categories.append("")
+                best_customer_keywords.append("")
+                best_customer_scores.append(0.0)
 
             # Add the categorizations to the DataFrame for the current batch
             df.at[batch_start:batch_end, "Best Matching Customer Category"] = best_customer_categories
@@ -231,27 +241,3 @@ if transcript_file is not None:
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
-
-ValueError: Must have equal len keys and value when setting with an iterable
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 217, in <module>
-    df.at[batch_start:batch_end, "Best Matching Customer Category"] = best_customer_categories
-    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 2442, in __setitem__
-    return super().__setitem__(key, value)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 2397, in __setitem__
-    self.obj._set_value(*key, value=value, takeable=self._takeable)
-File "C:\Python311\Lib\site-packages\pandas\core\frame.py", line 4221, in _set_value
-    self.loc[index, col] = value
-    ~~~~~~~~^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 818, in __setitem__
-    iloc._setitem_with_indexer(indexer, value, self.name)
-File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1750, in _setitem_with_indexer
-    self._setitem_with_indexer(new_indexer, value, name)
-File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1795, in _setitem_with_indexer
-    self._setitem_with_indexer_split_path(indexer, value, name)
-File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1850, in _setitem_with_indexer_split_path
-    raise ValueError(
