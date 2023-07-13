@@ -38,7 +38,7 @@ st.title("👨‍💻 Chat Transcript Categorization")
 transcript_file = st.file_uploader("Upload CSV file", type="csv")
 
 # Main layout
-st.header("Process Your File")
+st.header("Processing")
 
 # Only process if a file is uploaded
 if transcript_file is not None:
@@ -148,15 +148,23 @@ if transcript_file is not None:
     st.sidebar.header("Edit Customer Categories")
     # Edit Customer categories
     customer_categories_edited = {}
+    category_embeddings = {}  # Store precomputed embeddings
     for category, subcategories in customer_categories.items():
         category_subcategories = st.sidebar.text_area(f"{category} Customer Subcategories", value="\n".join(subcategories))
         customer_categories_edited[category] = category_subcategories.split("\n")
+
+        # Precompute embeddings for category keywords
+        keyword_embeddings = [bert_model.encode(keyword) for keyword in customer_categories_edited[category]]
+        category_embeddings[category] = keyword_embeddings
 
     st.sidebar.subheader("Add or Modify Customer Categories")
     new_category_name = st.sidebar.text_input("New Customer Category Name")
     new_category_subcategories = st.sidebar.text_area(f"Subcategories for Customer Category {new_category_name}")
     if new_category_name and new_category_subcategories:
         customer_categories_edited[new_category_name] = new_category_subcategories.split("\n")
+        # Precompute embeddings for new category keywords
+        keyword_embeddings = [bert_model.encode(keyword) for keyword in customer_categories_edited[new_category_name]]
+        category_embeddings[new_category_name] = keyword_embeddings
 
     # Main processing
     if start_processing:
@@ -189,8 +197,8 @@ if transcript_file is not None:
             # Compute semantic similarity scores between customer comment and customer intents
             customer_intent_scores = {}
             customer_comment_embedding = bert_model.encode(line)
-            for intent, keywords in customer_categories_edited.items():
-                embedding_scores = [compute_semantic_similarity(customer_comment_embedding, bert_model.encode(keyword)) for keyword in keywords]
+            for intent, keyword_embeddings in category_embeddings.items():
+                embedding_scores = [compute_semantic_similarity(customer_comment_embedding, keyword_embedding) for keyword_embedding in keyword_embeddings]
                 customer_intent_scores[intent] = embedding_scores
 
             # Find the best matching customer category
