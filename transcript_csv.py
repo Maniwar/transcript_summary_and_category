@@ -29,7 +29,8 @@ def preprocess_text(text):
     text = text.encode('ascii', 'ignore').decode('utf-8')
 
     # Return the text without removing stop words
-    return text
+    return text.strip()
+
 
 # Function for ML summarization
 def ml_summarize(text, model, tokenizer):
