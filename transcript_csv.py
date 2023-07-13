@@ -357,25 +357,8 @@ if transcript_file is not None:
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
 
-NameError: name 'tokenizer' is not defined
+StreamlitAPIException: Progress Value has invalid value [0.0, 1.0]: 1.000000
+
 Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 94, in <module>
-    customer_summaries.append(ml_summarize(customer_comment, t5_model, t5_tokenizer))
-                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
-    return cached_func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
-    return self._get_or_create_cached_value(args, kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
-    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
-    computed_value = self._info.func(*func_args, **func_kwargs)
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 39, in ml_summarize
-    inputs = tokenizer.encode("summarize: " + text, return_tensors="pt", max_length=512, truncation=True)
-             ^^^^^^^^^
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 301, in <module>
+    progress_bar.progress(progress)
