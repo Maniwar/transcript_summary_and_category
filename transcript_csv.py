@@ -149,7 +149,7 @@ if transcript_file is not None:
 
         # Precompute embeddings for category keywords
         keyword_embeddings = [bert_model.encode(keyword) for keyword in customer_categories_edited[category]]
-        category_embeddings[category] = np.array(keyword_embeddings)
+        category_embeddings[category] = keyword_embeddings
 
     st.sidebar.subheader("Add or Modify Customer Categories")
     new_category_name = st.sidebar.text_input("New Customer Category Name")
@@ -158,7 +158,7 @@ if transcript_file is not None:
         customer_categories_edited[new_category_name] = new_category_subcategories.split("\n")
         # Precompute embeddings for new category keywords
         keyword_embeddings = [bert_model.encode(keyword) for keyword in customer_categories_edited[new_category_name]]
-        category_embeddings[new_category_name] = np.array(keyword_embeddings)
+        category_embeddings[new_category_name] = keyword_embeddings
 
     # Main processing
     if start_processing:
@@ -198,11 +198,10 @@ if transcript_file is not None:
                 customer_intent_scores[intent] = embedding_scores
 
             # Find the best matching customer category for each line in the batch
-            best_customer_categories = np.argmax(customer_intent_scores, axis=0)
+            best_customer_categories = np.argmax(customer_intent_scores, axis=1)
             best_customer_keywords = []
             best_customer_scores = []
-            for i in range(len(best_customer_categories)):
-                intent = best_customer_categories[i]
+            for i, intent in enumerate(best_customer_categories):
                 intent_scores = customer_intent_scores[intent][i]
                 keyword_index = np.argmax(intent_scores, default=0)
                 best_customer_keyword = customer_categories_edited[intent][keyword_index]
@@ -227,11 +226,3 @@ if transcript_file is not None:
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
-
-TypeError: object of type 'numpy.int64' has no len()
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 204, in <module>
-    for i in range(len(best_customer_categories)):
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
