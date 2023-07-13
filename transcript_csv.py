@@ -52,7 +52,7 @@ st.title("👨‍💻 Chat Transcript Categorization")
 transcript_file = st.file_uploader("Upload CSV file", type="csv")
 
 # Only process if a file is uploaded
-if transcript_file is not None:
+if transcript_file is not None and start_processing:
     # Read the uploaded CSV file with different encoding types
     raw_data = transcript_file.read()
     result = chardet.detect(raw_data)
