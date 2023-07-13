@@ -6,30 +6,12 @@ from sklearn.metrics.pairwise import cosine_similarity
 import chardet
 import io
 import math
+import numpy as np
 
 # Initialize BERT model
-@st.cache_resource
+@st.cache(allow_output_mutation=True)
 def initialize_bert_model():
     return SentenceTransformer('all-MiniLM-L6-v2')
-
-# Function to preprocess the text
-@st.cache_data
-def preprocess_text(text):
-    # Convert to string if input is a real number
-    if isinstance(text, float) and math.isfinite(text):
-        text = str(text)
-
-    # Remove unnecessary characters and weird characters
-    text = text.encode('ascii', 'ignore').decode('utf-8')
-
-    # Return the text without removing stop words
-    return text.strip()
-
-# Function to compute semantic similarity
-@st.cache_data
-def compute_semantic_similarity(embedding1, embedding2):
-    return cosine_similarity(embedding1.reshape(1, -1), embedding2.reshape(1, -1))[0][0]
-
 
 # Streamlit interface
 st.title("👨‍💻 Chat Transcript Categorization")
@@ -155,7 +137,7 @@ if transcript_file is not None:
 
         # Precompute embeddings for category keywords
         keyword_embeddings = [bert_model.encode(keyword) for keyword in customer_categories_edited[category]]
-        category_embeddings[category] = keyword_embeddings
+        category_embeddings[category] = np.array(keyword_embeddings)
 
     st.sidebar.subheader("Add or Modify Customer Categories")
     new_category_name = st.sidebar.text_input("New Customer Category Name")
@@ -164,7 +146,7 @@ if transcript_file is not None:
         customer_categories_edited[new_category_name] = new_category_subcategories.split("\n")
         # Precompute embeddings for new category keywords
         keyword_embeddings = [bert_model.encode(keyword) for keyword in customer_categories_edited[new_category_name]]
-        category_embeddings[new_category_name] = keyword_embeddings
+        category_embeddings[new_category_name] = np.array(keyword_embeddings)
 
     # Main processing
     if start_processing:
@@ -179,40 +161,45 @@ if transcript_file is not None:
         # Initialize the progress
         progress = 0
 
-        # Process each line separately
-        for i, row in df.iterrows():
-            # Calculate the progress
-            progress = (i + 1) / num_steps
+        # Preprocess all lines outside the loop
+        df[selected_column] = df[selected_column].apply(lambda x: preprocess_text(str(x)))
 
-            # Update the progress bar
+        # Process lines in batches
+        batch_size = 100
+        num_batches = math.ceil(len(df) / batch_size)
+        for batch_index in range(num_batches):
+            # Calculate the progress for the current batch
+            progress = (batch_index + 1) / num_batches
             progress_bar.progress(progress)
             progress_text.text(f'Processing: {int(progress * 100)}%')
 
-            # Extract the transcript line from the selected column
-            line = row[selected_column]
-
-            # Preprocess the line
-            line = preprocess_text(str(line))
+            # Get the lines for the current batch
+            batch_start = batch_index * batch_size
+            batch_end = (batch_index + 1) * batch_size
+            batch_lines = df[selected_column].iloc[batch_start:batch_end].tolist()
 
             # Compute semantic similarity scores between customer comment and customer intents
             customer_intent_scores = {}
-            customer_comment_embedding = bert_model.encode(line)
+            customer_comment_embeddings = bert_model.encode(batch_lines)
             for intent, keyword_embeddings in category_embeddings.items():
-                embedding_scores = [compute_semantic_similarity(customer_comment_embedding, keyword_embedding) for keyword_embedding in keyword_embeddings]
+                embedding_scores = cosine_similarity(customer_comment_embeddings, keyword_embeddings)
                 customer_intent_scores[intent] = embedding_scores
 
-            # Find the best matching customer category
-            best_customer_category = max(customer_intent_scores, key=lambda x: max(customer_intent_scores[x]), default="")
+            # Find the best matching customer category for each line in the batch
+            best_customer_categories = np.argmax(customer_intent_scores, axis=0)
+            best_customer_keywords = []
+            best_customer_scores = []
+            for i, intent in enumerate(best_customer_categories):
+                intent_scores = customer_intent_scores[intent][:, i]
+                keyword_index = np.argmax(intent_scores, default=0)
+                best_customer_keyword = customer_categories_edited[intent][keyword_index]
+                best_customer_keywords.append(best_customer_keyword)
+                best_customer_scores.append(max(intent_scores, default=0))
 
-            # Find the best matching customer keyword
-            best_customer_category_scores = customer_intent_scores[best_customer_category]
-            best_customer_category_index = best_customer_category_scores.index(max(best_customer_category_scores, default=0))
-            best_customer_category_keyword = customer_categories_edited[best_customer_category][best_customer_category_index]
-
-            # Add the categorizations to the dataframe
-            df.at[i, "Best Matching Customer Category"] = best_customer_category
-            df.at[i, "Best Matching Customer Keyword"] = best_customer_category_keyword
-            df.at[i, "Best Matching Customer Score"] = max(best_customer_category_scores, default=0)
+            # Add the categorizations to the dataframe for the current batch
+            df.at[batch_start:batch_end, "Best Matching Customer Category"] = best_customer_categories
+            df.at[batch_start:batch_end, "Best Matching Customer Keyword"] = best_customer_keywords
+            df.at[batch_start:batch_end, "Best Matching Customer Score"] = best_customer_scores
 
         # When all data is processed, set the progress bar to 100%
         progress_bar.progress(1.0)
