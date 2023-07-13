@@ -98,13 +98,6 @@ if transcript_file is not None:
     agent_summary = ' '.join(agent_summaries)
     customer_summary = ' '.join(customer_summaries)
 
-    # Display the agent and customer summaries
-    st.subheader("Customer Summary:")
-    st.write(customer_summary)
-
-    st.subheader("Agent Summary:")
-    st.write(agent_summary)
-
     # Define extended categories and subcategories for customer call intents
     customer_categories = {
         "Product Related": [
@@ -280,7 +273,7 @@ if transcript_file is not None:
     new_category_name = st.sidebar.text_input("New Agent Category Name")
     new_category_subcategories = st.sidebar.text_area(f"Subcategories for Agent Category {new_category_name}")
     if new_category_name and new_category_subcategories:
-        agent_categories_edited[new_category_name] = new_category_subcategories.split("\n")
+        agent_categories_edited[new_category_name] = category_subcategories.split("\n")
 
     # Main processing
     if start_processing:
