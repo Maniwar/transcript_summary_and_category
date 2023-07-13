@@ -212,18 +212,17 @@ if transcript_file is not None:
                 best_customer_categories.append("")
                 best_customer_keywords.append("")
                 best_customer_scores.append(0.0)
-
+        
         # Ensure the lengths of best_customer_categories, best_customer_keywords, and best_customer_scores match the DataFrame length
         num_rows = len(df)
         best_customer_categories = best_customer_categories[:num_rows]
         best_customer_keywords = best_customer_keywords[:num_rows]
         best_customer_scores = best_customer_scores[:num_rows]
-
+        
         # Add the categorizations to the DataFrame
         df["Best Matching Customer Category"] = best_customer_categories
         df["Best Matching Customer Keyword"] = best_customer_keywords
         df["Best Matching Customer Score"] = best_customer_scores
-
 
         # When all data is processed, set the progress bar to 100%
         progress_bar.progress(1.0)
