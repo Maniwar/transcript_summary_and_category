@@ -198,7 +198,7 @@ if transcript_file is not None:
                 customer_intent_scores[intent] = embedding_scores
 
             # Find the best matching customer category for each line in the batch
-            best_customer_categories = np.argmax(customer_intent_scores, axis=1)
+            best_customer_categories = np.argmax(customer_intent_scores, axis=0)
             best_customer_keywords = []
             best_customer_scores = []
             for i in range(len(best_customer_categories)):
@@ -227,21 +227,3 @@ if transcript_file is not None:
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
-
-AxisError: axis 1 is out of bounds for array of dimension 1
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 201, in <module>
-    best_customer_categories = np.argmax(customer_intent_scores, axis=1)
-                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "<__array_function__ internals>", line 200, in argmax
-File "C:\Python311\Lib\site-packages\numpy\core\fromnumeric.py", line 1242, in argmax
-    return _wrapfunc(a, 'argmax', axis=axis, out=out, **kwds)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\numpy\core\fromnumeric.py", line 54, in _wrapfunc
-    return _wrapit(obj, method, *args, **kwds)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\numpy\core\fromnumeric.py", line 43, in _wrapit
-    result = getattr(asarray(obj), method)(*args, **kwds)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
