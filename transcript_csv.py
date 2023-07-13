@@ -70,153 +70,88 @@ if emerging_issue_mode:
 # Edit categories and keywords
 st.sidebar.header("Edit Categories")
 default_categories = {
-    "Product Discovery Issues": [
-        "Difficulty Finding Products",
-        "Insufficient Product Information",
-        "Mobile Webpage Layout Problems",
-        "Search Functionality Problems",
-        "Issues with Product Filters",
-        "User Interface Discrepancies"
-    ],
-    "Product Selection Issues": [
-        "Problems Comparing Products",
-        "Confusing Product Descriptions",
-        "Issues with Configurator Performance",
-        "Configurator Inaccuracies",
-        "Usability Issues with Configurator",
-        "Limited Product Varieties",
-        "Unavailability of Certain Sizes",
-        "Frequent Stock Shortages"
-    ],
-    "Cart & Checkout Issues": [
-        "Complexities in Cart Management",
-        "Product Unavailability in Cart",
-        "Problems with Regional Product Availability",
-        "Limited Shipping Methods",
-        "Complicated Checkout Process",
-        "Inconveniences in Store Pick-up",
-        "Delivery Date Calculation Errors",
-        "Address Verification Problems"
-    ],
-    "Order Processing Issues": [
-        "Unanticipated Order Cancellations",
-        "Delays due to Stock Issues",
-        "Order Modification Difficulties",
-        "Multiple Order Cancellations"
-    ],
-    "Payment Processing Issues": [
-        "Payment Declined",
-        "Unauthorized Charges",
-        "Payment Gateway Errors",
-        "Payment Verification Issues",
-        "Refund Delays",
-        "Coupon Code Malfunctions"
-    ],
-    "Order Communication Issues": [
-        "Inefficient Fraud Alert Communication"
-    ],
-    "Delivery Issues": [
-        "Promised Delivery Date was Missed",
-        "Inaccurate Delivery Tracking",
-        "Poor Condition of Delivered Packages",
-        "Problems with In-store Pick-up",
-        "Received Incorrect Item",
-        "Missing Items in Delivered Package",
-        "Received Damaged Item",
-        "Received Defective Item",
-        "Limited Delivery Zones"
-    ],
-    "Installation Problems": [
-        "Complex Installation Process",
-        "Vague Installation Instructions",
-        "Missing Installation Parts",
-        "Issues Detected Post-Installation",
-        "Inadequate Installation Support",
-        "Incompatibility of Products"
-    ],
-    "Service & Repair Problems": [
-        "Inferior On-Site Service",
-        "Delayed Service Response",
-        "Substandard Repair Work",
-        "Slow Repair Process",
-        "Lack of Cost Transparency in Service & Repair",
-        "Poor Communication during Service & Repair",
-        "Insufficient Warranty Coverage"
-    ],
-    "Customer Support Issues": [
-        "Long Wait Times for Support Response",
-        "Unsatisfactory Support Quality",
-        "Limited Knowledge of Support Staff",
-        "Unresolved Customer Issues",
-        "Poor Follow-up Support",
-        "Difficulty Reaching Support",
-        "Unresponsive Support Staff",
-        "Inaccessible Support Channels",
-        "Lack of Empathy from Support Staff"
-    ],
-    "Return & Refund Issues": [
-        "Complex Return Process",
-        "Delayed Refund Process",
-        "Unclear Return Policy",
-        "Disagreement over Return Shipping Responsibility",
-        "Brief Return Window",
-        "Exchange Policy Problems",
-        "Refund Amount Discrepancies"
-    ],
-    "Website & Mobile App Performance Issues": [
-        "Overall Performance Issues with Website",
-        "Slow Website Load Speed",
-        "Mobile App Usability Issues",
-        "Poor Mobile App Performance",
-        "Website Design Criticisms",
-        "Challenges Navigating Website",
-        "Distractions from Pop-ups",
-        "Poor Website Scrolling Experience",
-        "Malfunctioning Website Features"
-    ],
-    "Customer Communication Issues": [
-        "Excessive Email Notifications",
-        "Irrelevant Email Content",
-        "Issues Unsubscribing from Emails",
-        "Poor Response to Customer Feedback",
-        "Delays in Communication"
-    ],
-    "Privacy & Security Issues": [
-        "Concerns about Data Privacy",
-        "Concerns about Data Security",
-        "Problems with Login",
-        "Two-Factor Authentication Difficulties",
-        "Poor Account Management",
-        "Lack of Transparency in Data Usage",
-        "Experiences of Scams & Phishing",
-        "Payment Information Security Concerns"
-    ],
-    "Product Feedback": [
-        "Absence of Charger",
-        "Product Durability Concerns",
-        "Issues with Firmware",
-        "General Product Feedback",
-        "Feedback on Pre-Installed Apps",
-        "Software Malfunctions",
-        "Hardware Problems",
-        "Poor Product Quality",
-        "Poor Product Performance"
-    ],
-    "Policy Feedback": [
-        "Inability to Replace Items",
-        "Concerns about Device Locking Policies",
-        "Feedback on Trade-In Process",
-        "Shipping Policy Critiques",
-        "Return Policy Critiques"
-    ],
-    "Pricing Clarity": [
-        "Unexpected Price Changes in Cart",
-        "Issues with Applying Discounts",
-        "Employee Purchase Program Difficulties",
-        "First Responder Program Difficulties",
-        "Lack of Pricing Transparency",
-        "Uncompetitive Pricing"
-    ]
+    "Product Related": [
+            "Product Quality",
+            "Product Availability",
+            "Product Specifications",
+            "Product Compatibility",
+            "Product Warranties and Guarantees",
+            "Product Installation",
+            "Product Maintenance",
+            "Refund Requests Due to Product Issues",
+            "Promo Code Requests Due to Product Issues"
+        ],
+        "Service Queries": [
+            "Service Types (Standard, Express, International)",
+            "Service Rates",
+            "Service Customization",
+            "Service Experience",
+            "Refund Requests Due to Service Issues",
+            "Promo Code Requests Due to Service Issues"
+        ],
+        "Order Issues": [
+            "Wrong Product Received",
+            "Missing Items",
+            "Order Tracking",
+            "Delivery Delays",
+            "Damaged Package",
+            "Order Modifications",
+            "Bulk Orders",
+            "Custom Orders",
+            "Return Requests",
+            "Refund Requests Due to Order Issues",
+            "Promo Code Requests Due to Order Issues"
+        ],
+        "Billing and Invoice Issues": [
+            "Unauthorized Payments",
+            "Billing Errors",
+            "Invoice Discrepancy",
+            "Refund Requests Due to Billing Issues",
+            "Promo Code Requests Due to Billing Issues"
+        ],
+        "Payment Process": [
+            "Payment Errors",
+            "Credit/Debit Card",
+            "Bank Account",
+            "Digital Wallet",
+            "Payment Plans",
+            "Gift Cards",
+            "Promo Code Requests Due to Payment Issues",
+            "Refund Requests Due to Payment Issues"
+        ],
+        "Account Management": [
+            "Login",
+            "Password Reset",
+            "Security",
+            "Subscription/Membership",
+            "Communication Preferences",
+            "Personal Data Handling",
+            "Account Deactivation",
+            "Refund Requests Due to Account Management Issues",
+            "Promo Code Requests Due to Account Management Issues"
+        ],
+        "Technical Issues": [
+            "Website Navigation",
+            "App Errors",
+            "Payment Gateway",
+            "Accessibility",
+            "Computer or Laptop Technical Issues",
+            "Browser Compatibility",
+            "Security Warnings",
+            "Promo Code Requests Due to Technical Issues",
+            "Refund Requests Due to Technical Issues"
+        ],
+        "Feedback and Suggestions": [
+            "Product",
+            "Service",
+            "Website/App",
+            "Suggestions"
+        ],
+        "Price Match": [
+            "Price Match Requests",
+            "Refund Requests Due to Price Match",
+            "Promo Code Requests Due to Price Match"
+        ],
 }
 categories = {}
 for category, keywords in default_categories.items():
