@@ -292,7 +292,7 @@ if transcript_file is not None:
         for i, row in df.iterrows():
             # Calculate the progress
             progress = (i + 1) / num_steps
-        
+
             # Update the progress bar
             progress_bar.progress(progress)
             progress_text.text(f'Processing: {int(progress * 100)}%')
@@ -317,13 +317,13 @@ if transcript_file is not None:
             for intent, embeddings in customer_categories_edited.items():
                 embedding_scores = []
                 for embedding in embeddings:
-                    embedding_scores.append(
-                        compute_semantic_similarity(agent_summary_embedding, bert_model.encode(embedding)))
-                intent_scores[intent] = max(embedding_scores)
+                    score = compute_semantic_similarity(agent_summary_embedding, bert_model.encode(embedding))
+                    embedding_scores.append((embedding, score))  # Store both the keyword and the score
+                intent_scores[intent] = embedding_scores
 
             # Find the best matching intent
-            best_intent = max(intent_scores, key=intent_scores.get)
-            best_intent_score = intent_scores[best_intent]
+            best_intent = max(intent_scores, key=lambda x: max([score for _, score in x[1]]))
+            best_intent_keyword, best_intent_score = max(intent_scores[best_intent], key=lambda x: x[1])
 
             # Compute semantic similarity scores between customer summary and agent actions
             action_scores = {}
@@ -331,19 +331,21 @@ if transcript_file is not None:
             for action, embeddings in agent_categories_edited.items():
                 embedding_scores = []
                 for embedding in embeddings:
-                    embedding_scores.append(
-                        compute_semantic_similarity(customer_summary_embedding, bert_model.encode(embedding)))
-                action_scores[action] = max(embedding_scores)
+                    score = compute_semantic_similarity(customer_summary_embedding, bert_model.encode(embedding))
+                    embedding_scores.append((embedding, score))  # Store both the keyword and the score
+                action_scores[action] = embedding_scores
 
             # Find the best matching action
-            best_action = max(action_scores, key=action_scores.get)
-            best_action_score = action_scores[best_action]
+            best_action = max(action_scores, key=lambda x: max([score for _, score in x[1]]))
+            best_action_keyword, best_action_score = max(action_scores[best_action], key=lambda x: x[1])
 
             # Add the summaries and categorizations to the dataframe
             df.at[i, "Agent Summary"] = agent_summary
             df.at[i, "Customer Summary"] = customer_summary
             df.at[i, "Best Matching Customer Intent"] = best_intent
+            df.at[i, "Best Matching Intent Keyword"] = best_intent_keyword  # Store the keyword
             df.at[i, "Best Matching Agent Action"] = best_action
+            df.at[i, "Best Matching Action Keyword"] = best_action_keyword  # Store the keyword
 
         # When all data is processed, set the progress bar to 100%
         progress_bar.progress(1.0)
@@ -358,9 +360,3 @@ if transcript_file is not None:
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
-
-StreamlitAPIException: Progress Value has invalid value [0.0, 1.0]: 1.000000
-
-Traceback:
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 295, in <module>
-    progress_bar.progress(progress / 100)
