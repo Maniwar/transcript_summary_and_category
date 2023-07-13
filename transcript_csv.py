@@ -1,20 +1,3 @@
-ValueError: Length of values (9) does not match length of index (144)
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 206, in <module>
-    df["Best Matching Customer Category"] = best_customer_categories
-    ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\pandas\core\frame.py", line 3978, in __setitem__
-    self._set_item(key, value)
-File "C:\Python311\Lib\site-packages\pandas\core\frame.py", line 4172, in _set_item
-    value = self._sanitize_column(value)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\pandas\core\frame.py", line 4912, in _sanitize_column
-    com.require_length_match(value, self.index)
-File "C:\Python311\Lib\site-packages\pandas\core\common.py", line 561, in require_length_match
-    raise ValueError(
-
 import streamlit as st
 import pandas as pd
 import base64
@@ -212,13 +195,7 @@ if transcript_file is not None:
                 best_customer_categories.append("")
                 best_customer_keywords.append("")
                 best_customer_scores.append(0.0)
-        
-        # Ensure the lengths of best_customer_categories, best_customer_keywords, and best_customer_scores match the DataFrame length
-        num_rows = len(df)
-        best_customer_categories = best_customer_categories[:num_rows]
-        best_customer_keywords = best_customer_keywords[:num_rows]
-        best_customer_scores = best_customer_scores[:num_rows]
-        
+
         # Add the categorizations to the DataFrame
         df["Best Matching Customer Category"] = best_customer_categories
         df["Best Matching Customer Keyword"] = best_customer_keywords
