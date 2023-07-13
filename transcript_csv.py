@@ -34,10 +34,11 @@ def preprocess_text(text):
     return text.strip()
 
 # Function for ML summarization
-@st.cache_resource # Cache the ML summarization function as a resource
+@st.cache_resource  # Cache the ML summarization function as a resource
 def ml_summarize(text, _model, _tokenizer):
+    tokenizer = _tokenizer or T5Tokenizer.from_pretrained('t5-base')
     inputs = tokenizer.encode("summarize: " + text, return_tensors="pt", max_length=512, truncation=True)
-    outputs = model.generate(inputs, max_length=150, min_length=40, num_beams=4, early_stopping=True)
+    outputs = _model.generate(inputs, max_length=150, min_length=40, num_beams=4, early_stopping=True)
     summary = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return summary
 
