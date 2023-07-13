@@ -49,8 +49,18 @@ transcript_file = st.file_uploader("Upload CSV file", type="csv")
 
 # Only process if a file is uploaded
 if transcript_file is not None:
-    # Read the uploaded CSV file
-    df = pd.read_csv(transcript_file)
+    # Read the uploaded CSV file with different encoding types
+    with transcript_file as file:
+        raw_data = file.read()
+        result = chardet.detect(raw_data)
+        encoding = result['encoding']
+        try:
+            df = pd.read_csv(transcript_file, encoding=encoding)
+        except UnicodeDecodeError:
+            st.error("Error: Unable to decode the CSV file. Please try a different encoding type.")
+    
+        # Display a dropdown to select the transcript column
+        selected_column = st.selectbox("Select transcript column", df.columns)
 
     # Display a dropdown to select the transcript column
     selected_column = st.selectbox("Select transcript column", df.columns)
