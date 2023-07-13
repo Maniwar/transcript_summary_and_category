@@ -3,22 +3,14 @@ import pandas as pd
 import base64
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-from transformers import T5ForConditionalGeneration, T5Tokenizer
 import chardet
 import io
 import math
 
 # Initialize BERT model
-@st.cache_resource  # Cache the BERT model as a resource
+@st.cache_resource
 def initialize_bert_model():
     return SentenceTransformer('all-MiniLM-L6-v2')
-
-# Initialize T5 model and tokenizer
-@st.cache_resource  # Cache the T5 model and tokenizer as resources
-def initialize_t5_model():
-    model = T5ForConditionalGeneration.from_pretrained('t5-base')
-    tokenizer = T5Tokenizer.from_pretrained('t5-base')
-    return model, tokenizer
 
 # Function to preprocess the text
 @st.cache_data
@@ -32,15 +24,6 @@ def preprocess_text(text):
 
     # Return the text without removing stop words
     return text.strip()
-
-# Function for ML summarization
-@st.cache_resource  # Cache the ML summarization function as a resource
-def ml_summarize(text, _model, _tokenizer):
-    tokenizer = _tokenizer or T5Tokenizer.from_pretrained('t5-base')
-    inputs = tokenizer.encode("summarize: " + text, return_tensors="pt", max_length=512, truncation=True)
-    outputs = _model.generate(inputs, max_length=150, min_length=40, num_beams=4, early_stopping=True)
-    summary = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return summary
 
 # Function to compute semantic similarity
 @st.cache_data
@@ -73,30 +56,8 @@ if transcript_file is not None:
     # Display a dropdown to select the transcript column
     selected_column = st.selectbox("Select transcript column", df.columns)
 
-    # Initialize BERT model and T5 model
+    # Initialize BERT model
     bert_model = initialize_bert_model()
-    t5_model, t5_tokenizer = initialize_t5_model()
-
-    # Create empty lists to store summaries
-    agent_summaries = []
-    customer_summaries = []
-
-    # Process each line separately
-    for line in df[selected_column]:
-        # Preprocess the line
-        line = preprocess_text(str(line))
-
-        # Split the line into agent and customer comments
-        if line.startswith("Agent:"):
-            agent_comment = line[6:].strip()
-            agent_summaries.append(ml_summarize(agent_comment, t5_model, t5_tokenizer))
-        elif line.startswith("Customer:"):
-            customer_comment = line[9:].strip()
-            customer_summaries.append(ml_summarize(customer_comment, t5_model, t5_tokenizer))
-
-    # Join the agent and customer summaries
-    agent_summary = ' '.join(agent_summaries)
-    customer_summary = ' '.join(customer_summaries)
 
     # Define extended categories and subcategories for customer call intents
     customer_categories = {
@@ -184,71 +145,6 @@ if transcript_file is not None:
         ],
     }
 
-    # Define extended categories and subcategories for agent actions
-    agent_categories = {
-        "Product Assistance": [
-            "Product Information",
-            "Product Availability",
-            "Product Specifications",
-            "Product Alternatives",
-            "Product Warranties and Guarantees",
-            "Product Installation",
-            "Product Maintenance",
-        ],
-        "Service Assistance": [
-            "Explaining Service Types",
-            "Providing Service Rates",
-            "Service Customization",
-            "Improving Service Experience"
-        ],
-        "Order Support": [
-            "Order Status Updates",
-            "Processing a Return related Refund",
-            "Processing Order Cancellations",
-            "Organizing Product Exchanges",
-            "Assisting with Order Modifications",
-            "Helping with Bulk Orders",
-            "Customizing Orders",
-            "Handling Unauthorized Payments",
-            "Resolving Billing Errors",
-            "Explaining Invoices",
-            "Processing Non-return related Refund",
-            "Issuing Promo Codes"
-        ],
-        "Payment Assistance": [
-            "Resolving Payment Errors",
-            "Assisting with Credit/Debit Card Issues",
-            "Addressing Bank Account Concerns",
-            "Providing Digital Wallet Support",
-            "Explaining Payment Plans",
-            "Helping with Gift Cards"
-        ],
-        "Account Maintenance": [
-            "Resolving Login Issues",
-            "Assisting with Password Reset",
-            "Enhancing Security",
-            "Managing Subscription and Membership",
-            "Updating Communication Preferences",
-            "Addressing Personal Data Queries",
-            "Helping with Account Deactivation",
-        ],
-        "Technical Support": [
-            "Supporting Website Navigation",
-            "Troubleshooting App Errors",
-            "Troubleshooting Computer or Laptop Technical Issues",
-            "Resolving Payment Gateway Issues",
-            "Improving Accessibility",
-            "Fixing Browser Compatibility Issues",
-            "Addressing Security Warnings",
-        ],
-        "Feedback Management": [
-            "Collecting Product Feedback",
-            "Collecting Service Feedback",
-            "Collecting Website/App Feedback",
-            "Accepting Suggestions",
-        ],
-    }
-
     st.sidebar.header("Edit Customer Categories")
     # Edit Customer categories
     customer_categories_edited = {}
@@ -261,19 +157,6 @@ if transcript_file is not None:
     new_category_subcategories = st.sidebar.text_area(f"Subcategories for Customer Category {new_category_name}")
     if new_category_name and new_category_subcategories:
         customer_categories_edited[new_category_name] = new_category_subcategories.split("\n")
-
-    # Edit Agent categories
-    st.sidebar.header("Edit Agent Categories")
-    agent_categories_edited = {}
-    for category, subcategories in agent_categories.items():
-        category_subcategories = st.sidebar.text_area(f"{category} Agent Subcategories", value="\n".join(subcategories))
-        agent_categories_edited[category] = category_subcategories.split("\n")
-
-    st.sidebar.subheader("Add or Modify Agent Categories")
-    new_category_name = st.sidebar.text_input("New Agent Category Name")
-    new_category_subcategories = st.sidebar.text_area(f"Subcategories for Agent Category {new_category_name}")
-    if new_category_name and new_category_subcategories:
-        agent_categories_edited[new_category_name] = new_category_subcategories.split("\n")
 
     # Main processing
     if start_processing:
@@ -303,21 +186,13 @@ if transcript_file is not None:
             # Preprocess the line
             line = preprocess_text(str(line))
 
-            # Split the line into agent and customer comments
-            if line.startswith("Agent:"):
-                agent_comment = line[6:].strip()
-                agent_summary = ml_summarize(agent_comment, t5_model, t5_tokenizer)
-            elif line.startswith("Customer:"):
-                customer_comment = line[9:].strip()
-                customer_summary = ml_summarize(customer_comment, t5_model, t5_tokenizer)
-
-            # Compute semantic similarity scores between customer summary and customer intents
+            # Compute semantic similarity scores between customer comment and customer intents
             customer_intent_scores = {}
-            customer_summary_embedding = bert_model.encode(customer_summary)
+            customer_comment_embedding = bert_model.encode(line)
             for intent, keywords in customer_categories_edited.items():
                 embedding_scores = []
                 for keyword in keywords:
-                    score = compute_semantic_similarity(customer_summary_embedding, bert_model.encode(keyword))
+                    score = compute_semantic_similarity(customer_comment_embedding, bert_model.encode(keyword))
                     embedding_scores.append((keyword, score))
                 customer_intent_scores[intent] = embedding_scores
 
@@ -329,33 +204,10 @@ if transcript_file is not None:
             else:
                 best_customer_category_keyword, best_customer_category_score = ("", 0)
 
-            # Compute semantic similarity scores between agent summary and agent actions
-            agent_action_scores = {}
-            agent_summary_embedding = bert_model.encode(agent_summary)
-            for action, keywords in agent_categories_edited.items():
-                embedding_scores = []
-                for keyword in keywords:
-                    score = compute_semantic_similarity(agent_summary_embedding, bert_model.encode(keyword))
-                    embedding_scores.append((keyword, score))
-                agent_action_scores[action] = embedding_scores
-
-            # Find the best matching agent action and keyword
-            best_agent_action = max(agent_action_scores, key=lambda x: max([score for _, score in x[1]], default=0), default="")
-            best_agent_action_keywords = agent_action_scores[best_agent_action]
-            if len(best_agent_action_keywords) > 0:
-                best_agent_action_keyword, best_agent_action_score = max(best_agent_action_keywords, key=lambda x: x[1])
-            else:
-                best_agent_action_keyword, best_agent_action_score = ("", 0)
-
-            # Add the summaries and categorizations to the dataframe
-            df.at[i, "Agent Summary"] = agent_summary
-            df.at[i, "Customer Summary"] = customer_summary
+            # Add the categorizations to the dataframe
             df.at[i, "Best Matching Customer Category"] = best_customer_category
             df.at[i, "Best Matching Customer Keyword"] = best_customer_category_keyword
             df.at[i, "Best Matching Customer Score"] = best_customer_category_score
-            df.at[i, "Best Matching Agent Action"] = best_agent_action
-            df.at[i, "Best Matching Agent Keyword"] = best_agent_action_keyword
-            df.at[i, "Best Matching Agent Score"] = best_agent_action_score
 
         # When all data is processed, set the progress bar to 100%
         progress_bar.progress(1.0)
@@ -370,17 +222,3 @@ if transcript_file is not None:
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
-
-ValueError: not enough values to unpack (expected 2, got 1)
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 325, in <module>
-    best_customer_category = max(customer_intent_scores, key=lambda x: max([score for _, score in x[1]], default=0), default="")
-                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 325, in <lambda>
-    best_customer_category = max(customer_intent_scores, key=lambda x: max([score for _, score in x[1]], default=0), default="")
-                                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 325, in <listcomp>
-    best_customer_category = max(customer_intent_scores, key=lambda x: max([score for _, score in x[1]], default=0), default="")
-                                                                                      ^^^^^^^^
