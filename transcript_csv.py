@@ -51,8 +51,13 @@ st.title("👨‍💻 Chat Transcript Categorization")
 # Add file uploader for the CSV
 transcript_file = st.file_uploader("Upload CSV file", type="csv")
 
+# Main layout
+st.header("Processing")
+
 # Only process if a file is uploaded
-if transcript_file is not None and start_processing:
+if transcript_file is not None:
+    start_processing = st.button('Start Processing')
+
     # Read the uploaded CSV file with different encoding types
     raw_data = transcript_file.read()
     result = chardet.detect(raw_data)
@@ -65,13 +70,6 @@ if transcript_file is not None and start_processing:
     # Display a dropdown to select the transcript column
     selected_column = st.selectbox("Select transcript column", df.columns)
 
-    # Extract the transcripts from the selected column
-    transcript_lines = df[selected_column].tolist()
-
-    # Preprocess the transcript lines
-    transcript_lines = [preprocess_text(str(line)) for line in transcript_lines if
-                        isinstance(line, str) and line.strip() or isinstance(line, float) and math.isfinite(line)]
-
     # Initialize BERT model and T5 model
     bert_model = initialize_bert_model()
     t5_model, t5_tokenizer = initialize_t5_model()
@@ -81,7 +79,7 @@ if transcript_file is not None and start_processing:
     customer_summaries = []
 
     # Process each line separately
-    for line in transcript_lines:
+    for line in df[selected_column]:
         # Preprocess the line
         line = preprocess_text(str(line))
 
@@ -281,87 +279,78 @@ if transcript_file is not None and start_processing:
     if new_category_name and new_category_subcategories:
         agent_categories_edited[new_category_name] = new_category_subcategories.split("\n")
 
-# Initialize BERT model
-model = initialize_bert_model()
+    # Main processing
+    if start_processing:
+        # Create a progress bar in the main layout
+        progress_bar = st.progress(0)
+        progress_text = st.empty()
 
-# Main layout
-st.header("Processing")
-if st.button('Start Processing'):
-    # Create a progress bar in the main layout
-    progress_bar = st.progress(0)
-    progress_text = st.empty()
+        # Calculate the number of steps to update the progress bar
+        num_steps = len(df)
+        step_size = 1 / num_steps
 
-    # Calculate the number of steps to update the progress bar
-    num_steps = len(df)
-    step_size = 1 / num_steps
+        # Initialize the progress
+        progress = 0
 
-    # Initialize the progress
-    progress = 0
+        # Process each line separately
+        for i, row in df.iterrows():
+            # Update the progress bar
+            progress += step_size
+            progress_bar.progress(progress)
+            progress_text.text(f'Processing: {int(progress * 100)}%')
 
-    # Process each line separately
-    for i, row in df.iterrows():
-        # Update the progress bar
-        progress += step_size
-        progress_bar.progress(progress)
-        progress_text.text(f'Processing: {int(progress * 100)}%')
+            # Extract the transcript line from the selected column
+            line = row[selected_column]
 
-        # Extract the transcript line from the selected column
-        line = row[selected_column]
-        
-        # Preprocess the line
-        line = preprocess_text(str(line))
+            # Preprocess the line
+            line = preprocess_text(str(line))
 
-        # Split the line into agent and customer comments
-        if line.startswith("Agent:"):
-            agent_comment = line[6:].strip()
-            agent_summary = ml_summarize(agent_comment, t5_model, t5_tokenizer)
-        elif line.startswith("Customer:"):
-            customer_comment = line[9:].strip()
-            customer_summary = ml_summarize(customer_comment, t5_model, t5_tokenizer)
+            # Split the line into agent and customer comments
+            if line.startswith("Agent:"):
+                agent_comment = line[6:].strip()
+                agent_summary = ml_summarize(agent_comment, t5_model, t5_tokenizer)
+            elif line.startswith("Customer:"):
+                customer_comment = line[9:].strip()
+                customer_summary = ml_summarize(customer_comment, t5_model, t5_tokenizer)
 
-        # Compute semantic similarity scores between agent summary and customer intents
-        intent_scores = {}
-        agent_summary_embedding = model.encode(agent_summary)
-        for intent, embedding in customer_embeddings.items():
-            score = compute_semantic_similarity(agent_summary_embedding, embedding)
-            intent_scores[intent] = score
+            # Compute semantic similarity scores between agent summary and customer intents
+            intent_scores = {}
+            agent_summary_embedding = bert_model.encode(agent_summary)
+            for intent, embeddings in customer_categories_edited.items():
+                embedding_scores = []
+                for embedding in embeddings:
+                    embedding_scores.append(compute_semantic_similarity(agent_summary_embedding, bert_model.encode(embedding)))
+                intent_scores[intent] = max(embedding_scores)
 
-        # Find the best matching intent
-        best_intent = max(intent_scores, key=intent_scores.get)
-        best_intent_score = intent_scores[best_intent]
+            # Find the best matching intent
+            best_intent = max(intent_scores, key=intent_scores.get)
+            best_intent_score = intent_scores[best_intent]
 
-        # Compute semantic similarity scores between customer summary and agent actions
-        action_scores = {}
-        customer_summary_embedding = model.encode(customer_summary)
-        for action, embedding in agent_embeddings.items():
-            score = compute_semantic_similarity(customer_summary_embedding, embedding)
-            action_scores[action] = score
+            # Compute semantic similarity scores between customer summary and agent actions
+            action_scores = {}
+            customer_summary_embedding = bert_model.encode(customer_summary)
+            for action, embeddings in agent_categories_edited.items():
+                embedding_scores = []
+                for embedding in embeddings:
+                    embedding_scores.append(compute_semantic_similarity(customer_summary_embedding, bert_model.encode(embedding)))
+                action_scores[action] = max(embedding_scores)
 
-        # Find the best matching action
-        best_action = max(action_scores, key=action_scores.get)
-        best_action_score = action_scores[best_action]
+            # Find the best matching action
+            best_action = max(action_scores, key=action_scores.get)
+            best_action_score = action_scores[best_action]
 
-        # Add the summaries and categorizations to the dataframe
-        df.at[i, "Agent Summary"] = agent_summary
-        df.at[i, "Customer Summary"] = customer_summary
-        df.at[i, "Best Matching Customer Intent"] = best_intent
-        df.at[i, "Best Matching Agent Action"] = best_action
+            # Add the summaries and categorizations to the dataframe
+            df.at[i, "Agent Summary"] = agent_summary
+            df.at[i, "Customer Summary"] = customer_summary
+            df.at[i, "Best Matching Customer Intent"] = best_intent
+            df.at[i, "Best Matching Agent Action"] = best_action
 
-    # When all data is processed, set the progress bar to 100%
-    progress_bar.progress(1.0)
-    progress_text.text('Processing complete!')
+        # When all data is processed, set the progress bar to 100%
+        progress_bar.progress(1.0)
+        progress_text.text('Processing complete!')
 
-    # Generate a download link for the updated CSV file
-    csv_data = df.to_csv(index=False, encoding='utf-8-sig')
-    b64 = base64.b64encode(csv_data.encode()).decode()
-    href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
-    st.markdown(href, unsafe_allow_html=True)
-
-
-NameError: name 'start_processing' is not defined
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 55, in <module>
-    if transcript_file is not None and start_processing:
-                                       ^^^^^^^^^^^^^^^^
+        # Generate a download link for the updated CSV file
+        csv_data = df.to_csv(index=False, encoding='utf-8-sig')
+        b64 = base64.b64encode(csv_data.encode()).decode()
+        href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
+        st.markdown(href, unsafe_allow_html=True)
