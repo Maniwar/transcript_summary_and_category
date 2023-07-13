@@ -61,7 +61,7 @@ if transcript_file is not None:
         st.error("Error: Unable to decode the CSV file. Please try a different encoding type.")
     
     # Display a dropdown to select the transcript column
-
+    selected_column = st.selectbox("Select transcript column", df.columns)
 
     # Extract the transcripts from the selected column
     transcript_lines = df[selected_column].tolist()
