@@ -344,14 +344,3 @@ if transcript_file is not None:
     st.markdown(href, unsafe_allow_html=True)
 
 
-AttributeError: 'float' object has no attribute 'strip'
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 73, in <module>
-    transcript_lines = [preprocess_text(line) for line in transcript_lines if line.strip()]
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 73, in <listcomp>
-    transcript_lines = [preprocess_text(line) for line in transcript_lines if line.strip()]
-                                                                              ^^^^^^^^^^
-
