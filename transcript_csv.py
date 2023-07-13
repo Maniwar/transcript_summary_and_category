@@ -6,6 +6,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from transformers import T5ForConditionalGeneration, T5Tokenizer
 import chardet
 import io
+import math
 
 # Initialize BERT model
 @st.cache_resource  # Cache the BERT model as a resource
@@ -20,9 +21,10 @@ def initialize_t5_model():
     return model, tokenizer
 
 # Function to preprocess the text
+
 def preprocess_text(text):
-    # Convert to string if input is a float
-    if isinstance(text, float):
+    # Convert to string if input is a float or NaN
+    if isinstance(text, float) or (isinstance(text, str) and text.lower() == "nan") or math.isnan(text):
         text = str(text)
 
     # Remove unnecessary characters and weird characters
@@ -30,6 +32,7 @@ def preprocess_text(text):
 
     # Return the text without removing stop words
     return text.strip()
+
 
 
 # Function for ML summarization
