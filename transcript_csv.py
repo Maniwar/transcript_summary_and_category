@@ -197,9 +197,14 @@ if transcript_file is not None:
                 best_customer_scores.append(0.0)
 
         # Add the categorizations to the DataFrame
-        df["Best Matching Customer Category"] = best_customer_categories
-        df["Best Matching Customer Keyword"] = best_customer_keywords
-        df["Best Matching Customer Score"] = best_customer_scores
+        df["Best Matching Customer Category"] = [""] * len(df)  # Initialize the column with empty strings
+        df["Best Matching Customer Keyword"] = [""] * len(df)  # Initialize the column with empty strings
+        df["Best Matching Customer Score"] = [0.0] * len(df)  # Initialize the column with zeros
+
+        # Assign the values to the DataFrame for the matching rows
+        df.loc[:, "Best Matching Customer Category"] = best_customer_categories
+        df.loc[:, "Best Matching Customer Keyword"] = best_customer_keywords
+        df.loc[:, "Best Matching Customer Score"] = best_customer_scores
 
         # When all data is processed, set the progress bar to 100%
         progress_bar.progress(1.0)
@@ -214,19 +219,3 @@ if transcript_file is not None:
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
-ValueError: Length of values (9) does not match length of index (144)
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 200, in <module>
-    df["Best Matching Customer Category"] = best_customer_categories
-    ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\pandas\core\frame.py", line 3978, in __setitem__
-    self._set_item(key, value)
-File "C:\Python311\Lib\site-packages\pandas\core\frame.py", line 4172, in _set_item
-    value = self._sanitize_column(value)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\pandas\core\frame.py", line 4912, in _sanitize_column
-    com.require_length_match(value, self.index)
-File "C:\Python311\Lib\site-packages\pandas\core\common.py", line 561, in require_length_match
-    raise ValueError(
