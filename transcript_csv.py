@@ -9,12 +9,12 @@ import io
 import math
 
 # Initialize BERT model
-@st.cache_resource # Cache the BERT model as a resource
+@st.cache_resource  # Cache the BERT model as a resource
 def initialize_bert_model():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
 # Initialize T5 model and tokenizer
-@st.cache_resource # Cache the T5 model and tokenizer as resources
+@st.cache_resource  # Cache the T5 model and tokenizer as resources
 def initialize_t5_model():
     model = T5ForConditionalGeneration.from_pretrained('t5-base')
     tokenizer = T5Tokenizer.from_pretrained('t5-base')
@@ -289,7 +289,7 @@ if transcript_file is not None:
 
         # Calculate the number of steps to update the progress bar
         num_steps = len(df)
-        step_size = 1 / num_steps
+        step_size = 100 / num_steps  # Adjust the step size to be a percentage
 
         # Initialize the progress
         progress = 0
@@ -298,8 +298,8 @@ if transcript_file is not None:
         for i, row in df.iterrows():
             # Update the progress bar
             progress += step_size
-            progress_bar.progress(progress)
-            progress_text.text(f'Processing: {int(progress * 100)}%')
+            progress_bar.progress(min(progress, 100))  # Ensure the progress value is within the valid range
+            progress_text.text(f'Processing: {int(progress)}%')
 
             # Extract the transcript line from the selected column
             line = row[selected_column]
@@ -321,7 +321,8 @@ if transcript_file is not None:
             for intent, embeddings in customer_categories_edited.items():
                 embedding_scores = []
                 for embedding in embeddings:
-                    embedding_scores.append(compute_semantic_similarity(agent_summary_embedding, bert_model.encode(embedding)))
+                    embedding_scores.append(
+                        compute_semantic_similarity(agent_summary_embedding, bert_model.encode(embedding)))
                 intent_scores[intent] = max(embedding_scores)
 
             # Find the best matching intent
@@ -334,7 +335,8 @@ if transcript_file is not None:
             for action, embeddings in agent_categories_edited.items():
                 embedding_scores = []
                 for embedding in embeddings:
-                    embedding_scores.append(compute_semantic_similarity(customer_summary_embedding, bert_model.encode(embedding)))
+                    embedding_scores.append(
+                        compute_semantic_similarity(customer_summary_embedding, bert_model.encode(embedding)))
                 action_scores[action] = max(embedding_scores)
 
             # Find the best matching action
@@ -344,21 +346,19 @@ if transcript_file is not None:
             # Add the summaries and categorizations to the dataframe
             df.at[i, "Agent Summary"] = agent_summary
             df.at[i, "Customer Summary"] = customer_summary
-            df.at[i, "Best Matching Customer Intent"] = best_intent
-            df.at[i, "Best Matching Agent Action"] = best_action
+            df.at[i, "Best Matching Customer Intent"] = best_intent + ': ' + ', '.join(customer_categories_edited[best_intent])
+            df.at[i, "Best Matching Agent Action"] = best_action + ': ' + ', '.join(agent_categories_edited[best_action])
 
         # When all data is processed, set the progress bar to 100%
-        progress_bar.progress(1.0)
+        progress_bar.progress(100)
         progress_text.text('Processing complete!')
+
+        # Display the updated dataframe
+        st.subheader("Processed Data:")
+        st.dataframe(df)
 
         # Generate a download link for the updated CSV file
         csv_data = df.to_csv(index=False, encoding='utf-8-sig')
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
-
-StreamlitAPIException: Progress Value has invalid value [0.0, 1.0]: 1.000000
-
-Traceback:
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 301, in <module>
-    progress_bar.progress(progress)
