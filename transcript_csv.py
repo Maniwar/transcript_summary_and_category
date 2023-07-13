@@ -197,9 +197,10 @@ if transcript_file is not None:
                 best_customer_scores.append(0.0)
 
         # Add the categorizations to the DataFrame
-        df["Best Matching Customer Category"] = best_customer_categories
-        df["Best Matching Customer Keyword"] = best_customer_keywords
-        df["Best Matching Customer Score"] = best_customer_scores
+        df["Best Matching Customer Category"] = pd.Series(best_customer_categories, index=df.index)
+        df["Best Matching Customer Keyword"] = pd.Series(best_customer_keywords, index=df.index)
+        df["Best Matching Customer Score"] = pd.Series(best_customer_scores, index=df.index)
+
 
         # When all data is processed, set the progress bar to 100%
         progress_bar.progress(1.0)
