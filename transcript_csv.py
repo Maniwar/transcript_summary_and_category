@@ -190,17 +190,14 @@ if transcript_file is not None:
             customer_intent_scores = {}
             customer_comment_embedding = bert_model.encode(line)
             for intent, keywords in customer_categories_edited.items():
-                embedding_scores = []
-                for keyword in keywords:
-                    score = compute_semantic_similarity(customer_comment_embedding, bert_model.encode(keyword))
-                    embedding_scores.append(score)
+                embedding_scores = [compute_semantic_similarity(customer_comment_embedding, bert_model.encode(keyword)) for keyword in keywords]
                 customer_intent_scores[intent] = embedding_scores
 
             # Find the best matching customer category
-            best_customer_category = max(customer_intent_scores, key=lambda x: max(x[1], default=0), default="")
-            best_customer_category_scores = customer_intent_scores[best_customer_category]
+            best_customer_category = max(customer_intent_scores, key=lambda x: max(customer_intent_scores[x]), default="")
 
             # Find the best matching customer keyword
+            best_customer_category_scores = customer_intent_scores[best_customer_category]
             best_customer_category_index = best_customer_category_scores.index(max(best_customer_category_scores, default=0))
             best_customer_category_keyword = customer_categories_edited[best_customer_category][best_customer_category_index]
 
