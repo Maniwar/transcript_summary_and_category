@@ -38,7 +38,7 @@ st.title("👨‍💻 Chat Transcript Categorization")
 transcript_file = st.file_uploader("Upload CSV file", type="csv")
 
 # Main layout
-st.header("Processing")
+st.header("Process Your File")
 
 # Only process if a file is uploaded
 if transcript_file is not None:
