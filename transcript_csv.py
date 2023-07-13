@@ -9,7 +9,7 @@ import math
 import numpy as np
 
 # Initialize BERT model
-@st.cache(allow_output_mutation=True)
+@st.cache_resource
 def initialize_bert_model():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
