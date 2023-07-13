@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import base64
+import chardet
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from transformers import T5ForConditionalGeneration, T5Tokenizer
@@ -50,7 +51,10 @@ transcript_file = st.file_uploader("Upload CSV file", type="csv")
 # Only process if a file is uploaded
 if transcript_file is not None:
     # Read the uploaded CSV file
-    df = pd.read_csv(transcript_file)
+    raw_content = transcript_file.read()
+    encoding = chardet.detect(raw_content)["encoding"]
+    decoded_content = raw_content.decode(encoding)
+    df = pd.read_csv(pd.compat.StringIO(decoded_content))
 
     # Display a dropdown to select the transcript column
     selected_column = st.selectbox("Select transcript column", df.columns)
@@ -61,18 +65,6 @@ if transcript_file is not None:
     # Preprocess the transcript lines
     transcript_lines = [preprocess_text(line) for line in transcript_lines if line.strip()]
 
-    # Split the transcript into agent and customer comments
-    agent_comments = []
-    customer_comments = []
-    for line in transcript_lines:
-        if line.startswith("Agent:"):
-            agent_comments.append(line[6:].strip())
-        elif line.startswith("Customer:"):
-            customer_comments.append(line[9:].strip())
-
-    # Preprocess agent and customer comments
-    agent_comments = [preprocess_text(comment) for comment in agent_comments]
-    customer_comments = [preprocess_text(comment) for comment in customer_comments]
 
     # Concatenate agent and customer comments
     agent_text = ' '.join(agent_comments)
