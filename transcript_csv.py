@@ -266,7 +266,7 @@ if transcript_file is not None:
     new_category_name = st.sidebar.text_input("New Customer Category Name")
     new_category_subcategories = st.sidebar.text_area(f"Subcategories for Customer Category {new_category_name}")
     if new_category_name and new_category_subcategories:
-        customer_categories_edited[new_category_name] = new_category_subcategories.split("\n")
+        customer_categories_edited[new_category_name] = category_subcategories.split("\n")
 
     # Edit Agent categories
     st.sidebar.header("Edit Agent Categories")
@@ -279,7 +279,7 @@ if transcript_file is not None:
     new_category_name = st.sidebar.text_input("New Agent Category Name")
     new_category_subcategories = st.sidebar.text_area(f"Subcategories for Agent Category {new_category_name}")
     if new_category_name and new_category_subcategories:
-        agent_categories_edited[new_category_name] = new_category_subcategories.split("\n")
+        agent_categories_edited[new_category_name] = category_subcategories.split("\n")
 
     # Main processing
     if start_processing:
@@ -289,7 +289,7 @@ if transcript_file is not None:
 
         # Calculate the number of steps to update the progress bar
         num_steps = len(df)
-        step_size = 100 / num_steps  # Adjust the step size to be a percentage
+        step_size = 100 / num_steps
 
         # Initialize the progress
         progress = 0
@@ -298,7 +298,7 @@ if transcript_file is not None:
         for i, row in df.iterrows():
             # Update the progress bar
             progress += step_size
-            progress_bar.progress(min(progress, 100))  # Ensure the progress value is within the valid range
+            progress_bar.progress(progress / 100)
             progress_text.text(f'Processing: {int(progress)}%')
 
             # Extract the transcript line from the selected column
@@ -346,15 +346,15 @@ if transcript_file is not None:
             # Add the summaries and categorizations to the dataframe
             df.at[i, "Agent Summary"] = agent_summary
             df.at[i, "Customer Summary"] = customer_summary
-            df.at[i, "Best Matching Customer Intent"] = best_intent + ': ' + ', '.join(customer_categories_edited[best_intent])
-            df.at[i, "Best Matching Agent Action"] = best_action + ': ' + ', '.join(agent_categories_edited[best_action])
+            df.at[i, "Best Matching Customer Intent"] = best_intent
+            df.at[i, "Best Matching Agent Action"] = best_action
 
         # When all data is processed, set the progress bar to 100%
-        progress_bar.progress(100)
+        progress_bar.progress(1.0)
         progress_text.text('Processing complete!')
 
-        # Display the updated dataframe
-        st.subheader("Processed Data:")
+        # Display the processed dataframe
+        st.subheader("Processed Data")
         st.dataframe(df)
 
         # Generate a download link for the updated CSV file
