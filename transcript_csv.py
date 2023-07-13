@@ -197,14 +197,10 @@ if transcript_file is not None:
                 best_customer_scores.append(0.0)
 
         # Add the categorizations to the DataFrame
-        df["Best Matching Customer Category"] = [""] * len(df)  # Initialize the column with empty strings
-        df["Best Matching Customer Keyword"] = [""] * len(df)  # Initialize the column with empty strings
-        df["Best Matching Customer Score"] = [0.0] * len(df)  # Initialize the column with zeros
+        df["Best Matching Customer Category"] = best_customer_categories
+        df["Best Matching Customer Keyword"] = best_customer_keywords
+        df["Best Matching Customer Score"] = best_customer_scores
 
-        # Assign the values to the DataFrame for the matching rows
-        df.loc[:, "Best Matching Customer Category"] = best_customer_categories
-        df.loc[:, "Best Matching Customer Keyword"] = best_customer_keywords
-        df.loc[:, "Best Matching Customer Score"] = best_customer_scores
 
         # When all data is processed, set the progress bar to 100%
         progress_bar.progress(1.0)
@@ -219,17 +215,3 @@ if transcript_file is not None:
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
-
-ValueError: Must have equal len keys and value when setting with an iterable
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 205, in <module>
-    df.loc[:, "Best Matching Customer Category"] = best_customer_categories
-    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 818, in __setitem__
-    iloc._setitem_with_indexer(indexer, value, self.name)
-File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1795, in _setitem_with_indexer
-    self._setitem_with_indexer_split_path(indexer, value, name)
-File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1850, in _setitem_with_indexer_split_path
-    raise ValueError(
