@@ -168,65 +168,38 @@ if transcript_file is not None:
         progress_bar = st.progress(0)
         progress_text = st.empty()
 
-        # Calculate the number of steps to update the progress bar
-        num_steps = len(df)
-        step_size = 100 / num_steps
-
-        # Initialize the progress
-        progress = 0
-
         # Preprocess all lines outside the loop
         df[selected_column] = df[selected_column].apply(lambda x: preprocess_text(str(x)))
 
-        # Process lines in batches
-        batch_size = 100
-        num_batches = math.ceil(len(df) / batch_size)
-        for batch_index in range(num_batches):
-            # Calculate the progress for the current batch
-            progress = (batch_index + 1) / num_batches
-            progress_bar.progress(progress)
-            progress_text.text(f'Processing: {int(progress * 100)}%')
+        # Compute semantic similarity scores between customer comment and customer intents
+        customer_intent_scores = {}
+        customer_comment_embeddings = bert_model.encode(df[selected_column])
+        for intent, keyword_embeddings in category_embeddings.items():
+            embedding_scores = cosine_similarity(customer_comment_embeddings, keyword_embeddings)
+            customer_intent_scores[intent] = embedding_scores
 
-            # Get the lines for the current batch
-            batch_start = batch_index * batch_size
-            batch_end = (batch_index + 1) * batch_size
-            batch_lines = df[selected_column].iloc[batch_start:batch_end].tolist()
-
-            # Compute semantic similarity scores between customer comment and customer intents
-            customer_intent_scores = {}
-            customer_comment_embeddings = bert_model.encode(batch_lines)
-            for intent, keyword_embeddings in category_embeddings.items():
-                embedding_scores = cosine_similarity(customer_comment_embeddings, keyword_embeddings)
-                customer_intent_scores[intent] = embedding_scores
-
-            # Find the best matching customer category for each line in the batch
-            best_customer_categories = []
-            best_customer_keywords = []
-            best_customer_scores = []
-            for i, line_scores in enumerate(customer_intent_scores.values()):
-                max_score = np.max(line_scores)
-                if max_score >= threshold:
-                    intent = list(customer_intent_scores.keys())[i]
-                    keyword_index = np.argmax(line_scores)
-                    best_customer_keyword = customer_categories_edited[intent][keyword_index]
-                    best_customer_categories.append(intent)
-                    best_customer_keywords.append(best_customer_keyword)
-                    best_customer_scores.append(max_score)
-                else:
-                    best_customer_categories.append("")
-                    best_customer_keywords.append("")
-                    best_customer_scores.append(0.0)
-
-            # Pad the lists to match the batch size
-            while len(best_customer_categories) < batch_size:
+        # Find the best matching customer category for each line
+        best_customer_categories = []
+        best_customer_keywords = []
+        best_customer_scores = []
+        for i, line_scores in enumerate(customer_intent_scores.values()):
+            max_score = np.max(line_scores)
+            if max_score >= threshold:
+                intent = list(customer_intent_scores.keys())[i]
+                keyword_index = np.argmax(line_scores)
+                best_customer_keyword = customer_categories_edited[intent][keyword_index]
+                best_customer_categories.append(intent)
+                best_customer_keywords.append(best_customer_keyword)
+                best_customer_scores.append(max_score)
+            else:
                 best_customer_categories.append("")
                 best_customer_keywords.append("")
                 best_customer_scores.append(0.0)
 
-            # Add the categorizations to the DataFrame for the current batch
-            df.at[batch_start:batch_end, "Best Matching Customer Category"] = best_customer_categories
-            df.at[batch_start:batch_end, "Best Matching Customer Keyword"] = best_customer_keywords
-            df.at[batch_start:batch_end, "Best Matching Customer Score"] = best_customer_scores
+        # Add the categorizations to the DataFrame
+        df["Best Matching Customer Category"] = best_customer_categories
+        df["Best Matching Customer Keyword"] = best_customer_keywords
+        df["Best Matching Customer Score"] = best_customer_scores
 
         # When all data is processed, set the progress bar to 100%
         progress_bar.progress(1.0)
