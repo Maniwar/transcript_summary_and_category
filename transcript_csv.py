@@ -9,19 +9,19 @@ import io
 import math
 
 # Initialize BERT model
-@st.cache_resource(allow_output_mutation=True)  # Cache the BERT model as a resource
+@st.cache_resource # Cache the BERT model as a resource
 def initialize_bert_model():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
 # Initialize T5 model and tokenizer
-@st.cache_resource(allow_output_mutation=True)  # Cache the T5 model and tokenizer as resources
+@st.cache_resource # Cache the T5 model and tokenizer as resources
 def initialize_t5_model():
     model = T5ForConditionalGeneration.from_pretrained('t5-base')
     tokenizer = T5Tokenizer.from_pretrained('t5-base')
     return model, tokenizer
 
 # Function to preprocess the text
-@st.cache
+@st.cache_data
 def preprocess_text(text):
     # Convert to string if input is a real number
     if isinstance(text, float) and math.isfinite(text):
@@ -34,15 +34,15 @@ def preprocess_text(text):
     return text.strip()
 
 # Function for ML summarization
-@st.cache_resource(allow_output_mutation=True)  # Cache the ML summarization function as a resource
-def ml_summarize(text, model, tokenizer):
+@st.cache_resource # Cache the ML summarization function as a resource
+def ml_summarize(text, _model, _tokenizer):
     inputs = tokenizer.encode("summarize: " + text, return_tensors="pt", max_length=512, truncation=True)
     outputs = model.generate(inputs, max_length=150, min_length=40, num_beams=4, early_stopping=True)
     summary = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return summary
 
 # Function to compute semantic similarity
-@st.cache
+@st.cache_data
 def compute_semantic_similarity(embedding1, embedding2):
     return cosine_similarity(embedding1.reshape(1, -1), embedding2.reshape(1, -1))[0][0]
 
@@ -355,3 +355,26 @@ if transcript_file is not None:
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
+
+NameError: name 'tokenizer' is not defined
+Traceback:
+File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
+    exec(code, module.__dict__)
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 94, in <module>
+    customer_summaries.append(ml_summarize(customer_comment, t5_model, t5_tokenizer))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
+    return cached_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
+    return self._get_or_create_cached_value(args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
+    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
+    computed_value = self._info.func(*func_args, **func_kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 39, in ml_summarize
+    inputs = tokenizer.encode("summarize: " + text, return_tensors="pt", max_length=512, truncation=True)
+             ^^^^^^^^^
