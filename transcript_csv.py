@@ -50,7 +50,7 @@ def perform_sentiment_analysis(text):
     return compound_score
 
 # Streamlit interface
-st.title("👨‍💻 Feedback Categorization")
+st.title("👨‍💻 Chat Transcript Categorization")
 
 # Add checkbox for emerging issue mode
 emerging_issue_mode = st.sidebar.checkbox("Emerging Issue Mode")
