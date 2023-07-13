@@ -356,3 +356,12 @@ if st.button('Start Processing'):
     b64 = base64.b64encode(csv_data.encode()).decode()
     href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
     st.markdown(href, unsafe_allow_html=True)
+
+
+NameError: name 'start_processing' is not defined
+Traceback:
+File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
+    exec(code, module.__dict__)
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 55, in <module>
+    if transcript_file is not None and start_processing:
+                                       ^^^^^^^^^^^^^^^^
