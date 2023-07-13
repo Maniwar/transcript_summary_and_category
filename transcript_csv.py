@@ -356,3 +356,9 @@ if transcript_file is not None:
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
+
+StreamlitAPIException: Progress Value has invalid value [0.0, 1.0]: 1.000000
+
+Traceback:
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 295, in <module>
+    progress_bar.progress(progress / 100)
