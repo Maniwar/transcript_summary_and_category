@@ -311,37 +311,37 @@ if transcript_file is not None:
                 customer_comment = line[9:].strip()
                 customer_summary = ml_summarize(customer_comment, t5_model, t5_tokenizer)
 
-            # Compute semantic similarity scores between agent summary and customer intents
-            intent_scores = {}
-            agent_summary_embedding = bert_model.encode(agent_summary)
-            for intent, embeddings in customer_categories_edited.items():
+            # Compute semantic similarity scores between customer summary and customer intents
+            customer_intent_scores = {}
+            customer_summary_embedding = bert_model.encode(customer_summary)
+            for intent, keywords in customer_categories_edited.items():
                 embedding_scores = []
-                for embedding in embeddings:
-                    score = compute_semantic_similarity(agent_summary_embedding, bert_model.encode(embedding))
-                    embedding_scores.append((embedding, score))  # Store both the keyword and the score
-                intent_scores[intent] = embedding_scores
+                for keyword in keywords:
+                    score = compute_semantic_similarity(customer_summary_embedding, bert_model.encode(keyword))
+                    embedding_scores.append((keyword, score))
+                customer_intent_scores[intent] = embedding_scores
 
             # Find the best matching customer category and keyword
-            best_customer_category = max(intent_scores, key=lambda x: max([score for _, score in x[1]]), default="")
-            best_customer_category_keywords = intent_scores[best_customer_category]
+            best_customer_category = max(customer_intent_scores, key=lambda x: max([score for _, score in x[1]], default=0), default="")
+            best_customer_category_keywords = customer_intent_scores[best_customer_category]
             if len(best_customer_category_keywords) > 0:
                 best_customer_category_keyword, best_customer_category_score = max(best_customer_category_keywords, key=lambda x: x[1])
             else:
                 best_customer_category_keyword, best_customer_category_score = ("", 0)
 
-            # Compute semantic similarity scores between customer summary and agent actions
-            action_scores = {}
-            customer_summary_embedding = bert_model.encode(customer_summary)
-            for action, embeddings in agent_categories_edited.items():
+            # Compute semantic similarity scores between agent summary and agent actions
+            agent_action_scores = {}
+            agent_summary_embedding = bert_model.encode(agent_summary)
+            for action, keywords in agent_categories_edited.items():
                 embedding_scores = []
-                for embedding in embeddings:
-                    score = compute_semantic_similarity(customer_summary_embedding, bert_model.encode(embedding))
-                    embedding_scores.append((embedding, score))  # Store both the keyword and the score
-                action_scores[action] = embedding_scores
+                for keyword in keywords:
+                    score = compute_semantic_similarity(agent_summary_embedding, bert_model.encode(keyword))
+                    embedding_scores.append((keyword, score))
+                agent_action_scores[action] = embedding_scores
 
             # Find the best matching agent action and keyword
-            best_agent_action = max(action_scores, key=lambda x: max([score for _, score in x[1]]), default="")
-            best_agent_action_keywords = action_scores[best_agent_action]
+            best_agent_action = max(agent_action_scores, key=lambda x: max([score for _, score in x[1]], default=0), default="")
+            best_agent_action_keywords = agent_action_scores[best_agent_action]
             if len(best_agent_action_keywords) > 0:
                 best_agent_action_keyword, best_agent_action_score = max(best_agent_action_keywords, key=lambda x: x[1])
             else:
@@ -370,16 +370,3 @@ if transcript_file is not None:
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
-ValueError: not enough values to unpack (expected 2, got 1)
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 325, in <module>
-    best_customer_category = max(intent_scores, key=lambda x: max([score for _, score in x[1]]), default="")
-                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 325, in <lambda>
-    best_customer_category = max(intent_scores, key=lambda x: max([score for _, score in x[1]]), default="")
-                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 325, in <listcomp>
-    best_customer_category = max(intent_scores, key=lambda x: max([score for _, score in x[1]]), default="")
-                                                                             ^^^^^^^^
