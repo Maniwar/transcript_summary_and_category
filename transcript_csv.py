@@ -322,8 +322,14 @@ if transcript_file is not None:
                 intent_scores[intent] = embedding_scores
 
             # Find the best matching intent
-            best_intent = max(intent_scores, key=lambda x: max([score for _, score in x[1]]))
-            best_intent_keyword, best_intent_score = max(intent_scores[best_intent], key=lambda x: x[1])
+            if intent_scores:
+                best_intent = max(intent_scores, key=lambda x: max([score for _, score in x[1]]))
+                best_intent_keywords = intent_scores[best_intent]
+                best_intent_keyword, best_intent_score = max(best_intent_keywords, key=lambda x: x[1])
+            else:
+                best_intent = ""
+                best_intent_keyword = ""
+                best_intent_score = 0.0
 
             # Compute semantic similarity scores between customer summary and agent actions
             action_scores = {}
@@ -336,16 +342,24 @@ if transcript_file is not None:
                 action_scores[action] = embedding_scores
 
             # Find the best matching action
-            best_action = max(action_scores, key=lambda x: max([score for _, score in x[1]]))
-            best_action_keyword, best_action_score = max(action_scores[best_action], key=lambda x: x[1])
+            if action_scores:
+                best_action = max(action_scores, key=lambda x: max([score for _, score in x[1]]))
+                best_action_keywords = action_scores[best_action]
+                best_action_keyword, best_action_score = max(best_action_keywords, key=lambda x: x[1])
+            else:
+                best_action = ""
+                best_action_keyword = ""
+                best_action_score = 0.0
 
             # Add the summaries and categorizations to the dataframe
             df.at[i, "Agent Summary"] = agent_summary
             df.at[i, "Customer Summary"] = customer_summary
             df.at[i, "Best Matching Customer Intent"] = best_intent
             df.at[i, "Best Matching Intent Keyword"] = best_intent_keyword  # Store the keyword
+            df.at[i, "Best Matching Intent Score"] = best_intent_score
             df.at[i, "Best Matching Agent Action"] = best_action
             df.at[i, "Best Matching Action Keyword"] = best_action_keyword  # Store the keyword
+            df.at[i, "Best Matching Action Score"] = best_action_score
 
         # When all data is processed, set the progress bar to 100%
         progress_bar.progress(1.0)
@@ -360,18 +374,3 @@ if transcript_file is not None:
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
-
-
-ValueError: not enough values to unpack (expected 2, got 1)
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 325, in <module>
-    best_intent = max(intent_scores, key=lambda x: max([score for _, score in x[1]]))
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 325, in <lambda>
-    best_intent = max(intent_scores, key=lambda x: max([score for _, score in x[1]]))
-                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 325, in <listcomp>
-    best_intent = max(intent_scores, key=lambda x: max([score for _, score in x[1]]))
-                                                                  ^^^^^^^^
