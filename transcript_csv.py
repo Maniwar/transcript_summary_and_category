@@ -322,14 +322,9 @@ if transcript_file is not None:
                 intent_scores[intent] = embedding_scores
 
             # Find the best matching intent
-            if intent_scores:
-                best_intent = max(intent_scores, key=lambda x: max([score for _, score in x[1]]))
-                best_intent_keywords = intent_scores[best_intent]
-                best_intent_keyword, best_intent_score = max(best_intent_keywords, key=lambda x: x[1])
-            else:
-                best_intent = ""
-                best_intent_keyword = ""
-                best_intent_score = 0.0
+            best_intent = max(intent_scores, key=lambda x: max([score for _, score in x[1]]), default=("", []))
+            best_intent_keywords = intent_scores[best_intent]
+            best_intent_keyword, best_intent_score = max(best_intent_keywords, key=lambda x: x[1])
 
             # Compute semantic similarity scores between customer summary and agent actions
             action_scores = {}
@@ -342,14 +337,9 @@ if transcript_file is not None:
                 action_scores[action] = embedding_scores
 
             # Find the best matching action
-            if action_scores:
-                best_action = max(action_scores, key=lambda x: max([score for _, score in x[1]]))
-                best_action_keywords = action_scores[best_action]
-                best_action_keyword, best_action_score = max(best_action_keywords, key=lambda x: x[1])
-            else:
-                best_action = ""
-                best_action_keyword = ""
-                best_action_score = 0.0
+            best_action = max(action_scores, key=lambda x: max([score for _, score in x[1]]), default=("", []))
+            best_action_keywords = action_scores[best_action]
+            best_action_keyword, best_action_score = max(best_action_keywords, key=lambda x: x[1])
 
             # Add the summaries and categorizations to the dataframe
             df.at[i, "Agent Summary"] = agent_summary
