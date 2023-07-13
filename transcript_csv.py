@@ -70,7 +70,7 @@ if transcript_file is not None:
     transcript_lines = df[selected_column].tolist()
 
     # Preprocess the transcript lines
-    transcript_lines = [preprocess_text(line) for line in transcript_lines if line.strip()]
+    transcript_lines = [preprocess_text(line) for line in transcript_lines if isinstance(line, str) and line.strip()]
 
     # Split the transcript into agent and customer comments
     agent_comments = []
