@@ -290,10 +290,12 @@ if transcript_file is not None:
 
         # Process each line separately
         for i, row in df.iterrows():
+            # Calculate the progress
+            progress = (i + 1) / num_steps
+        
             # Update the progress bar
-            progress += step_size
-            progress_bar.progress(progress / 100)
-            progress_text.text(f'Processing: {int(progress)}%')
+            progress_bar.progress(progress)
+            progress_text.text(f'Processing: {int(progress * 100)}%')
 
             # Extract the transcript line from the selected column
             line = row[selected_column]
