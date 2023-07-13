@@ -104,6 +104,7 @@ if transcript_file is not None:
 
     st.subheader("Agent Summary:")
     st.write(agent_summary)
+
     # Define extended categories and subcategories for customer call intents
     customer_categories = {
         "Product Related": [
@@ -266,7 +267,7 @@ if transcript_file is not None:
     new_category_name = st.sidebar.text_input("New Customer Category Name")
     new_category_subcategories = st.sidebar.text_area(f"Subcategories for Customer Category {new_category_name}")
     if new_category_name and new_category_subcategories:
-        customer_categories_edited[new_category_name] = category_subcategories.split("\n")
+        customer_categories_edited[new_category_name] = new_category_subcategories.split("\n")
 
     # Edit Agent categories
     st.sidebar.header("Edit Agent Categories")
@@ -279,7 +280,7 @@ if transcript_file is not None:
     new_category_name = st.sidebar.text_input("New Agent Category Name")
     new_category_subcategories = st.sidebar.text_area(f"Subcategories for Agent Category {new_category_name}")
     if new_category_name and new_category_subcategories:
-        agent_categories_edited[new_category_name] = category_subcategories.split("\n")
+        agent_categories_edited[new_category_name] = new_category_subcategories.split("\n")
 
     # Main processing
     if start_processing:
@@ -362,9 +363,3 @@ if transcript_file is not None:
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
-
-StreamlitAPIException: Progress Value has invalid value [0.0, 1.0]: 1.000000
-
-Traceback:
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 301, in <module>
-    progress_bar.progress(progress / 100)
