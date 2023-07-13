@@ -222,3 +222,17 @@ if transcript_file is not None:
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
+
+ValueError: not enough values to unpack (expected 2, got 1)
+Traceback:
+File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
+    exec(code, module.__dict__)
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 200, in <module>
+    best_customer_category = max(customer_intent_scores, key=lambda x: max([score for _, score in x[1]], default=0), default="")
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 200, in <lambda>
+    best_customer_category = max(customer_intent_scores, key=lambda x: max([score for _, score in x[1]], default=0), default="")
+                                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 200, in <listcomp>
+    best_customer_category = max(customer_intent_scores, key=lambda x: max([score for _, score in x[1]], default=0), default="")
+                                         
