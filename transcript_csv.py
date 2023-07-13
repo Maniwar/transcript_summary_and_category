@@ -219,3 +219,17 @@ if transcript_file is not None:
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
+
+ValueError: Must have equal len keys and value when setting with an iterable
+Traceback:
+File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
+    exec(code, module.__dict__)
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 205, in <module>
+    df.loc[:, "Best Matching Customer Category"] = best_customer_categories
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 818, in __setitem__
+    iloc._setitem_with_indexer(indexer, value, self.name)
+File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1795, in _setitem_with_indexer
+    self._setitem_with_indexer_split_path(indexer, value, name)
+File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1850, in _setitem_with_indexer_split_path
+    raise ValueError(
