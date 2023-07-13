@@ -281,14 +281,15 @@ if transcript_file is not None:
     if new_category_name and new_category_subcategories:
         agent_categories_edited[new_category_name] = new_category_subcategories.split("\n")
 
-    # Initialize BERT model
-    model = initialize_bert_model()
+# Initialize BERT model
+model = initialize_bert_model()
 
-    # Process button
-if st.sidebar.button('Start Processing'):
-    # Create a progress bar
-    progress_bar = st.sidebar.progress(0)
-    progress_text = st.sidebar.empty()
+# Main layout
+st.header("Processing")
+if st.button('Start Processing'):
+    # Create a progress bar in the main layout
+    progress_bar = st.progress(0)
+    progress_text = st.empty()
 
     # Calculate the number of steps to update the progress bar
     num_steps = len(df)
@@ -349,7 +350,6 @@ if st.sidebar.button('Start Processing'):
     # When all data is processed, set the progress bar to 100%
     progress_bar.progress(1.0)
     progress_text.text('Processing complete!')
-
 
     # Generate a download link for the updated CSV file
     csv_data = df.to_csv(index=False, encoding='utf-8-sig')
