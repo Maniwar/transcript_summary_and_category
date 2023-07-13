@@ -198,11 +198,12 @@ if transcript_file is not None:
                 customer_intent_scores[intent] = embedding_scores
 
             # Find the best matching customer category for each line in the batch
-            best_customer_categories = np.argmax(customer_intent_scores, axis=0)
+            best_customer_categories = np.argmax(customer_intent_scores, axis=1)
             best_customer_keywords = []
             best_customer_scores = []
-            for i, intent in enumerate(best_customer_categories):
-                intent_scores = customer_intent_scores[intent][:, i]
+            for i in range(len(best_customer_categories)):
+                intent = best_customer_categories[i]
+                intent_scores = customer_intent_scores[intent][i]
                 keyword_index = np.argmax(intent_scores, default=0)
                 best_customer_keyword = customer_categories_edited[intent][keyword_index]
                 best_customer_keywords.append(best_customer_keyword)
@@ -226,11 +227,3 @@ if transcript_file is not None:
         b64 = base64.b64encode(csv_data.encode()).decode()
         href = f'<a href="data:file/csv;base64,{b64}" download="processed_transcripts.csv">Download CSV</a>'
         st.markdown(href, unsafe_allow_html=True)
-
-TypeError: 'numpy.int64' object is not iterable
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\categorizer\transcript_category_csv.py", line 204, in <module>
-    for i, intent in enumerate(best_customer_categories):
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
