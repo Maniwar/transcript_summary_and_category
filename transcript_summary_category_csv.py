@@ -13,6 +13,7 @@ from transformers import pipeline
 from io import BytesIO
 
 # Initialize BERT model
+@st.cache_resource
 def initialize_bert_model():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
