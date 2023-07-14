@@ -1,13 +1,3 @@
-Error reading the CSV file: name 'BytesIO' is not defined
-
-NameError: name 'feedback_data' is not defined
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\transcript_category_summary_csv.py", line 257, in <module>
-    comment_column = st.selectbox("Select the column containing the comments", feedback_data.columns.tolist())
-                                                                               
-
 import pandas as pd
 import nltk
 from nltk.corpus import stopwords
@@ -20,6 +10,7 @@ import numpy as np
 import xlsxwriter
 import chardet
 from transformers import pipeline
+from io import BytesIO
 
 # Initialize BERT model
 def initialize_bert_model():
@@ -69,7 +60,7 @@ st.title("👨‍💻 Feedback Categorization")
 # Add checkbox for emerging issue mode
 emerging_issue_mode = st.sidebar.checkbox("Emerging Issue Mode")
 
-#Sidebar description for emerging issue mode
+# Sidebar description for emerging issue mode
 st.sidebar.write("Emerging issue mode allows you to set a minimum similarity score. If the comment doesn't match up to the categories based on the threshold, it will be set to NO MATCH.")
 
 # Add slider for semantic similarity threshold in emerging issue mode
@@ -252,6 +243,9 @@ uploaded_file = st.file_uploader("Upload CSV file", type="csv")
 comment_column = None
 date_column = None
 trends_data = None
+
+# Define an empty DataFrame for feedback_data
+feedback_data = pd.DataFrame()
 
 if uploaded_file is not None:
     # Read customer feedback from uploaded file
