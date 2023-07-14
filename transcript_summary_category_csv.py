@@ -1,4 +1,3 @@
-import streamlit as st
 import pandas as pd
 import nltk
 from nltk.corpus import stopwords
@@ -6,15 +5,13 @@ from nltk.tokenize import word_tokenize
 from nltk.sentiment import SentimentIntensityAnalyzer
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-import base64
-from io import BytesIO
 import datetime
 import numpy as np
 import xlsxwriter
 import chardet
+from transformers import pipeline
 
 # Initialize BERT model
-@st.cache_resource  # Cache the BERT model as a resource
 def initialize_bert_model():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
@@ -49,14 +46,21 @@ def perform_sentiment_analysis(text):
     compound_score = sentiment_scores['compound']
     return compound_score
 
+# Function to summarize the text
+def summarize_text(text):
+    summarization_pipeline = pipeline("summarization")
+    summary = summarization_pipeline(text, max_length=100, min_length=30, do_sample=False)
+    return summary[0]['summary_text']
+
 # Streamlit interface
+import streamlit as st
 st.title("👨‍💻 Feedback Categorization")
 
 # Add checkbox for emerging issue mode
 emerging_issue_mode = st.sidebar.checkbox("Emerging Issue Mode")
 
 #Sidebar description for emerging issue mode
-st.sidebar.write("Emerging issue mode allows you to set a minimum similiary score. If the comment doesn't match up to the categories based on the threashold it will be set to  NO MATCH.")
+st.sidebar.write("Emerging issue mode allows you to set a minimum similarity score. If the comment doesn't match up to the categories based on the threshold, it will be set to NO MATCH.")
 
 # Add slider for semantic similarity threshold in emerging issue mode
 similarity_threshold = None
@@ -269,7 +273,8 @@ if uploaded_file is not None:
             # Process each comment
             for index, row in feedback_data.iterrows():
                 preprocessed_comment = preprocess_text(row[comment_column])
-                comment_embedding = initialize_bert_model().encode([preprocessed_comment])[0]  # Compute the comment embedding once
+                summarized_text = summarize_text(preprocessed_comment)
+                comment_embedding = initialize_bert_model().encode([summarized_text])[0]  # Compute the comment embedding once
                 sentiment_score = perform_sentiment_analysis(preprocessed_comment)
                 category = 'Other'
                 sub_category = 'Other'
@@ -295,14 +300,14 @@ if uploaded_file is not None:
                     sub_category = 'No Match'
 
                 parsed_date = row[date_column].split(' ')[0] if isinstance(row[date_column], str) else None
-                row_extended = row.tolist() + [preprocessed_comment, category, sub_category, sentiment_score, best_match_score, parsed_date]
+                row_extended = row.tolist() + [preprocessed_comment, summarized_text, category, sub_category, sentiment_score, best_match_score, parsed_date]
                 categorized_comments.append(row_extended)
                 sentiments.append(sentiment_score)
                 similarity_scores.append(similarity_score)
 
             # Create a new DataFrame with extended columns
             existing_columns = feedback_data.columns.tolist()
-            additional_columns = [comment_column, 'Category', 'Sub-Category', 'Sentiment', 'Best Match Score', 'Parsed Date']
+            additional_columns = [comment_column, 'Preprocessed Comment', 'Summarized Text', 'Category', 'Sub-Category', 'Sentiment', 'Best Match Score', 'Parsed Date']
             headers = existing_columns + additional_columns
             trends_data = pd.DataFrame(categorized_comments, columns=headers)
             trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce').dt.date
@@ -473,85 +478,19 @@ if uploaded_file is not None:
             # Convert 'Parsed Date' column to datetime type
             trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce')
 
-            # Create a separate column for formatted date strings
-            trends_data['Formatted Date'] = trends_data['Parsed Date'].dt.strftime('%Y-%m-%d')
+            # Create a separate worksheet for each category and sub-category
+            for category, subcategories in categories.items():
+                for subcategory in subcategories:
+                    filtered_data = trends_data[(trends_data['Category'] == category) & (trends_data['Sub-Category'] == subcategory)]
+                    filtered_data.to_excel(excel_writer, sheet_name=f'{category} - {subcategory}', index=False)
 
-            # Reset the index
-            trends_data.reset_index(inplace=True)
+            # Create a separate worksheet for pivot tables
+            pivot1.to_excel(excel_writer, sheet_name='Category vs Sentiment and Survey Count')
+            pivot2_reset.to_excel(excel_writer, sheet_name='Sub-Category vs Sentiment and Survey Count')
+            pivot.to_excel(excel_writer, sheet_name='Feedback Trends by Date')
 
-            # Set 'Formatted Date' column as the index
-            trends_data.set_index('Formatted Date', inplace=True)
-
-            # Create pivot table with counts for Category, Sub-Category, and Parsed Date
-            if grouping_option == 'Date':
-                pivot = trends_data.pivot_table(
-                    index=['Category', 'Sub-Category'],
-                    columns='Parsed Date',
-                    values='Sentiment',
-                    aggfunc='count',
-                    fill_value=0
-                )
-            elif grouping_option == 'Week':
-                pivot = trends_data.pivot_table(
-                    index=['Category', 'Sub-Category'],
-                    columns=pd.Grouper(key='Parsed Date', freq='W-SUN', closed='left', label='left'),
-                    values='Sentiment',
-                    aggfunc='count',
-                    fill_value=0
-                )
-
-            elif grouping_option == 'Month':
-                pivot = trends_data.pivot_table(
-                    index=['Category', 'Sub-Category'],
-                    columns=pd.Grouper(key='Parsed Date', freq='M'),
-                    values='Sentiment',
-                    aggfunc='count',
-                    fill_value=0
-                )
-            elif grouping_option == 'Quarter':
-                pivot = trends_data.pivot_table(
-                    index=['Category', 'Sub-Category'],
-                    columns=pd.Grouper(key='Parsed Date', freq='Q'),
-                    values='Sentiment',
-                    aggfunc='count',
-                    fill_value=0
-                )
-
-            # Format column headers as date strings in 'YYYY-MM-DD' format
-            pivot.columns = pivot.columns.strftime('%Y-%m-%d')
-
-            # Write pivot tables to Excel
-            pivot.to_excel(excel_writer, sheet_name='Trends by ' + grouping_option, merge_cells=False)
-            pivot1.to_excel(excel_writer, sheet_name='Categories', merge_cells=False)
-            pivot2.to_excel(excel_writer, sheet_name='Subcategories', merge_cells=False)
-
-            # Write example comments to a single sheet
-            example_comments_sheet = excel_writer.book.add_worksheet('Example Comments')
-
-            # Write each table of example comments to the sheet
-            for subcategory in top_subcategories:
-                filtered_data = trends_data[trends_data['Sub-Category'] == subcategory]
-                top_comments = filtered_data.nlargest(10, 'Parsed Date')[['Parsed Date', comment_column]]
-                # Calculate the starting row for each table
-                start_row = (top_subcategories.index(subcategory) * 8) + 1
-
-                # Write the subcategory as a merged cell
-                example_comments_sheet.merge_range(start_row, 0, start_row, 1, subcategory)
-                example_comments_sheet.write(start_row, 2, '')
-                # Write the table headers
-                example_comments_sheet.write(start_row + 1, 0, 'Date')
-                example_comments_sheet.write(start_row + 1, 1, comment_column)
-
-                # Write the table data
-                for i, (_, row) in enumerate(top_comments.iterrows(), start=start_row + 2):
-                    example_comments_sheet.write(i, 0, row['Parsed Date'])
-                    example_comments_sheet.write_string(i, 1, str(row[comment_column]))
-
-            # Save the Excel file
-            excel_writer.close()
-
-        # Convert the Excel file to bytes and create a download link
         excel_file.seek(0)
-        b64 = base64.b64encode(excel_file.read()).decode()
-        href = f'<a href="data:application/octet-stream;base64,{b64}" download="feedback_trends.xlsx">Download Excel File</a>'
-        st.markdown(href, unsafe_allow_html=True)
+        excel_data = excel_file.getvalue()
+
+        # Download Excel file
+        st.download_button("Download Excel", data=excel_data, file_name="feedback_trends.xlsx", mime="application/vnd.ms-excel")
