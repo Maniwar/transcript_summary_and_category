@@ -1,23 +1,22 @@
+import streamlit as st
 import pandas as pd
-import nltk
-from nltk.corpus import stopwords
+import chardet
+from io import BytesIO
 from nltk.tokenize import word_tokenize
 from nltk.sentiment import SentimentIntensityAnalyzer
 from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
-import datetime
-import numpy as np
-import xlsxwriter
-import chardet
 from transformers import pipeline
-from io import BytesIO
+
+# Set page title and layout
+st.set_page_config(page_title="👨‍💻 Feedback Categorization")
 
 # Initialize BERT model
-@st.cache_resource
+@st.cache_resource(allow_output_mutation=True)
 def initialize_bert_model():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
 # Create a dictionary to store precomputed embeddings
+@st.cache_resource(allow_output_mutation=True)
 def compute_keyword_embeddings(keywords):
     model = initialize_bert_model()
     keyword_embeddings = {}
@@ -26,6 +25,7 @@ def compute_keyword_embeddings(keywords):
     return keyword_embeddings
 
 # Function to preprocess the text
+@st.cache
 def preprocess_text(text):
     # Convert to string if input is a float
     if isinstance(text, float):
@@ -37,11 +37,8 @@ def preprocess_text(text):
     # Return the text without removing stop words
     return text
 
-# Function to compute semantic similarity
-def compute_semantic_similarity(embedding1, embedding2):
-    return cosine_similarity([embedding1], [embedding2])[0][0]
-
 # Function to perform sentiment analysis
+@st.cache_data
 def perform_sentiment_analysis(text):
     analyzer = SentimentIntensityAnalyzer()
     sentiment_scores = analyzer.polarity_scores(text)
@@ -49,13 +46,13 @@ def perform_sentiment_analysis(text):
     return compound_score
 
 # Function to summarize the text
+@st.cache_resource
 def summarize_text(text):
     summarization_pipeline = pipeline("summarization")
     summary = summarization_pipeline(text, max_length=400, min_length=30, do_sample=False)
     return summary[0]['summary_text']
 
 # Streamlit interface
-import streamlit as st
 st.title("👨‍💻 Feedback Categorization")
 
 # Add checkbox for emerging issue mode
