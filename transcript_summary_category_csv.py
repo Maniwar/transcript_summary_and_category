@@ -1,3 +1,13 @@
+Error reading the CSV file: name 'BytesIO' is not defined
+
+NameError: name 'feedback_data' is not defined
+Traceback:
+File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
+    exec(code, module.__dict__)
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\transcript_category_summary_csv.py", line 257, in <module>
+    comment_column = st.selectbox("Select the column containing the comments", feedback_data.columns.tolist())
+                                                                               
+
 import pandas as pd
 import nltk
 from nltk.corpus import stopwords
