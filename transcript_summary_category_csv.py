@@ -11,17 +11,18 @@ import xlsxwriter
 import chardet
 from transformers import pipeline
 from io import BytesIO
+import streamlit as st
 
 # Set page title and layout
 st.set_page_config(page_title="👨‍💻 Feedback Categorization")
 
 # Initialize BERT model
-@st.cache_resource(allow_output_mutation=True)
+@st.cache_resource
 def initialize_bert_model():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
 # Create a dictionary to store precomputed embeddings
-@st.cache_resource(allow_output_mutation=True)
+@st.cache_resource
 def compute_keyword_embeddings(keywords):
     model = initialize_bert_model()
     keyword_embeddings = {}
@@ -30,7 +31,7 @@ def compute_keyword_embeddings(keywords):
     return keyword_embeddings
 
 # Function to preprocess the text
-@st.cache
+@st.cache_data
 def preprocess_text(text):
     # Convert to string if input is a float
     if isinstance(text, float):
