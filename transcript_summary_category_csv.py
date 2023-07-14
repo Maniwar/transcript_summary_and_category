@@ -50,7 +50,7 @@ def perform_sentiment_analysis(text):
 # Function to summarize the text
 def summarize_text(text):
     summarization_pipeline = pipeline("summarization")
-    summary = summarization_pipeline(text, max_length=100, min_length=30, do_sample=False)
+    summary = summarization_pipeline(text, max_length=400, min_length=30, do_sample=False)
     return summary[0]['summary_text']
 
 # Streamlit interface
