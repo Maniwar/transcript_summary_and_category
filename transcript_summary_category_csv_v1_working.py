@@ -54,7 +54,13 @@ def perform_sentiment_analysis(text):
 
 # Function to summarize the text
 @st.cache_resource
+# Function to summarize the text
+@st.cache_resource
 def summarize_text(text, max_length=400, min_length=30):
+    # Check if the text is less than 400 words
+    if len(word_tokenize(text)) < 400:
+        return text
+
     # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="facebook/bart-large-cnn")
 
@@ -72,6 +78,7 @@ def summarize_text(text, max_length=400, min_length=30):
 
     # Return the full summary
     return full_summary.strip()
+
 
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
