@@ -59,7 +59,7 @@ def summarize_text(text, max_length=100, min_length=30):
     summarization_pipeline = pipeline("summarization", model="facebook/bart-large-cnn")
 
     # Split the text into chunks of approximately 1024 words
-    text_chunks = textwrap.wrap(text, width=1024)
+    text_chunks = textwrap.wrap(text, width=2000)
 
     # Initialize an empty string to store the full summary
     full_summary = ""
@@ -163,7 +163,6 @@ default_categories = {
         "Found Broken Links on Website",
         "Couldn't Locate Features on Website",
         "User Experience Was Inconsistent Across Different Devices",
-        "Website Went Down Unexpectedly",
         "User Interface Was Confusing",
         "Had Issues with Mobile Functionality",
         "Website Didn't Adjust Well to My Location"
@@ -275,7 +274,7 @@ default_categories = {
         "Self-Service Options Were Limited"
     ],
     "Technical/Product Support": [
-        "Need Help With Purchased Product",
+        "Technical Problem with Purchased Product",
         "Had Trouble Receiving Technical Support",
         "Troubleshooting Advice from Tech Support Wasn't Helpful",
         "Technical Issues Weren't Resolved by Support",
