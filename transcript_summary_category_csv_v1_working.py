@@ -15,7 +15,7 @@ from io import BytesIO
 import streamlit as st
 
 # Set page title and layout
-st.set_page_config(page_title="👨‍💻 Feedback Categorization")
+st.set_page_config(page_title="👨‍💻 Transcript Categorization")
 
 # Initialize BERT model
 @st.cache_resource
@@ -64,7 +64,7 @@ def compute_semantic_similarity(embedding1, embedding2):
     return cosine_similarity([embedding1], [embedding2])[0][0]
 
 # Streamlit interface
-st.title("👨‍💻 Feedback Categorization")
+st.title("👨‍💻 Transcript Categorization")
 
 # Add checkbox for emerging issue mode
 emerging_issue_mode = st.sidebar.checkbox("Emerging Issue Mode")
