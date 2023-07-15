@@ -341,12 +341,29 @@ comment_embedding = model.encode([comment])[0]
 
 # Compute similarity scores and store them in a DataFrame
 similarity_scores = []
+best_match_score = 0
+best_match = None
 
 for main_category, keywords in keywords_text.items():
     for keyword in keywords:
         keyword_embedding = keyword_embeddings[keyword.lower()]
         similarity_score = compute_semantic_similarity(keyword_embedding, comment_embedding)
         similarity_scores.append({'Keyword': keyword, 'Similarity Score': similarity_score})
+        if similarity_score > best_match_score:
+            best_match_score = similarity_score
+            best_match = keyword
+
+# Check if the best match is under the threshold
+if emerging_issue_mode and best_match_score < similarity_threshold:
+    best_match = "NO MATCH"
+
+# Show the best match and its score
+st.subheader("Best Match")
+st.write(best_match)
+
+# Show the score of the best match
+st.subheader("Best Match Score")
+st.write(best_match_score)
 
 # Create a DataFrame with similarity scores
 df_similarity_scores = pd.DataFrame(similarity_scores)
@@ -361,3 +378,4 @@ st.dataframe(top_10_items)
 # Print similarity scores
 st.subheader("Similarity Scores")
 st.dataframe(similarity_scores)
+
