@@ -83,7 +83,7 @@ if emerging_issue_mode:
 
 # Edit categories and keywords
 st.sidebar.header("Edit Categories")
-default_categories = {
+combined_categories = {
     "Product Discovery": [
         "Misleading Product Information",
         "Difficulty Finding Product",
@@ -95,9 +95,16 @@ default_categories = {
         "Product Comparison Difficulties",
         "Unavailability of Desired Products",
         "Product Variants Issues",
-        "Lack of Product Videos",
-        "Unclear Product Warranty Information",
-        "Unresponsive Product Search"
+        "Unavailability of Certain Colors or Sizes",
+        "Mismatch Between Selected Product Variant and Delivered Item",
+        "Out of Stock Items Not Clearly Marked",
+        "Delayed Restocking of Popular Variants",
+        "Overwhelming Product Options",
+        "Inadequate Product Selection Filters",
+        "Inaccurate Product Category Assignment",
+        "Poor Product Recommendation System",
+        "Difficulty in Saving Preferred Products for Future Reference",
+        "Lack of Information About Product Origin or Manufacturer"
     ],
     "Promotions & Deals": [
         "Promotion Not Applied",
@@ -109,8 +116,14 @@ default_categories = {
         "Issues with Membership Discounts",
         "Inconsistencies in Pricing",
         "Inaccessible or Hidden Discounts",
-        "Unavailability of Discount on Bulk Orders",
-        "Inaccurate Sale Countdown Timer"
+        "Issues with Employee Purchasing Program",
+        "Problems Having Promotional Discounts Applied",
+        "Perceived Deceptive Pricing",
+        "Confusing Bulk Discount Structure",
+        "Inadequate Information About Seasonal Sales",
+        "Exclusion of Specific Products from Promotions",
+        "Issues with Referral Bonus System",
+        "Deals Applicable to Limited Geographic Areas"
     ],
     "Pre-order Concerns": [
         "Unable to Pre-order",
@@ -122,8 +135,10 @@ default_categories = {
         "Delivery Issues with Pre-ordered Items",
         "Confusing Pre-order Process",
         "Unavailability of Pre-order Option",
-        "Unexpected Pre-order Cancellation",
-        "Unavailability of Pre-order Discount"
+        "Unclear Pre-order Delivery Timelines",
+        "Mismatch in Pre-ordered Item and Final Product",
+        "Issues with Part-payment for Pre-orders",
+        "Inability to Change Pre-order Details"
     ],
     "Website/App Navigation": [
         "Website/App Errors",
@@ -135,9 +150,12 @@ default_categories = {
         "Unexpected Website/App Downtime",
         "Confusing User Interface",
         "Mobile Website/App Issues",
-        "Unresponsive Site Search",
-        "Issues with Site Layout on Various Screen Sizes",
-        "Poor Image and Video Loading Speed"
+        "Difficulty Saving Payment and Shipping Information",
+        "Issues with Wishlist Functionality",
+        "Lack of Live Chat Support",
+        "Difficulty Accessing Order History",
+        "Inadequate Search Engine Functionality",
+        "Language Localization Issues"
     ],
     "Ordering & Checkout": [
         "Ordering Errors",
@@ -149,9 +167,13 @@ default_categories = {
         "Trouble with Gift Wrapping or Special Instructions",
         "Order Cancellation Issues",
         "Lack of Order Confirmation",
-        "Absence of Guest Checkout Option",
-        "Inaccessible Saved Items",
-        "Issues with Shipping Address Validation"
+        "Unexpected Order Cancellation",
+        "Unexplained Order Cancellation",
+        "Limited Quantity Purchase Restrictions",
+        "Lack of Delivery Date Selection Option",
+        "Inability to Split Order Deliveries",
+        "Unavailability of Express Checkout Option",
+        "Issues with Order Review Process"
     ],
     "Payment Processing": [
         "Incorrect Amount Charged",
@@ -163,9 +185,11 @@ default_categories = {
         "Trouble Applying Gift Cards",
         "Payment Information Storage Issues",
         "Suspicious Charges",
-        "Unavailability of EMI Options",
-        "Issue with Auto-renewal Subscriptions",
-        "Delayed Transaction Confirmation"
+        "Problems with Monthly Installment Payments",
+        "Inability to Split Payments Across Multiple Methods",
+        "Insecurity Around Stored Payment Details",
+        "Inability to Apply Multiple Gift Cards",
+        "Issue with Tax Calculation"
     ],
     "Delivery & Shipping": [
         "Late Delivery",
@@ -178,9 +202,22 @@ default_categories = {
         "Lack of Delivery Options",
         "Packaging Issues",
         "International Shipping Problems",
-        "Delivery Signature Issues",
-        "Lost Packages",
-        "Discrepancy Between Estimated and Actual Delivery Time"
+        "Unavailability of Products in Certain ZIP Codes",
+        "Insufficient Delivery Updates",
+        "Lack of Same-Day/Next-Day Delivery Options",
+        "Poor Handling of Fragile Items",
+        "Unsatisfactory Courier Communication",
+        "Incorrect Delivery Address Captured"
+    ],
+    "Pickup & Store Location": [
+        "Difficulty Locating the Right Store for Pickup",
+        "Mismatch Between Selected Store and Available Pickup Locations",
+        "Change of Pickup Store Post-Order",
+        "Lack of Clear Instructions for In-Store Pickup",
+        "Inadequate In-store Customer Support",
+        "Long Waiting Time for Pickup",
+        "Difficulty Scheduling Pickup Time",
+        "Unclear Return Policy for Store-Purchased Items"
     ],
     "Installation & Setup": [
         "Difficulty Installing Product",
@@ -192,9 +229,10 @@ default_categories = {
         "Product Requires Unexpected Additional Setup",
         "Mismatch Between Product and Manual",
         "Lack of Technical Support",
-        "Inaccurate Setup Time Estimate",
-        "Lack of Required Tools for Installation",
-        "Difficulty Downloading/Installing Software or Firmware"
+        "Inadequate Troubleshooting Guides",
+        "Need for Professional Installation",
+        "Unexpected Need for Additional Tools for Installation",
+        "Issues with Product Updates Post-Setup"
     ],
     "Returns & Refunds": [
         "Problem Initiating Return",
@@ -206,9 +244,10 @@ default_categories = {
         "Partial Refund Discrepancies",
         "Difficulty Tracking Return",
         "Exchange Issues",
-        "Issues with Return Label",
-        "Unprocessed Returns",
-        "Lack of Return Confirmation"
+        "Difficulty with International Returns",
+        "Damage Incurred During Return Shipping",
+        "Lack of Exchange for Different Sizes/Colors",
+        "Problem with Return Labels"
     ],
     "Customer Service & Support": [
         "Poor Customer Service",
@@ -220,9 +259,11 @@ default_categories = {
         "Difficulty Escalating Issues",
         "Language Barriers with Customer Service",
         "Inefficient Complaint Resolution",
-        "Lack of Support During Non-business Hours",
-        "Difficulty Reaching Support Through Various Channels",
-        "Inconsistent Information Across Different Support Agents"
+        "Inadequate Self-Service Support Options",
+        "Incorrect Advice from Customer Support",
+        "Automated Response System Issues",
+        "Limited Customer Service Hours",
+        "Lack of Multilingual Support"
     ],
     "Account & Privacy": [
         "Difficulty Accessing Account",
@@ -234,38 +275,42 @@ default_categories = {
         "Concerns About Unauthorised Data Sharing",
         "Difficulty Resetting Password",
         "Confusing Account Settings",
-        "Issues with Two-factor Authentication",
-        "Difficulty Managing Subscription Preferences",
-        "Invasive Cookies and Tracking Concerns"
+        "Inability to Delete Payment Information",
+        "Lack of Two-Factor Authentication",
+        "Unsolicited Marketing Calls or SMS",
+        "Difficulty Managing Newsletter Preferences",
+        "Inadequate Explanation of Privacy Settings"
     ],
     "Product Performance & Maintenance": [
-        "Product Breakdown",
-        "Performance Below Expectation",
-        "Need for Frequent Maintenance",
-        "Unavailability of Spare Parts",
-        "Inadequate Maintenance Instructions",
-        "Lack of Warranty/Support Information",
-        "Issues with Software Updates",
-        "Unexpected Need for Replacements",
-        "Failure of Product Features",
-        "Incompatibility with Other Devices",
-        "Short Battery Life",
-        "Overheating Problems"
+        "Product Malfunction",
+        "Early Product Failure",
+        "Inconsistent Product Performance",
+        "Difficulty Updating Product",
+        "Unavailability of Replacement Parts",
+        "Inadequate Warranty Coverage",
+        "Unavailability of After-Sales Services",
+        "Difficulty Maintaining Product",
+        "Lack of Replacement Parts",
+        "Inadequate Instructions for Routine Care",
+        "Unavailability of Repair Services",
+        "Incompatibility with Other Devices/Software",
+        "Lack of Clear Information About End of Life/Discontinued Support"
     ],
     "Product Instructions & Manuals": [
         "Lack of Instructions",
-        "Difficult to Understand Instructions",
-        "Errors in Manual",
-        "Unavailability of Digital Manual",
-        "Contradictory Information in Manuals",
-        "Missing Safety Instructions",
-        "Unclarity on Warranty Terms",
-        "Missing Assembly Instructions",
-        "Inconsistency Between Online and Physical Manuals",
-        "Lack of Troubleshooting Guide",
-        "Missing Information on Maintenance and Cleaning"
+        "Unclear Instructions",
+        "Difficulty Understanding Instructions",
+        "Mismatch Between Instructions and Actual Product",
+        "Instructions Not in Desired Language",
+        "Missing Necessary Information in Instructions",
+        "Lack of Troubleshooting Guide in Manual",
+        "Lack of Visual Diagrams in Instructions",
+        "Inadequate Troubleshooting Section",
+        "Lack of Information About Potential Risks/Hazards",
+        "Difficulty Finding Online Versions of Manuals"
     ]
 }
+
 
 categories = {}
 for category, keywords in default_categories.items():
