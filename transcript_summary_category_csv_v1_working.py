@@ -84,155 +84,189 @@ if emerging_issue_mode:
 # Edit categories and keywords
 st.sidebar.header("Edit Categories")
 default_categories = {
-    "Product Discovery Issues": [
-        "Difficulty Finding Products",
-        "Insufficient Product Information",
-        "Mobile Webpage Layout Problems",
-        "Search Functionality Problems",
-        "Issues with Product Filters",
-        "User Interface Discrepancies"
+    "Product Discovery": [
+        "Misleading Product Information",
+        "Difficulty Finding Product",
+        "Poor Product Description",
+        "Lack of Product Reviews",
+        "Inaccurate Product Specifications",
+        "Outdated Product Images",
+        "Insufficient Product Availability Information",
+        "Product Comparison Difficulties",
+        "Unavailability of Desired Products",
+        "Product Variants Issues",
+        "Lack of Product Videos",
+        "Unclear Product Warranty Information",
+        "Unresponsive Product Search"
     ],
-    "Product Selection Issues": [
-        "Problems Comparing Products",
-        "Confusing Product Descriptions",
-        "Issues with Configurator Performance",
-        "Configurator Inaccuracies",
-        "Usability Issues with Configurator",
-        "Limited Product Varieties",
-        "Unavailability of Certain Sizes",
-        "Product Not Available In my Area or Zip code",
-        "Product Availability Best Buy Pick-up Option Unclear ",
-        "Frequent Stock Shortages"
+    "Promotions & Deals": [
+        "Promotion Not Applied",
+        "Confusing Promotion Terms",
+        "Expired Promotion Still Displayed",
+        "Promised Deal Not Honored",
+        "Difficulty Finding Promotions",
+        "Limited Availability of Deals",
+        "Issues with Membership Discounts",
+        "Inconsistencies in Pricing",
+        "Inaccessible or Hidden Discounts",
+        "Unavailability of Discount on Bulk Orders",
+        "Inaccurate Sale Countdown Timer"
     ],
-    "Cart & Checkout Issues": [
-        "Complexities in Cart Management",
-        "Items were removed from my Cart",
-        "Product Unavailability in Cart",
-        "Limited Shipping Methods",
-        "Complicated Checkout Process",
-        "Inconveniences in Store Pick-up",
-        "Delivery Date Calculation Errors",
-        "Address Verification Problems"
+    "Pre-order Concerns": [
+        "Unable to Pre-order",
+        "Pre-order Delayed",
+        "Wrong Pre-order Information",
+        "Cancellation of Pre-order",
+        "Charging for Pre-order",
+        "Lack of Updates on Pre-order Status",
+        "Delivery Issues with Pre-ordered Items",
+        "Confusing Pre-order Process",
+        "Unavailability of Pre-order Option",
+        "Unexpected Pre-order Cancellation",
+        "Unavailability of Pre-order Discount"
     ],
-    "Order Processing Issues": [
-        "My order keeps getting cancelled",
-        "Delays due to Stock Issues",
-        "Order Modification Difficulties"
+    "Website/App Navigation": [
+        "Website/App Errors",
+        "Slow Website/App Performance",
+        "Difficult Interface Navigation",
+        "Broken Website/App Links",
+        "Difficulty Locating Features",
+        "Inconsistent Website/App Experience Across Devices",
+        "Unexpected Website/App Downtime",
+        "Confusing User Interface",
+        "Mobile Website/App Issues",
+        "Unresponsive Site Search",
+        "Issues with Site Layout on Various Screen Sizes",
+        "Poor Image and Video Loading Speed"
     ],
-    "Payment Processing Issues": [
-        "Payment Declined",
-        "Unauthorized Charges",
-        "Payment Gateway Errors",
-        "Payment Verification Issues",
-        "Refund Delays",
-        "Coupon Code Malfunctions"
+    "Ordering & Checkout": [
+        "Ordering Errors",
+        "Long Checkout Process",
+        "Payment Failure",
+        "Cart Issues",
+        "Unexpected Additional Fees",
+        "Difficulty Modifying Order",
+        "Trouble with Gift Wrapping or Special Instructions",
+        "Order Cancellation Issues",
+        "Lack of Order Confirmation",
+        "Absence of Guest Checkout Option",
+        "Inaccessible Saved Items",
+        "Issues with Shipping Address Validation"
     ],
-    "Delivery Issues": [
-        "Promised Delivery Date was Missed or Late",
-        "Order was not Delivered",
-        "Problems with UPS",
-        "Problems with AGS",
-        "Problems with XPO",
-        "Problems with FEDEX",
-        "Poor Condition of Delivered Packages",
-        "Problems with In-store Pick-up",
-        "Package contained wrong product",
-        "Missing Items in Delivered Package",
-        "Received Damaged or Defective Item",
-        "Limited Delivery Zones"
+    "Payment Processing": [
+        "Incorrect Amount Charged",
+        "Unsuccessful Refund",
+        "Declined Payment",
+        "Coupon/Discount Issues",
+        "Unexpected Currency Conversion Rates",
+        "Lack of Payment Options",
+        "Trouble Applying Gift Cards",
+        "Payment Information Storage Issues",
+        "Suspicious Charges",
+        "Unavailability of EMI Options",
+        "Issue with Auto-renewal Subscriptions",
+        "Delayed Transaction Confirmation"
     ],
-    "Installation Problems": [
-        "Complex Installation Process",
-        "Unprofessional Installation Process",
-        "Vague Installation Instructions",
-        "Missing Installation Parts",
-        "Issues Detected Post-Installation",
-        "Inadequate Installation Support",
-        "Incompatibility of Products"
+    "Delivery & Shipping": [
+        "Late Delivery",
+        "Product Not Delivered",
+        "Wrong Product Delivered",
+        "Product Damaged Upon Arrival",
+        "Missing Items in Delivery",
+        "Problem with Delivery Tracking",
+        "Issues with Delivery Company",
+        "Lack of Delivery Options",
+        "Packaging Issues",
+        "International Shipping Problems",
+        "Delivery Signature Issues",
+        "Lost Packages",
+        "Discrepancy Between Estimated and Actual Delivery Time"
     ],
-    "Service & Repair Problems": [
-        "Inferior On-Site Service",
-        "Delayed Service Response",
-        "Substandard Repair Work",
-        "Slow Repair Process",
-        "Lack of Cost Transparency in Service & Repair",
-        "Poor Communication during Service & Repair",
-        "Insufficient Warranty Coverage"
+    "Installation & Setup": [
+        "Difficulty Installing Product",
+        "Missing Installation Instructions",
+        "Product Not Working Post-Installation",
+        "Setup Assistance Unavailable",
+        "Incorrect Assembly Parts",
+        "Product Compatibility Issues",
+        "Product Requires Unexpected Additional Setup",
+        "Mismatch Between Product and Manual",
+        "Lack of Technical Support",
+        "Inaccurate Setup Time Estimate",
+        "Lack of Required Tools for Installation",
+        "Difficulty Downloading/Installing Software or Firmware"
     ],
-    "Customer Support Issues": [
-        "Long Wait Times for Support Response",
-        "Unsatisfactory Support Quality",
-        "Multiple Chat Transfers",
-        "Limited Knowledge of Support Staff",
-        "Unresolved Customer Issues",
-        "Poor Follow-up Support",
-        "Difficulty Reaching Support",
-        "Unresponsive Support Staff",
-        "Inaccessible Support Channels",
-        "Lack of Empathy from Support Staff"
+    "Returns & Refunds": [
+        "Problem Initiating Return",
+        "Refund Not Issued",
+        "Product Not Eligible for Return",
+        "Restocking Fee Issues",
+        "Problem with Return Pickup",
+        "Long Wait for Refund",
+        "Partial Refund Discrepancies",
+        "Difficulty Tracking Return",
+        "Exchange Issues",
+        "Issues with Return Label",
+        "Unprocessed Returns",
+        "Lack of Return Confirmation"
     ],
-    "Return & Refund Issues": [
-        "Complex Return Process",
-        "Delayed Refund Process",
-        "Unclear Return Policy",
-        "Disagreement over Return Shipping Responsibility",
-        "Brief Return Window",
-        "Exchange Policy Problems",
-        "Refund Amount Discrepancies"
+    "Customer Service & Support": [
+        "Poor Customer Service",
+        "Unresolved Issues",
+        "Long Response Times",
+        "Unavailable Customer Support",
+        "Misinformation from Customer Support",
+        "Lack of Follow-up from Customer Service",
+        "Difficulty Escalating Issues",
+        "Language Barriers with Customer Service",
+        "Inefficient Complaint Resolution",
+        "Lack of Support During Non-business Hours",
+        "Difficulty Reaching Support Through Various Channels",
+        "Inconsistent Information Across Different Support Agents"
     ],
-    "Website & Mobile App Performance Issues": [
-        "Slow Website Load Speed",
-        "Mobile App Usability Issues",
-        "Website Design Criticisms",
-        "Challenges Navigating Website",
-        "Distractions from Pop-ups",
-        "Poor Website Scrolling Experience"
-    ],
-    "Customer Communication Issues": [
-        "Excessive Email Notifications",
-        "Irrelevant Email Content",
-        "Issues Unsubscribing from Emails",
-        "Poor Response to Customer Feedback",
-        "Delays in Communication"
-    ],
-    "Privacy & Security Issues": [
+    "Account & Privacy": [
+        "Difficulty Accessing Account",
         "Concerns about Data Privacy",
-        "Concerns about Data Security",
-        "Problems with Login",
-        "Two-Factor Authentication Difficulties",
-        "Poor Account Management",
-        "Lack of Transparency in Data Usage",
-        "Experiences of Scams & Phishing",
-        "Payment Information Security Concerns"
+        "Unwanted Email Notifications",
+        "Account Hacked",
+        "Trouble Updating Account Information",
+        "Difficulty Closing Account",
+        "Concerns About Unauthorised Data Sharing",
+        "Difficulty Resetting Password",
+        "Confusing Account Settings",
+        "Issues with Two-factor Authentication",
+        "Difficulty Managing Subscription Preferences",
+        "Invasive Cookies and Tracking Concerns"
     ],
-    "Product Feedback": [
-        "Absence of Charger",
-        "Product Durability Concerns",
-        "Issues with Firmware",
-        "General Product Feedback",
-        "Problems with Mobile Apps",
-        "Problems with Shop Mobile App",
-        "Software Malfunctions",
-        "Hardware Problems",
-        "Poor Product Quality",
-        "Poor Product Performance"
+    "Product Performance & Maintenance": [
+        "Product Breakdown",
+        "Performance Below Expectation",
+        "Need for Frequent Maintenance",
+        "Unavailability of Spare Parts",
+        "Inadequate Maintenance Instructions",
+        "Lack of Warranty/Support Information",
+        "Issues with Software Updates",
+        "Unexpected Need for Replacements",
+        "Failure of Product Features",
+        "Incompatibility with Other Devices",
+        "Short Battery Life",
+        "Overheating Problems"
     ],
-    "Policy Feedback": [
-        "Inability to Replace Items",
-        "Concerns about Device Locking Policies",
-        "Feedback on Trade-In Process",
-        "Shipping Policy Critiques",
-        "Return Policy Critiques"
-    ],
-    "Unexpected Pricing": [
-        "Unexpected Price Changes in Cart",
-        "Issues with Applying Discounts",
-        "Employee Purchase Program Difficulties",
-        "First Responder Program Difficulties",
-        "Lack of Pricing Transparency",
-        "Uncompetitive Pricing"
+    "Product Instructions & Manuals": [
+        "Lack of Instructions",
+        "Difficult to Understand Instructions",
+        "Errors in Manual",
+        "Unavailability of Digital Manual",
+        "Contradictory Information in Manuals",
+        "Missing Safety Instructions",
+        "Unclarity on Warranty Terms",
+        "Missing Assembly Instructions",
+        "Inconsistency Between Online and Physical Manuals",
+        "Lack of Troubleshooting Guide",
+        "Missing Information on Maintenance and Cleaning"
     ]
 }
+
 categories = {}
 for category, keywords in default_categories.items():
     category_name = st.sidebar.text_input(f"{category} Category", value=category)
