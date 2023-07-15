@@ -54,13 +54,7 @@ def perform_sentiment_analysis(text):
 
 # Function to summarize the text
 @st.cache_resource
-# Function to summarize the text
-@st.cache_resource
 def summarize_text(text, max_length=400, min_length=30):
-    # Check if the text is less than 400 words
-    if len(word_tokenize(text)) < 400:
-        return text
-
     # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="facebook/bart-large-cnn")
 
@@ -78,6 +72,7 @@ def summarize_text(text, max_length=400, min_length=30):
 
     # Return the full summary
     return full_summary.strip()
+
 
 
 # Function to compute semantic similarity
@@ -371,33 +366,34 @@ if uploaded_file is not None:
             similarity_scores = []
             summarized_texts = []
             categories_list = []
-
             # Process each comment
             for index, row in feedback_data.iterrows():
                 preprocessed_comment = preprocess_text(row[comment_column])
+            
+                # Only summarize the comment if it exceeds 250 words
                 if len(preprocessed_comment.split()) > 250:
-                    summarized_text = summarize_text(preprocessed_comment)
+                    summarized_comment = summarize_text(preprocessed_comment)
                 else:
-                    summarized_text = preprocessed_comment
-                comment_embedding = initialize_bert_model().encode([summarized_text])[0]  # Compute the comment embedding once
+                    summarized_comment = preprocessed_comment
+            
+                comment_embedding = initialize_bert_model().encode([summarized_comment])[0]  # Compute the comment embedding once
                 sentiment_score = perform_sentiment_analysis(preprocessed_comment)
                 category = 'Other'
                 sub_category = 'Other'
                 best_match_score = float('-inf')  # Initialized to negative infinity
-
-                # Tokenize the preprocessed_comment
-                tokens = word_tokenize(preprocessed_comment)
-
+            
                 for main_category, keywords in categories.items():
                     for keyword in keywords:
                         keyword_embedding = keyword_embeddings[keyword]  # Use the precomputed keyword embedding
                         similarity_score = compute_semantic_similarity(keyword_embedding, comment_embedding)
+            
                         # If similarity_score equals best_match_score, we pick the first match.
                         # If similarity_score > best_match_score, we update best_match.
                         if similarity_score >= best_match_score:
                             category = main_category
                             sub_category = keyword
                             best_match_score = similarity_score
+
 
                 # If in emerging issue mode and the best match score is below the threshold, set category and sub-category to 'No Match'
                 if emerging_issue_mode and best_match_score < similarity_threshold:
