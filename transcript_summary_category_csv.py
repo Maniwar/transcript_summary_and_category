@@ -274,30 +274,33 @@ if uploaded_file is not None:
     if comment_column is not None and date_column is not None and grouping_option is not None and process_button:
         # Check if the processed DataFrame is already cached
         @st.cache_data
-        def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold, similarity_score, best_match_score):
+        def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold):
             # Compute keyword embeddings
             keyword_embeddings = compute_keyword_embeddings([keyword for keywords in categories.values() for keyword in keywords])
-            
+
             # Initialize lists for categorized_comments, sentiments, similarity scores, and summaries
             categorized_comments = []
             sentiments = []
             similarity_scores = []
             summarized_texts = []
             categories_list = []
-        
+
             # Process each comment
             for index, row in feedback_data.iterrows():
                 preprocessed_comment = preprocess_text(row[comment_column])
-                summarized_text = summarize_text(preprocessed_comment)
+                if len(preprocessed_comment.split()) > 512:
+                    summarized_text = summarize_text(preprocessed_comment)
+                else:
+                    summarized_text = preprocessed_comment
                 comment_embedding = initialize_bert_model().encode([summarized_text])[0]  # Compute the comment embedding once
                 sentiment_score = perform_sentiment_analysis(preprocessed_comment)
                 category = 'Other'
                 sub_category = 'Other'
                 best_match_score = float('-inf')  # Initialized to negative infinity
-        
+
                 # Tokenize the preprocessed_comment
                 tokens = word_tokenize(preprocessed_comment)
-        
+
                 for main_category, keywords in categories.items():
                     for keyword in keywords:
                         keyword_embedding = keyword_embeddings[keyword]  # Use the precomputed keyword embedding
@@ -308,12 +311,12 @@ if uploaded_file is not None:
                             category = main_category
                             sub_category = keyword
                             best_match_score = similarity_score
-        
+
                 # If in emerging issue mode and the best match score is below the threshold, set category and sub-category to 'No Match'
                 if emerging_issue_mode and best_match_score < similarity_threshold:
                     category = 'No Match'
                     sub_category = 'No Match'
-        
+
                 parsed_date = row[date_column].split(' ')[0] if isinstance(row[date_column], str) else None
                 row_extended = row.tolist() + [preprocessed_comment, summarized_text, category, sub_category, sentiment_score, best_match_score, parsed_date]
                 categorized_comments.append(row_extended)
@@ -321,7 +324,7 @@ if uploaded_file is not None:
                 similarity_scores.append(similarity_score)
                 summarized_texts.append(summarized_text)
                 categories_list.append(category)
-        
+
             # Create a new DataFrame with extended columns
             existing_columns = feedback_data.columns.tolist()
             additional_columns = [comment_column, 'Preprocessed Comment', 'Summarized Text', 'Category', 'Sub-Category', 'Sentiment', 'Best Match Score', 'Parsed Date']
@@ -331,7 +334,7 @@ if uploaded_file is not None:
             trends_data['Summarized Text'] = summarized_texts
             trends_data['Category'] = categories_list
             trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce').dt.date
-            
+
             # Rename duplicate column names
             trends_data = trends_data.loc[:, ~trends_data.columns.duplicated()]
             duplicate_columns = set([col for col in trends_data.columns if trends_data.columns.tolist().count(col) > 1])
@@ -339,13 +342,11 @@ if uploaded_file is not None:
                 column_indices = [i for i, col in enumerate(trends_data.columns) if col == column]
                 for i, idx in enumerate(column_indices[1:], start=1):
                     trends_data.columns.values[idx] = f"{column}_{i}"
-        
+
             return trends_data
 
-
-
         # Process feedback data and cache the result
-        trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold, similarity_score, best_match_score)
+        trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold)
 
         # Display trends and insights
         if trends_data is not None:
@@ -362,157 +363,73 @@ if uploaded_file is not None:
             if grouping_option == 'Date':
                 pivot = trends_data.pivot_table(
                     index=['Category', 'Sub-Category'],
-                    columns=pd.Grouper(key='Parsed Date', freq='D'),
-                    values='Sentiment',
+                    values='Preprocessed Comment',
                     aggfunc='count',
+                    columns=pd.Grouper(key='Parsed Date', freq='D'),
                     fill_value=0
                 )
-
             elif grouping_option == 'Week':
                 pivot = trends_data.pivot_table(
                     index=['Category', 'Sub-Category'],
-                    columns=pd.Grouper(key='Parsed Date', freq='W-SUN', closed='left', label='left'),
-                    values='Sentiment',
+                    values='Preprocessed Comment',
                     aggfunc='count',
+                    columns=pd.Grouper(key='Parsed Date', freq='W-MON'),
                     fill_value=0
                 )
-
             elif grouping_option == 'Month':
                 pivot = trends_data.pivot_table(
                     index=['Category', 'Sub-Category'],
-                    columns=pd.Grouper(key='Parsed Date', freq='M'),
-                    values='Sentiment',
+                    values='Preprocessed Comment',
                     aggfunc='count',
+                    columns=pd.Grouper(key='Parsed Date', freq='M'),
                     fill_value=0
                 )
             elif grouping_option == 'Quarter':
                 pivot = trends_data.pivot_table(
                     index=['Category', 'Sub-Category'],
-                    columns=pd.Grouper(key='Parsed Date', freq='Q'),
-                    values='Sentiment',
+                    values='Preprocessed Comment',
                     aggfunc='count',
+                    columns=pd.Grouper(key='Parsed Date', freq='Q'),
                     fill_value=0
                 )
 
-            pivot.columns = pivot.columns.astype(str)  # Convert column labels to strings
-
-            # Sort the pivot table rows based on the highest count
-            pivot = pivot.loc[pivot.sum(axis=1).sort_values(ascending=False).index]
-
-            # Sort the pivot table columns in descending order based on the most recent date
-            pivot = pivot[sorted(pivot.columns, reverse=True)]
-
-            # Create a line chart for the top 5 trends over time with the selected grouping option
-            # First, reset the index to have 'Category' and 'Sub-Category' as columns
-            pivot_reset = pivot.reset_index()
-
-            # Then, set 'Sub-Category' as the new index
-            pivot_reset = pivot_reset.set_index('Sub-Category')
-
-            # Drop the 'Category' column
-            pivot_reset = pivot_reset.drop(columns=['Category'])
-
-            # Now, get the top 5 trends
-            top_5_trends = pivot_reset.head(5).T  # Transpose the DataFrame to have dates as index
-
-            # Create and display a line chart for the top 5 trends
-            st.line_chart(top_5_trends)
-
-            # Display pivot table with counts for Category, Sub-Category, and Parsed Date
             st.dataframe(pivot)
 
-            # Create pivot tables with counts
-            pivot1 = trends_data.groupby('Category')['Sentiment'].agg(['mean', 'count'])
-            pivot1.columns = ['Average Sentiment', 'Survey Count']
-            pivot1 = pivot1.sort_values('Survey Count', ascending=False)
+            # Add a download button for the pivot table
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                pivot.to_excel(writer, sheet_name='Trends')
+                workbook = writer.book
+                worksheet = writer.sheets['Trends']
+                for idx, col in enumerate(pivot.columns):
+                    if grouping_option == 'Date':
+                        format_str = 'm/d/yyyy'
+                    elif grouping_option == 'Week':
+                        format_str = 'm/d/yyyy'
+                    elif grouping_option == 'Month':
+                        format_str = 'mmm-yyyy'
+                    elif grouping_option == 'Quarter':
+                        format_str = 'mmm-yyyy'
+                    format = workbook.add_format({'num_format': format_str})
+                    worksheet.set_column(idx + 2, idx + 2, None, format)
 
-            pivot2 = trends_data.groupby(['Category', 'Sub-Category'])['Sentiment'].agg(['mean', 'count'])
-            pivot2.columns = ['Average Sentiment', 'Survey Count']
-            pivot2 = pivot2.sort_values('Survey Count', ascending=False)
+            output.seek(0)
 
-            # Reset index for pivot2
-            pivot2_reset = pivot2.reset_index()
+            def get_pivot_table_file_name(grouping_option):
+                if grouping_option == 'Date':
+                    return 'feedback_trends_by_date.xlsx'
+                elif grouping_option == 'Week':
+                    return 'feedback_trends_by_week.xlsx'
+                elif grouping_option == 'Month':
+                    return 'feedback_trends_by_month.xlsx'
+                elif grouping_option == 'Quarter':
+                    return 'feedback_trends_by_quarter.xlsx'
+                else:
+                    return 'feedback_trends.xlsx'
 
-
-            # Set 'Sub-Category' as the index
-            pivot2_reset.set_index('Sub-Category', inplace=True)
-
-            # Create and display a bar chart for pivot1 with counts
-            st.bar_chart(pivot1['Survey Count'])
-
-            # Display pivot table with counts for Category
-            st.subheader("Category vs Sentiment and Survey Count")
-            st.dataframe(pivot1)
-
-            # Create and display a bar chart for pivot2 with counts
-            st.bar_chart(pivot2_reset['Survey Count'])
-
-            # Display pivot table with counts for Sub-Category
-            st.subheader("Sub-Category vs Sentiment and Survey Count")
-            st.dataframe(pivot2_reset)
-
-            # Display top 10 most recent comments for each of the 10 top subcategories
-            st.subheader("Top 10 Most Recent Comments for Each Top Subcategory")
-
-            # Get the top 10 subcategories based on the survey count
-            top_subcategories = pivot2_reset.head(10).index.tolist()
-
-            # Iterate over the top subcategories
-            for subcategory in top_subcategories:
-                st.subheader(subcategory)
-
-                # Filter the trends_data DataFrame for the current subcategory
-                filtered_data = trends_data[trends_data['Sub-Category'] == subcategory]
-
-                # Get the top 10 most recent comments for the current subcategory
-                top_comments = filtered_data.nlargest(10, 'Parsed Date')[['Parsed Date', comment_column,'Sentiment', 'Best Match Score']]
-
-                # Format the parsed date to display only the date part
-                top_comments['Parsed Date'] = top_comments['Parsed Date'].dt.date.astype(str)
-
-                # Display the top comments as a table
-                st.table(top_comments)
-
-            # Format 'Parsed Date' as string with 'YYYY-MM-DD' format
-            trends_data['Parsed Date'] = trends_data['Parsed Date'].dt.strftime('%Y-%m-%d').fillna('')
-
-            # Create pivot table with counts for Category, Sub-Category, and Parsed Date
-            pivot = trends_data.pivot_table(
-                index=['Category', 'Sub-Category'],
-                columns=pd.to_datetime(trends_data['Parsed Date']).dt.strftime('%Y-%m-%d'),  # Format column headers as 'YYYY-MM-DD'
-                values='Sentiment',
-                aggfunc='count',
-                fill_value=0
+            st.download_button(
+                label="Download Trends",
+                data=output,
+                file_name=get_pivot_table_file_name(grouping_option),
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-
-            # Sort the pivot table rows based on the highest count
-            pivot = pivot.loc[pivot.sum(axis=1).sort_values(ascending=False).index]
-
-            # Sort the pivot table columns in descending order based on the most recent date
-            pivot = pivot[sorted(pivot.columns, reverse=True)]
-
-        # Save DataFrame and pivot tables to Excel
-        excel_file = BytesIO()
-        with pd.ExcelWriter(excel_file, engine='xlsxwriter', mode='xlsx') as excel_writer:
-            trends_data.to_excel(excel_writer, sheet_name='Feedback Trends and Insights', index=False)
-
-            # Convert 'Parsed Date' column to datetime type
-            trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce')
-
-            # Create a separate worksheet for each grouping option
-            if grouping_option == 'Date':
-                pivot.to_excel(excel_writer, sheet_name='Pivot by Date')
-            elif grouping_option == 'Week':
-                pivot.to_excel(excel_writer, sheet_name='Pivot by Week')
-            elif grouping_option == 'Month':
-                pivot.to_excel(excel_writer, sheet_name='Pivot by Month')
-            elif grouping_option == 'Quarter':
-                pivot.to_excel(excel_writer, sheet_name='Pivot by Quarter')
-
-            # Save pivot tables with counts to Excel
-            pivot1.to_excel(excel_writer, sheet_name='Category vs Sentiment and Survey Count')
-            pivot2.to_excel(excel_writer, sheet_name='Sub-Category vs Sentiment and Survey Count')
-
-        # Set the position of the streamlit download button
-        download_button_str = download_button(excel_file, "Download Excel File", f"feedback_data_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx")
-        st.markdown(download_button_str, unsafe_allow_html=True)
