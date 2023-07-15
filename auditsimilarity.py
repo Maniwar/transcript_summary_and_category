@@ -1,3 +1,6 @@
+C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\auditsimilarity.py:328: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  similarity_scores = similarity_scores.append({'Keyword': keyword, 'Similarity Score': similarity_score}, ignore_index=True)
+
 import pandas as pd
 import nltk
 from nltk.corpus import stopwords
