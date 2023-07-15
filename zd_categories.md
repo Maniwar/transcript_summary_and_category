@@ -1,137 +1,213 @@
-Where's my Stuff::Shipped::Undeliverable
-Where's my Stuff::Shipped::Rescheduled by Carrier
-Where's my Stuff::Shipped::No Tracking
-Where's my Stuff::Shipped::Lost By Carrier
-Where's my Stuff::Shipped::In Transit On Time
-Where's my Stuff::Shipped::In Transit Late
-Where's my Stuff::Shipped::Delivered not Received
-Where's my Stuff::Scheduled Delivery::Missed Appointment
-Where's my Stuff::Not Shipped::Rescheduled by System
-Where's my Stuff::Not Shipped::Before Delivery Date
-Where's my Stuff::Not Shipped::After Delivery Date
-Trade In::Processing Delay::Wrong Label
-Trade In::Processing Delay::Multiple Item Order
-Trade In::Processing Delay::Delivered
-Trade In::General Questions::Label Request
-Trade In::General Questions::Trade-in Value
-Trade In::General Questions::Instructions
-Trade In::General Questions::Eligibility
-Trade In::Extension Request::Extension Request
-Trade In::Collections Inquiry::Payment Options
-Trade In::Collections Inquiry::Customer Dispute
-Trade In::Collections Inquiry::Chargeback Failure
-Trade In::Chargeback Dispute::Wrong Item Sent to Samsung
-Trade In::Chargeback Dispute::Unable to Clear Content
-Trade In::Chargeback Dispute::Payment Options
-Trade In::Chargeback Dispute::Order Returned
-Trade In::Chargeback Dispute::Not received by Samsung
-Trade In::Chargeback Dispute::Locks not disabled
-Trade In::Chargeback Dispute::Does not power on
-Trade In::Chargeback Dispute::Cracked Screen or Camera Lens
-Trade In::Chargeback Dispute::Blacklisted
-Samsung Subscriptions::Modify::Water Filter
-Samsung Subscriptions::Modify::Smart Things Cam
-Samsung Subscriptions::Modify::Premium Care
-Samsung Subscriptions::Modify::Art Store
-Samsung Rewards::Missing Rewards::Missing Rewards
-Samsung Rewards::How to Redeem::How to Redeem
-Return Related::Return Label Request::Return Label Request
-Return Related::Refund Status::Processing Time
-Return Related::Missing Refund::Used Own Label
-Return Related::Missing Refund::Shipper Delay
-Return Related::Missing Refund::Rejected return lost in transit
-Return Related::Missing Refund::Rejected or Unsent
-Return Related::Missing Refund::Multiple Items sent with one label
-Return Related::Missing Refund::Lost in Transit
-Return Related::Missing Refund::Incorrect Refund
-Return Related::Missing Refund::FC Delay
-Return Related::How to Return::Schedule Pick Up
-Return Related::How to Return::Eligibility and Terms
-Return Related::Extension Request::Extension Request
-Promotions::Support::Eligibility and Terms
-Promotional Subscriptions::Redeem::YouTube
-Promotional Subscriptions::Redeem::Spotify
-Promotional Subscriptions::Redeem::SiriusXM
-Promotional Subscriptions::Redeem::OneDrive
-Promotional Subscriptions::Redeem::Adobe Light Room
-Promotional Subscriptions::Modify::YouTube
-Promotional Subscriptions::Modify::Spotify
-Promotional Subscriptions::Modify::SiriusXM
-Promotional Subscriptions::Modify::OneDrive
-Promotional Subscriptions::Modify::Adobe Light Room
-Product Support::Support::Product Features
-Product Support::Support::Product Comparisons
-Product Support::Support::Product Comparisons
-Product Support::Support::Product and Parts Availability
-Product purchased at different retailer::Support::Warranty
-Product purchased at different retailer::Support::Promotions
-Problem with an Order::Wrong Product Received::Wrong Product Received
-Problem with an Order::Tax Exempt::Tax Refund
-Problem with an Order::Scheduled Delivery::Not Completed
-Problem with an Order::Refund Request::Service Not Provided
-Problem with an Order::Price Match::Previous Samsung.com Order
-Problem with an Order::Price Match::Competitor
-Problem with an Order::Payment::Tech Issue
-Problem with an Order::Payment::Financing Technical Issue
-Problem with an Order::Payment::Financing Rejected
-Problem with an Order::Payment::Charge Dispute
-Problem with an Order::Payment::Authorization Release
-Problem with an Order::Order Cancelled::Quantity Limit Exceeded
-Problem with an Order::Order Cancelled::Pricing Error
-Problem with an Order::Order Cancelled::Payment Issue
-Problem with an Order::Order Cancelled::Out of Stock
-Problem with an Order::Missing Item or Part::Missing Item or Part
-Problem with an Order::Item Issue::Product Damaged Packaging undamaged
-Problem with an Order::Item Issue::Product Damaged Packaging damaged
-Problem with an Order::Item Issue::Product Damaged During Installation
-Problem with an Order::Installation Issue::Two-Step Installation
-Problem with an Order::Installation Issue::Rescheduled by installer
-Problem with an Order::Installation Issue::Not Completed
-Problem with an Order::Installation Issue::Missed Appointment
-Problem with an Order::Installation Issue::Damaged Property
-Problem with an Order::Extra Item Received::Extra Item
-Problem with an Order::Delivery Issue::Damaged Property
-Problem with an Order::Defective Item::Product Defective
-Problem with an Order::Defective Item::Activation Issue
-Problem with an Order::Chargeback Inquiry::Payment Options
-Problem with an Order::Chargeback Inquiry::Dispute Chargeback
-Problem with an Order::Cart Issue::Unable to Checkout
-Problem with an Order::Cart Issue::Price Change at Checkout
-Problem with an Order:: Promotion::Promotion Not Received
-Problem with an Order:: Promotion::Promotion Not Applied
-Policy Inquiry::Warranty Details::Warranty
-Policy Inquiry::Tax Exemption Eligibility::Tax Exemption
-Policy Inquiry::Sales Tax::Sales Tax
-Policy Inquiry::Cancellation Policy::Cancellation Policy
-Policy Inquiry::Bulk Order::Bulk Order
-Order Modification::Modify::Shipping Method
-Order Modification::Modify::Shipping Address
-Order Modification::Modify::Product
-Order Modification::Modify::Payment Method
-Order Modification::Modify::Customer Request Reschedule Installation
-Order Modification::Modify::Customer Request Reschedule Delivery
-Order Modification::Modify::Billing Address
-Order Modification::Cancel Order::Promotion Issue
-Order Modification::Cancel Order::Customer Request
-Order Modification::Cancel Order::Backorder
-Order Modification::Cancel Order::Address Issue
-Order Modification::Add::Promotion
-Order Modification::Add::Item
-Non Order Related::Financing::How to
-Non Order Related::Financing::Account Linking
-Knox Guard::Device Locked::Valid Unlock Request
-Knox Guard::Device Locked::Invalid Unlock Request
-Incomplete Contact::Chat / Call::Training/Test Contact
-Incomplete Contact::Chat / Call::Disconnect No Information
-Customer Comment::Feedback::Website
-Customer Comment::Feedback::Product
-Customer Comment::Feedback::Customer Service
-Account Management::Unable to Access Account::Tech Issue
-Account Management::Modify::Samsung Account
-Account Management::Modify::Physical address
-Account Management::Modify::Payment Method
-Account Management::Modify::Password
-Account Management::Modify::Merge Accounts
-Account Management::Modify::Financing
-Account Management::Modify::Email Address
-Account Management::Invoice Request::Invoice Request
+ "Product Discovery & Selection": [
+        "Had Trouble Searching for a Specific Product",
+        "Found Product Information Unclear or Incomplete",
+        "Lacked Enough Information in Product Reviews",
+        "Product Specifications Seemed Inaccurate",
+        "Product Images Seemed Outdated",
+        "Couldn't Determine if Product Was in Stock",
+        "Struggled to Compare Different Products",
+        "Wanted Product Wasn't Available",
+        "Confused About Different Product Options",
+        "Overwhelmed by Too Many Product Options",
+        "Product Filters Didn't Help Narrow Down Choices",
+        "Products Seemed Misclassified",
+        "Product Recommendations Didn't Seem Relevant",
+        "Had Trouble Saving Favorite Products",
+        "Didn't Get Enough Information from Product Manufacturer"
+    ],
+    "Stock & Availability": [
+        "Product Was Out of Stock",
+        "Had to Wait Too Long for Product Restock",
+        "Product Was Excluded from Promotions",
+        "Limited Availability for Deals",
+        "Deal Restrictions Were Based on My Location",
+        "Was Restricted on the Quantity I Could Purchase"
+    ],
+    "Pricing & Promotions": [
+        "Promotion Didn't Apply to My Purchase",
+        "Promotion Terms Were Unclear",
+        "Saw Outdated Promotion Still Being Displayed",
+        "Deal Fulfillment Didn't Go Through",
+        "Had Trouble Locating Promotions on the Site",
+        "Faced Issues When Applying Discounts",
+        "Noticed Inconsistencies in Pricing",
+        "Discounts Were Not Clearly Visible",
+        "Encountered Problems with Membership Program",
+        "Felt Pricing Was Deceptive",
+        "Confused Over How Bulk Discounts Applied",
+        "Lacked Information on Seasonal Sales",
+        "Faced Problems with Referral Program",
+        "Encountered Unexpected Fees"
+    ],
+    "Pre-Order & Delivery Planning": [
+        "Encountered Problems During Pre-Order",
+        "Experienced Delays in Pre-Order",
+        "Received Inaccurate Pre-Order Information",
+        "Pre-Order Was Cancelled Unexpectedly",
+        "Faced Unexpected Charges for Pre-Order",
+        "Didn't Receive Updates on Pre-Order Status",
+        "Had Issues with Delivery of Pre-Ordered Product",
+        "Pre-Order Process Was Confusing",
+        "Couldn't Pre-Order the Product",
+        "Delivery Timelines Were Unclear",
+        "Mismatch Between Pre-Ordered and Delivered Product",
+        "Had Issues with Partial Payments",
+        "Had Trouble Modifying Pre-Order Details",
+        "Limited Options for Delivery Date",
+        "Had Issues with Delivering Split Orders"
+    ],
+    "Website & App Interface": [
+        "Experienced Glitches on Website",
+        "Website Performance Was Slow",
+        "Had Trouble Navigating the Interface",
+        "Found Broken Links on Website",
+        "Couldn't Locate Features on Website",
+        "User Experience Was Inconsistent Across Different Devices",
+        "User Interface Was Confusing",
+        "Had Issues with Mobile Functionality",
+        "Website Didn't Adjust Well to My Location"
+    ],
+    "Order Management & Checkout": [
+        "Experienced Glitches During Ordering",
+        "Checkout Process Was Too Lengthy",
+        "Payment Failed During Checkout",
+        "Had Issues with Shopping Cart",
+        "Couldn't Modify My Order",
+        "Had Trouble with Gift Wrapping or Special Instructions",
+        "Couldn't Cancel My Order",
+        "Didn't Receive Order Confirmation",
+        "My Order Was Cancelled Unexpectedly",
+        "No Option for Express Checkout",
+        "Had Problems Reviewing Order Before Checkout"
+    ],
+    "Payment & Billing": [
+        "Was Charged Incorrectly",
+        "Payment Was Declined During Checkout",
+        "Was Confused About Applying Discount/Coupon",
+        "Unexpected Conversion Rates Were Applied",
+        "Payment Options Were Limited",
+        "Had Difficulty Saving Payment Information",
+        "Noticed Suspicious Charges",
+        "Had Problems with Installment Payment",
+        "Had Difficulty Splitting Payment",
+        "Concerned About Data Security During Payment",
+        "Had Problems with Tax Calculation"
+    ],
+    "Delivery & Shipping": [
+        "Delivery Was Late",
+        "Product Wasn't Delivered",
+        "Received Wrong Product",
+        "Product Was Damaged Upon Arrival",
+        "Delivery Was Incomplete",
+        "Had Problems Tracking My Delivery",
+        "Had Issues with the Courier Service",
+        "Delivery Options Were Limited",
+        "Product Packaging Was Poor",
+        "Had Difficulties with International Shipping",
+        "Delivery Restrictions Were Based on My Zip Code",
+        "Didn't Receive Updates on Delivery Status",
+        "Limited Options for Same-Day/Next-Day Delivery",
+        "Fragile Items Were Handled Poorly During Delivery",
+        "Didn't Get Adequate Communication from Courier",
+        "Delivery Address Was Incorrect"
+    ],
+    "Store & Pickup Services": [
+        "Had Trouble Locating Stores",
+        "Mismatch Between Chosen and Actual Pickup Location",
+        "Had to Change Pickup Store",
+        "Instructions for In-Store Pickup Were Unclear",
+        "Received Poor Support In-Store",
+        "Waited Too Long for Pickup",
+        "Had Difficulty Scheduling Pickup Time",
+        "Confused About Store Purchase Return Policy",
+        "Had Difficulty Accessing Order History"
+    ],
+    "Product Installation & Setup": [
+        "Had Difficulty During Product Installation",
+        "Installation Instructions Were Missing",
+        "Had Problems with Product After Installation",
+        "Didn't Get Enough Assistance During Setup",
+        "Received Incorrect Assembly Parts",
+        "Had Issues with Product Compatibility",
+        "Faced Unexpected Requirements During Setup",
+        "Mismatch Between Product and Manual",
+        "Lacked Technical Support",
+        "Didn't Find Troubleshooting Guides Helpful",
+        "Needed Professional Installation",
+        "Needed Additional Tools Unexpectedly",
+        "Had Problems After Setup Update"
+    ],
+    "Returns, Refunds & Exchanges": [
+        "Had Difficulty Initiating a Return",
+        "I want a Refund",
+        "I want an Exchange",
+        "Refund Wasn't Issued After Return",
+        "Was Ineligible for Return",
+        "Confused Over Restocking Fees",
+        "Had Problems with Pickup for Return",
+        "Refund Process Was Too Long",
+        "Discrepancies in Partial Refunds",
+        "Had Difficulty Tracking Returned Item",
+        "Had Difficulties with International Return",
+        "Product Was Damaged During Return Shipping",
+        "Limited Options for Size/Color Exchanges",
+        "Had Problems with Return Label"
+    ],
+    "Pre-Purchase Assistance": [
+        "Had Trouble Getting Help Before Buying",
+        "Couldn't Find Enough Product Information or Advice",
+        "Customer Service Took Too Long to Respond",
+        "Received Incorrect Information",
+        "Support Wasn't Helpful with Promotions or Deals",
+        "Had Trouble Scheduling Store Visits or Pickups",
+        "Got Inconsistent Information from Different Agents"
+    ],
+    "Post-Purchase Assistance": [
+        "Had Trouble Contacting Support After Purchase",
+        "Post-Purchase Customer Service Response Was Slow",
+        "Issues Were Not Resolved by Customer Service",
+        "Didn't Get Enough Help Setting Up or Using Product",
+        "Trouble Understanding Product Features Due to Poor Support",
+        "Had Difficulty Getting Assistance During Product Installation",
+        "Had Trouble Contacting Customer Service for Delivery-Related Issues",
+        "Had Trouble Escalating Issues",
+        "Self-Service Options Were Limited"
+    ],
+    "Technical/Product Support": [
+        "Need Help With Purchased Product",
+        "Had Trouble Receiving Technical Support",
+        "Troubleshooting Advice from Tech Support Wasn't Helpful",
+        "Technical Issues Weren't Resolved by Support",
+        "Technical Instructions Were Difficult to Understand",
+        "Tech Support Didn't Follow Up",
+        "Received Incorrect Advice from Tech Support",
+        "Automated Technical Support Was Problematic",
+        "Technical Support Hours Were Limited"
+    ],
+    "Repair Services": [
+        "Had Trouble Scheduling Repair",
+        "Repair Work Was Unsatisfactory",
+        "Repair Took Too Long",
+        "Confused About Repair Charges",
+        "No Follow-Up After Repair",
+        "Received Incorrect Advice from Repair Service",
+        "Repair Resolution Process Was Inefficient"
+    ],
+    "Account Management": [
+        "Had Difficulty Logging In",
+        "Couldn't Retrieve Lost Password",
+        "Didn't Receive Account Verification Email",
+        "Had Trouble Changing Account Information",
+        "Had Problems with Account Security",
+        "Experienced Glitches During Account Creation",
+        "Not Able to Deactivate Account",
+        "Had Issues with Privacy Settings",
+        "Account Was Suspended or Banned Unexpectedly",
+        "Had Difficulty Linking Multiple Accounts",
+        "Didn't Get Email Notifications",
+        "Had Issues with Subscription Management",
+        "Couldn't Track Order History",
+        "Received Unwanted Marketing Emails",
+        "Trouble Setting Preferences in Account"
+    ],
+}
