@@ -635,7 +635,7 @@ if uploaded_file is not None:
                     aggfunc='count',
                     fill_value=0
                 )
-           elif grouping_option == 'Hour':
+            elif grouping_option == 'Hour':
                 pivot = trends_data.pivot_table(
                     index=['Category', 'Sub-Category'],
                     columns=pd.Grouper(key='Parsed Date', freq='H'),
