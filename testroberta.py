@@ -28,10 +28,10 @@ def initialize_roberta_model():
 @st.cache_resource
 def compute_keyword_embeddings(keywords):
     model = initialize_roberta_model()
-    keyword_embeddings = {}
+    sentence_embeddings = {}
     for keyword in keywords:
-        keyword_embeddings[keyword] = model.encode([keyword])[0]
-    return keyword_embeddings
+        sentence_embeddings[keyword] = model.encode([keyword])[0]
+    return sentence_embeddings
 
 # Function to preprocess the text
 @st.cache_data
@@ -301,15 +301,15 @@ default_categories = {
 }
 
 keywords_text = {}
-keyword_embeddings = {}
+sentence_embeddings = {}
 
 for category in default_categories:
     keywords_text[category] = st.sidebar.text_area(f"Keywords for {category} (One per line)", "\n".join(default_categories[category]))
     keywords_text[category] = [keyword.strip() for keyword in keywords_text[category].split("\n")]
-    keyword_embeddings.update(compute_keyword_embeddings(keywords_text[category]))
+    sentence_embeddings.update(compute_keyword_embeddings(keywords_text[category]))
 
 # Convert keywords to lowercase
-keyword_embeddings = {keyword.lower(): embedding for keyword, embedding in keyword_embeddings.items()}
+sentence_embeddings = {keyword.lower(): embedding for keyword, embedding in sentence_embeddings.items()}
 
 # Get user input comment
 comment = st.text_area("Enter your comment here")
@@ -326,7 +326,7 @@ similarity_scores = []
 
 for main_category, keywords in keywords_text.items():
     for keyword in keywords:
-        keyword_embedding = keyword_embeddings[keyword.lower()]
+        keyword_embedding = sentence_embeddings[keyword.lower()]
         similarity_score = compute_semantic_similarity(keyword_embedding, comment_embedding)
         similarity_scores.append({'Keyword': keyword, 'Similarity Score': similarity_score})
 
