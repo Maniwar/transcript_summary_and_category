@@ -61,7 +61,7 @@ def summarize_text(text):
 
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
-    return cosine_similarity([embedding1], [embedding2])[0][0]
+    return (cosine_similarity([embedding1], [embedding2])[0][0] + 1) / 2
 
 # Streamlit interface
 st.title("👨‍💻 Transcript Categorization")
@@ -79,7 +79,6 @@ best_match_score = None
 
 if emerging_issue_mode:
     similarity_threshold = st.sidebar.slider("Semantic Similarity Threshold", min_value=0.0, max_value=1.0, value=0.35)
-
 
 # Edit categories and keywords
 st.sidebar.header("Edit Categories")
@@ -169,22 +168,19 @@ default_categories = {
         "Received Error Messages",
         "Had Trouble Completing a Purchase",
         "Website Was Unresponsive",
-        "Had Issues with Payment Gateway",
-        "Experienced Issues with Page Loading",
-        "Couldn't Load Product Images",
-        "Had Trouble Accessing Order History",
-        "Faced Problems with Customer Support Chat"
+        "Encountered Problems with Mobile App",
+        "Couldn't Upload Files",
+        "Had Issues with Password Reset",
+        "Encountered Problems with Notifications",
+        "Had Trouble with Live Chat Support",
+        "Couldn't Contact Customer Support"
     ]
 }
-
-categories = st.sidebar.text_area("Categories (One per line)", "\n".join(default_categories.keys()))
-categories = [category.strip() for category in categories.split("\n")]
 
 keywords_text = {}
 keyword_embeddings = {}
 
-for category in categories:
-    st.sidebar.subheader(category)
+for category in default_categories:
     keywords_text[category] = st.sidebar.text_area(f"Keywords for {category} (One per line)", "\n".join(default_categories[category]))
     keywords_text[category] = [keyword.strip() for keyword in keywords_text[category].split("\n")]
     keyword_embeddings.update(compute_keyword_embeddings(keywords_text[category]))
