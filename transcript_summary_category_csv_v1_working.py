@@ -123,7 +123,7 @@ default_categories = {
         "Confused Over How Bulk Discounts Applied",
         "Lacked Information on Seasonal Sales",
         "Faced Problems with Referral Program",
-        "Encountered Unexpected Fees",
+        "Encountered Unexpected Fees"
     ],
     "Pre-Order & Delivery Planning": [
         "Encountered Problems During Pre-Order",
@@ -143,16 +143,16 @@ default_categories = {
         "Had Issues with Delivering Split Orders"
     ],
     "Website & App Interface": [
-        "Experienced Glitches on Website/App",
-        "Website/App Performance Was Slow",
+        "Experienced Glitches on Website",
+        "Website Performance Was Slow",
         "Had Trouble Navigating the Interface",
-        "Found Broken Links on Website/App",
-        "Couldn't Locate Features on Website/App",
+        "Found Broken Links on Website",
+        "Couldn't Locate Features on Website",
         "User Experience Was Inconsistent Across Different Devices",
-        "Website/App Went Down Unexpectedly",
+        "Website Went Down Unexpectedly",
         "User Interface Was Confusing",
         "Had Issues with Mobile Functionality",
-        "Website/App Didn't Adjust Well to My Location"
+        "Website Didn't Adjust Well to My Location"
     ],
     "Order Management & Checkout": [
         "Experienced Glitches During Ordering",
@@ -169,7 +169,6 @@ default_categories = {
     ],
     "Payment & Billing": [
         "Was Charged Incorrectly",
-        "Didn't Receive a Refund",
         "Payment Was Declined During Checkout",
         "Was Confused About Applying Discount/Coupon",
         "Unexpected Conversion Rates Were Applied",
@@ -236,7 +235,6 @@ default_categories = {
         "Refund Process Was Too Long",
         "Discrepancies in Partial Refunds",
         "Had Difficulty Tracking Returned Item",
-        "Had Issues During Product Exchange",
         "Had Difficulties with International Return",
         "Product Was Damaged During Return Shipping",
         "Limited Options for Size/Color Exchanges",
@@ -249,7 +247,7 @@ default_categories = {
         "Received Incorrect Information",
         "Support Wasn't Helpful with Promotions or Deals",
         "Had Trouble Scheduling Store Visits or Pickups",
-        "Got Inconsistent Information from Different Agents",
+        "Got Inconsistent Information from Different Agents"
     ],
     "Post-Purchase Assistance": [
         "Had Trouble Contacting Support After Purchase",
@@ -263,6 +261,7 @@ default_categories = {
         "Self-Service Options Were Limited"
     ],
     "Technical/Product Support": [
+        "Need Help With Purchased Product",
         "Had Trouble Receiving Technical Support",
         "Troubleshooting Advice from Tech Support Wasn't Helpful",
         "Technical Issues Weren't Resolved by Support",
@@ -270,7 +269,7 @@ default_categories = {
         "Tech Support Didn't Follow Up",
         "Received Incorrect Advice from Tech Support",
         "Automated Technical Support Was Problematic",
-        "Technical Support Hours Were Limited",
+        "Technical Support Hours Were Limited"
     ],
     "Repair Services": [
         "Had Trouble Scheduling Repair",
@@ -296,7 +295,7 @@ default_categories = {
         "Had Issues with Subscription Management",
         "Couldn't Track Order History",
         "Received Unwanted Marketing Emails",
-        "Trouble Setting Preferences in Account",
+        "Trouble Setting Preferences in Account"
     ],
 }
 categories = {}
