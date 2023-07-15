@@ -58,6 +58,10 @@ def summarize_text(text):
     summary = summarization_pipeline(text, max_length=400, min_length=30, do_sample=False)
     return summary[0]['summary_text']
 
+# Function to compute semantic similarity
+def compute_semantic_similarity(embedding1, embedding2):
+    return cosine_similarity([embedding1], [embedding2])[0][0]
+
 # Streamlit interface
 st.title("👨‍💻 Feedback Categorization")
 
