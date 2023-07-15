@@ -178,7 +178,7 @@ default_categories = {
         "Self-Service Options Were Limited"
     ],
     "Technical/Product Support": [
-        "Need Help With Purchased Product",
+        "Need Help Troubleshooting Product",
         "Had Trouble Receiving Technical Support",
         "Troubleshooting Advice from Tech Support Wasn't Helpful",
         "Technical Issues Weren't Resolved by Support",
