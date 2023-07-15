@@ -325,7 +325,7 @@ if uploaded_file is not None:
             # Create a new DataFrame with extended columns
             existing_columns = feedback_data.columns.tolist()
             additional_columns = [comment_column, 'Preprocessed Comment', 'Summarized Text', 'Category', 'Sub-Category', 'Sentiment', 'Best Match Score', 'Parsed Date']
-            num_additional_columns = len(additional_columns)
+            num_additional_columns = len(additional_columns)  # Corrected line
             headers = existing_columns + additional_columns[:num_additional_columns]
             trends_data = pd.DataFrame(categorized_comments, columns=headers)
             trends_data['Summarized Text'] = summarized_texts
@@ -341,6 +341,7 @@ if uploaded_file is not None:
                     trends_data.columns.values[idx] = f"{column}_{i}"
         
             return trends_data
+
 
 
 
