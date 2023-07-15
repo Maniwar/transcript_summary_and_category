@@ -202,13 +202,16 @@ model = initialize_bert_model()
 comment_embedding = model.encode([comment])[0]
 
 # Compute similarity scores and store them in a DataFrame
-similarity_scores = pd.DataFrame(columns=['Keyword', 'Similarity Score'])
+similarity_scores = []
 
 for main_category, keywords in keywords_text.items():
     for keyword in keywords:
         keyword_embedding = keyword_embeddings[keyword.lower()]
         similarity_score = compute_semantic_similarity(keyword_embedding, comment_embedding)
-        similarity_scores = similarity_scores.append({'Keyword': keyword, 'Similarity Score': similarity_score}, ignore_index=True)
+        similarity_scores.append({'Keyword': keyword, 'Similarity Score': similarity_score})
+
+# Create a DataFrame from the list of similarity scores
+similarity_scores = pd.concat(similarity_scores, ignore_index=True)
 
 # Sort the DataFrame by similarity score
 similarity_scores = similarity_scores.sort_values(by='Similarity Score', ascending=False)
@@ -216,3 +219,4 @@ similarity_scores = similarity_scores.sort_values(by='Similarity Score', ascendi
 # Print similarity scores
 st.subheader("Similarity Scores")
 st.dataframe(similarity_scores)
+
