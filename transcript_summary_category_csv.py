@@ -1,36 +1,3 @@
-ValueError: 10 columns passed, passed data had 9 columns
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\transcript_category_summary_csv.py", line 348, in <module>
-    trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold, similarity_score, best_match_score)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
-    return cached_func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
-    return self._get_or_create_cached_value(args, kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
-    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
-    computed_value = self._info.func(*func_args, **func_kwargs)
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\transcript_category_summary_csv.py", line 330, in process_feedback_data
-    trends_data = pd.DataFrame(categorized_comments, columns=headers)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\pandas\core\frame.py", line 745, in __init__
-    arrays, columns, index = nested_data_to_arrays(
-                             ^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\pandas\core\internals\construction.py", line 510, in nested_data_to_arrays
-    arrays, columns = to_arrays(data, columns, dtype=dtype)
-                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\pandas\core\internals\construction.py", line 875, in to_arrays
-    content, columns = _finalize_columns_and_data(arr, columns, dtype)
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\pandas\core\internals\construction.py", line 972, in _finalize_columns_and_data
-    raise ValueError(err) from err
 import pandas as pd
 import nltk
 from nltk.corpus import stopwords
@@ -532,19 +499,20 @@ if uploaded_file is not None:
             # Convert 'Parsed Date' column to datetime type
             trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce')
 
-            # Create a separate worksheet for each category and sub-category
-            for category, subcategories in categories.items():
-                for subcategory in subcategories:
-                    filtered_data = trends_data[(trends_data['Category'] == category) & (trends_data['Sub-Category'] == subcategory)]
-                    filtered_data.to_excel(excel_writer, sheet_name=f'{category} - {subcategory}', index=False)
+            # Create a separate worksheet for each grouping option
+            if grouping_option == 'Date':
+                pivot.to_excel(excel_writer, sheet_name='Pivot by Date')
+            elif grouping_option == 'Week':
+                pivot.to_excel(excel_writer, sheet_name='Pivot by Week')
+            elif grouping_option == 'Month':
+                pivot.to_excel(excel_writer, sheet_name='Pivot by Month')
+            elif grouping_option == 'Quarter':
+                pivot.to_excel(excel_writer, sheet_name='Pivot by Quarter')
 
-            # Create a separate worksheet for pivot tables
+            # Save pivot tables with counts to Excel
             pivot1.to_excel(excel_writer, sheet_name='Category vs Sentiment and Survey Count')
-            pivot2_reset.to_excel(excel_writer, sheet_name='Sub-Category vs Sentiment and Survey Count')
-            pivot.to_excel(excel_writer, sheet_name='Feedback Trends by Date')
+            pivot2.to_excel(excel_writer, sheet_name='Sub-Category vs Sentiment and Survey Count')
 
-        excel_file.seek(0)
-        excel_data = excel_file.getvalue()
-
-        # Download Excel file
-        st.download_button("Download Excel", data=excel_data, file_name="feedback_trends.xlsx", mime="application/vnd.ms-excel")
+        # Set the position of the streamlit download button
+        download_button_str = download_button(excel_file, "Download Excel File", f"feedback_data_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx")
+        st.markdown(download_button_str, unsafe_allow_html=True)
