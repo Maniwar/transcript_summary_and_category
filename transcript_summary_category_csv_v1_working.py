@@ -297,8 +297,6 @@ default_categories = {
         "Trouble Setting Preferences in Account",
     ],
 }
-
-
 categories = {}
 for category, keywords in default_categories.items():
     category_name = st.sidebar.text_input(f"{category} Category", value=category)
