@@ -54,7 +54,7 @@ def perform_sentiment_analysis(text):
 
 # Function to summarize the text
 @st.cache_resource
-def summarize_text(text, max_length=400, min_length=30):
+def summarize_text(text, max_length=100, min_length=30):
     # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="facebook/bart-large-cnn")
 
@@ -72,7 +72,6 @@ def summarize_text(text, max_length=400, min_length=30):
 
     # Return the full summary
     return full_summary.strip()
-
 
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
@@ -365,10 +364,10 @@ if uploaded_file is not None:
             similarity_scores = []
             summarized_texts = []
             categories_list = []
-            
+
             # Initialize the BERT model once
             model = initialize_bert_model()
-            
+
             # Process each comment
             for index, row in feedback_data.iterrows():
                 preprocessed_comment = preprocess_text(row[comment_column])
