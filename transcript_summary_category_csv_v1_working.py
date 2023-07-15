@@ -54,20 +54,23 @@ def perform_sentiment_analysis(text):
 
 # Function to summarize the text
 @st.cache_resource
-def summarize_large_text(text):
+def summarize_text(text, max_length=400, min_length=30):
+    # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="facebook/bart-large-cnn")
-    text_parts = textwrap.wrap(text, width=1024, break_long_words=False)
 
+    # Split the text into chunks of approximately 1024 words
+    text_chunks = textwrap.wrap(text, width=1024)
+
+    # Initialize an empty string to store the full summary
     full_summary = ""
 
-    # Only summarize each part if it's longer than 250 words
-    for part in text_parts:
-        if len(part.split()) > 250:
-            summary = summarization_pipeline(part, max_length=400, min_length=30, do_sample=False)
-            full_summary += summary[0]['summary_text']
-        else:
-            full_summary += part
+    # For each chunk of text...
+    for chunk in text_chunks:
+        # Summarize the chunk and add the result to the full summary
+        summary = summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False)
+        full_summary += summary[0]['summary_text'] + " "
 
+    # Return the full summary
     return full_summary.strip()
 
 # Function to compute semantic similarity
@@ -345,7 +348,7 @@ if uploaded_file is not None:
         st.error(f"Error reading the CSV file: {e}")
     comment_column = st.selectbox("Select the column containing the comments", feedback_data.columns.tolist())
     date_column = st.selectbox("Select the column containing the dates", feedback_data.columns.tolist())
-    grouping_option = st.radio("Select how to group the dates", ["Date", "Week", "Month", "Quarter"])
+    grouping_option = st.radio("Select how to group the dates", ["Hour","Date", "Week", "Month", "Quarter"])
     process_button = st.button("Process Feedback")
 
     if comment_column is not None and date_column is not None and grouping_option is not None and process_button:
@@ -365,16 +368,19 @@ if uploaded_file is not None:
             # Process each comment
             for index, row in feedback_data.iterrows():
                 preprocessed_comment = preprocess_text(row[comment_column])
-                summarized_text = summarize_large_text(preprocessed_comment)
+                if len(preprocessed_comment.split()) > 250:
+                    summarized_text = summarize_text(preprocessed_comment)
+                else:
+                    summarized_text = preprocessed_comment
                 comment_embedding = initialize_bert_model().encode([summarized_text])[0]  # Compute the comment embedding once
                 sentiment_score = perform_sentiment_analysis(preprocessed_comment)
                 category = 'Other'
                 sub_category = 'Other'
                 best_match_score = float('-inf')  # Initialized to negative infinity
-            
+
                 # Tokenize the preprocessed_comment
                 tokens = word_tokenize(preprocessed_comment)
-            
+
                 for main_category, keywords in categories.items():
                     for keyword in keywords:
                         keyword_embedding = keyword_embeddings[keyword]  # Use the precomputed keyword embedding
@@ -385,7 +391,6 @@ if uploaded_file is not None:
                             category = main_category
                             sub_category = keyword
                             best_match_score = similarity_score
-
 
                 # If in emerging issue mode and the best match score is below the threshold, set category and sub-category to 'No Match'
                 if emerging_issue_mode and best_match_score < similarity_threshold:
@@ -462,6 +467,14 @@ if uploaded_file is not None:
                 pivot = trends_data.pivot_table(
                     index=['Category', 'Sub-Category'],
                     columns=pd.Grouper(key='Parsed Date', freq='Q'),
+                    values='Sentiment',
+                    aggfunc='count',
+                    fill_value=0
+                )
+            elif grouping_option == 'Hour':
+                pivot = trends_data.pivot_table(
+                    index=['Category', 'Sub-Category'],
+                    columns=pd.Grouper(key='Parsed Date', freq='H'),
                     values='Sentiment',
                     aggfunc='count',
                     fill_value=0
@@ -611,6 +624,14 @@ if uploaded_file is not None:
                 pivot = trends_data.pivot_table(
                     index=['Category', 'Sub-Category'],
                     columns=pd.Grouper(key='Parsed Date', freq='Q'),
+                    values='Sentiment',
+                    aggfunc='count',
+                    fill_value=0
+                )
+           elif grouping_option == 'Hour':
+                pivot = trends_data.pivot_table(
+                    index=['Category', 'Sub-Category'],
+                    columns=pd.Grouper(key='Parsed Date', freq='H'),
                     values='Sentiment',
                     aggfunc='count',
                     fill_value=0
