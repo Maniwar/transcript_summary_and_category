@@ -227,6 +227,8 @@ default_categories = {
     ],
     "Returns, Refunds & Exchanges": [
         "Had Difficulty Initiating a Return",
+        "I want a Refund",
+        "I want an Exchange",
         "Refund Wasn't Issued After Return",
         "Was Ineligible for Return",
         "Confused Over Restocking Fees",
