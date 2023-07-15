@@ -342,4 +342,3 @@ st.dataframe(top_10_items)
 # Print similarity scores
 st.subheader("Similarity Scores")
 st.dataframe(similarity_scores)
-
