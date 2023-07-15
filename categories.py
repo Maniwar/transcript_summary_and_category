@@ -1,4 +1,5 @@
- "Product Discovery & Selection": [
+default_categories = {
+    "Product Discovery & Selection": [
         "Had Trouble Searching for a Specific Product",
         "Found Product Information Unclear or Incomplete",
         "Lacked Enough Information in Product Reviews",
@@ -37,6 +38,7 @@
         "Confused Over How Bulk Discounts Applied",
         "Lacked Information on Seasonal Sales",
         "Faced Problems with Referral Program",
+        "Trade-in Credit Not Applied",
         "Encountered Unexpected Fees"
     ],
     "Pre-Order & Delivery Planning": [
@@ -73,18 +75,20 @@
         "Payment Failed During Checkout",
         "Had Issues with Shopping Cart",
         "Couldn't Modify My Order",
-        "Had Trouble with Gift Wrapping or Special Instructions",
         "Couldn't Cancel My Order",
         "Didn't Receive Order Confirmation",
         "My Order Was Cancelled Unexpectedly",
         "No Option for Express Checkout",
+        "Price Changed at Checkout",
+        "Items in Cart were Not Saved",
+        "My Order Keeps Getting Cancelled",
         "Had Problems Reviewing Order Before Checkout"
     ],
     "Payment & Billing": [
         "Was Charged Incorrectly",
         "Payment Was Declined During Checkout",
+        "Financing Was Declined During Checkout",
         "Was Confused About Applying Discount/Coupon",
-        "Unexpected Conversion Rates Were Applied",
         "Payment Options Were Limited",
         "Had Difficulty Saving Payment Information",
         "Noticed Suspicious Charges",
