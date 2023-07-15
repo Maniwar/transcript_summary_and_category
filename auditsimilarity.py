@@ -328,6 +328,16 @@ for main_category, keywords in keywords_text.items():
         similarity_score = compute_semantic_similarity(keyword_embedding, comment_embedding)
         similarity_scores.append({'Keyword': keyword, 'Similarity Score': similarity_score})
 
+# Create a DataFrame with similarity scores
+df_similarity_scores = pd.DataFrame(similarity_scores)
+
+# Get the top 10 items based on similarity score
+top_10_items = df_similarity_scores.nlargest(10, 'Similarity Score')
+
+# Display the top 10 items
+st.subheader("Top 10 Items")
+st.dataframe(top_10_items)
+
 
 # Print similarity scores
 st.subheader("Similarity Scores")
