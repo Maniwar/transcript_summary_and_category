@@ -54,13 +54,7 @@ def perform_sentiment_analysis(text):
 
 # Function to summarize the text
 @st.cache_resource
-# Function to summarize the text
-@st.cache_resource
 def summarize_text(text, max_length=400, min_length=30):
-    # Check if the text is less than 400 words
-    if len(word_tokenize(text)) < 250:
-        return text
-
     # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="facebook/bart-large-cnn")
 
@@ -371,7 +365,10 @@ if uploaded_file is not None:
             similarity_scores = []
             summarized_texts = []
             categories_list = []
-
+            
+            # Initialize the BERT model once
+            model = initialize_bert_model()
+            
             # Process each comment
             for index, row in feedback_data.iterrows():
                 preprocessed_comment = preprocess_text(row[comment_column])
@@ -379,7 +376,7 @@ if uploaded_file is not None:
                     summarized_text = summarize_text(preprocessed_comment)
                 else:
                     summarized_text = preprocessed_comment
-                comment_embedding = initialize_bert_model().encode([summarized_text])[0]  # Compute the comment embedding once
+                comment_embedding = model.encode([summarized_text])[0]  # Compute the comment embedding once
                 sentiment_score = perform_sentiment_analysis(preprocessed_comment)
                 category = 'Other'
                 sub_category = 'Other'
