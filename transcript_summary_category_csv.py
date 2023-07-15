@@ -309,73 +309,72 @@ if uploaded_file is not None:
         # Check if the processed DataFrame is already cached
         @st.cache_data
         def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold, similarity_score, best_match_score):
-            # Compute keyword embeddings
-            keyword_embeddings = compute_keyword_embeddings([keyword for keywords in categories.values() for keyword in keywords])
-            
-            # Initialize lists for categorized_comments, sentiments, and similarity scores
-            categorized_comments = []
-            sentiments = []
-            similarity_scores = []
-            summarized_texts = []
-            categories_list = []
+        # Compute keyword embeddings
+        keyword_embeddings = compute_keyword_embeddings([keyword for keywords in categories.values() for keyword in keywords])
         
-            # Process each comment
-            for index, row in feedback_data.iterrows():
-                preprocessed_comment = preprocess_text(row[comment_column])
-                summarized_text = summarize_text(preprocessed_comment)
-                comment_embedding = initialize_bert_model().encode([summarized_text])[0]  # Compute the comment embedding once
-                sentiment_score = perform_sentiment_analysis(preprocessed_comment)
-                category = 'Other'
-                sub_category = 'Other'
-                best_match_score = float('-inf')  # Initialized to negative infinity
+        # Initialize lists for categorized_comments, sentiments, similarity scores, and summaries
+        categorized_comments = []
+        sentiments = []
+        similarity_scores = []
+        summarized_texts = []
+        categories_list = []
+    
+        # Process each comment
+        for index, row in feedback_data.iterrows():
+            preprocessed_comment = preprocess_text(row[comment_column])
+            summarized_text = summarize_text(preprocessed_comment)
+            comment_embedding = initialize_bert_model().encode([summarized_text])[0]  # Compute the comment embedding once
+            sentiment_score = perform_sentiment_analysis(preprocessed_comment)
+            category = 'Other'
+            sub_category = 'Other'
+            best_match_score = float('-inf')  # Initialized to negative infinity
+    
+            # Tokenize the preprocessed_comment
+            tokens = word_tokenize(preprocessed_comment)
+    
+            for main_category, keywords in categories.items():
+                for keyword in keywords:
+                    keyword_embedding = keyword_embeddings[keyword]  # Use the precomputed keyword embedding
+                    similarity_score = compute_semantic_similarity(keyword_embedding, comment_embedding)
+                    # If similarity_score equals best_match_score, we pick the first match.
+                    # If similarity_score > best_match_score, we update best_match.
+                    if similarity_score >= best_match_score:
+                        category = main_category
+                        sub_category = keyword
+                        best_match_score = similarity_score
+    
+            # If in emerging issue mode and the best match score is below the threshold, set category and sub-category to 'No Match'
+            if emerging_issue_mode and best_match_score < similarity_threshold:
+                category = 'No Match'
+                sub_category = 'No Match'
+    
+            parsed_date = row[date_column].split(' ')[0] if isinstance(row[date_column], str) else None
+            row_extended = row.tolist() + [preprocessed_comment, summarized_text, category, sub_category, sentiment_score, best_match_score, parsed_date]
+            categorized_comments.append(row_extended)
+            sentiments.append(sentiment_score)
+            similarity_scores.append(similarity_score)
+            summarized_texts.append(summarized_text)
+            categories_list.append(category)
+    
+        # Create a new DataFrame with extended columns
+        existing_columns = feedback_data.columns.tolist()
+        additional_columns = [comment_column, 'Preprocessed Comment', 'Summarized Text', 'Category', 'Sub-Category', 'Sentiment', 'Best Match Score', 'Parsed Date']
+        num_additional_columns = len(additional_columns)
+        headers = existing_columns + additional_columns[:num_additional_columns]
+        trends_data = pd.DataFrame(categorized_comments, columns=headers)
+        trends_data['Summarized Text'] = summarized_texts
+        trends_data['Category'] = categories_list
+        trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce').dt.date
         
-                # Tokenize the preprocessed_comment
-                tokens = word_tokenize(preprocessed_comment)
-        
-                for main_category, keywords in categories.items():
-                    for keyword in keywords:
-                        keyword_embedding = keyword_embeddings[keyword]  # Use the precomputed keyword embedding
-                        similarity_score = compute_semantic_similarity(keyword_embedding, comment_embedding)
-                        # If similarity_score equals best_match_score, we pick the first match.
-                        # If similarity_score > best_match_score, we update best_match.
-                        if similarity_score >= best_match_score:
-                            category = main_category
-                            sub_category = keyword
-                            best_match_score = similarity_score
-        
-                # If in emerging issue mode and the best match score is below the threshold, set category and sub-category to 'No Match'
-                if emerging_issue_mode and best_match_score < similarity_threshold:
-                    category = 'No Match'
-                    sub_category = 'No Match'
-        
-                parsed_date = row[date_column].split(' ')[0] if isinstance(row[date_column], str) else None
-                row_extended = row.tolist() + [preprocessed_comment, summarized_text, category, sub_category, sentiment_score, best_match_score, parsed_date]
-                categorized_comments.append(row_extended)
-                sentiments.append(sentiment_score)
-                similarity_scores.append(similarity_score)
-                summarized_texts.append(summarized_text)
-                categories_list.append(category)
-        
-            # Create a new DataFrame with extended columns
-            existing_columns = feedback_data.columns.tolist()
-            additional_columns = [comment_column, 'Preprocessed Comment', 'Summarized Text', 'Category', 'Sub-Category', 'Sentiment', 'Best Match Score', 'Parsed Date']
-            num_additional_columns = len(additional_columns)  # Corrected line
-            headers = existing_columns + additional_columns[:num_additional_columns]
-            trends_data = pd.DataFrame(categorized_comments, columns=headers)
-            trends_data['Summarized Text'] = summarized_texts
-            trends_data['Category'] = categories_list
-            trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce').dt.date
-            
-            # Rename duplicate column names
-            trends_data = trends_data.loc[:, ~trends_data.columns.duplicated()]
-            duplicate_columns = set([col for col in trends_data.columns if trends_data.columns.tolist().count(col) > 1])
-            for column in duplicate_columns:
-                column_indices = [i for i, col in enumerate(trends_data.columns) if col == column]
-                for i, idx in enumerate(column_indices[1:], start=1):
-                    trends_data.columns.values[idx] = f"{column}_{i}"
-        
-            return trends_data
-
+        # Rename duplicate column names
+        trends_data = trends_data.loc[:, ~trends_data.columns.duplicated()]
+        duplicate_columns = set([col for col in trends_data.columns if trends_data.columns.tolist().count(col) > 1])
+        for column in duplicate_columns:
+            column_indices = [i for i, col in enumerate(trends_data.columns) if col == column]
+            for i, idx in enumerate(column_indices[1:], start=1):
+                trends_data.columns.values[idx] = f"{column}_{i}"
+    
+        return trends_data
 
 
 
