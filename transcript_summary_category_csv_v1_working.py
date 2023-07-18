@@ -1,59 +1,92 @@
-TypeError: Couldn't build proto file into descriptor pool: duplicate file name sentencepiece_model.proto
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
+2023-07-17 21:32:00.280 Uncaught app exception
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 263, in _get_or_create_cached_value
+    cached_result = cache.read_result(value_key)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_resource_api.py", line 500, in read_result
+    raise CacheKeyNotFoundError()
+streamlit.runtime.caching.cache_errors.CacheKeyNotFoundError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 311, in _handle_cache_miss
+    cached_result = cache.read_result(value_key)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_resource_api.py", line 500, in read_result
+    raise CacheKeyNotFoundError()
+streamlit.runtime.caching.cache_errors.CacheKeyNotFoundError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
     exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\auditsimilarity.py", line 332, in <module>
+  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\auditsimilarity.py", line 332, in <module>
     summarized_comment = summarize_large_text(comment)
                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\auditsimilarity.py", line 71, in summarize_large_text
+  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\auditsimilarity.py", line 71, in summarize_large_text
     summarized_chunks = [summarize_text(chunk) for chunk in chunks]
                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\auditsimilarity.py", line 71, in <listcomp>
+  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\auditsimilarity.py", line 71, in <listcomp>
     summarized_chunks = [summarize_text(chunk) for chunk in chunks]
                          ^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
+  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
     return cached_func(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
+  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
     return self._get_or_create_cached_value(args, kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
+  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
     return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
+  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
     computed_value = self._info.func(*func_args, **func_kwargs)
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\auditsimilarity.py", line 59, in summarize_text
+  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\auditsimilarity.py", line 59, in summarize_text
     summarization_pipeline = pipeline("summarization", model="google/pegasus-large")
                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\pipelines\__init__.py", line 885, in pipeline
+  File "C:\Python311\Lib\site-packages\transformers\pipelines\__init__.py", line 885, in pipeline
     tokenizer = AutoTokenizer.from_pretrained(
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\models\auto\tokenization_auto.py", line 711, in from_pretrained
+  File "C:\Python311\Lib\site-packages\transformers\models\auto\tokenization_auto.py", line 709, in from_pretrained
     return tokenizer_class_fast.from_pretrained(pretrained_model_name_or_path, *inputs, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\tokenization_utils_base.py", line 1812, in from_pretrained
+  File "C:\Python311\Lib\site-packages\transformers\tokenization_utils_base.py", line 1825, in from_pretrained
     return cls._from_pretrained(
            ^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\tokenization_utils_base.py", line 1975, in _from_pretrained
+  File "C:\Python311\Lib\site-packages\transformers\tokenization_utils_base.py", line 1988, in _from_pretrained
     tokenizer = cls(*init_inputs, **init_kwargs)
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\models\pegasus\tokenization_pegasus_fast.py", line 142, in __init__
+  File "C:\Python311\Lib\site-packages\transformers\models\pegasus\tokenization_pegasus_fast.py", line 142, in __init__
     super().__init__(
-File "C:\Python311\Lib\site-packages\transformers\tokenization_utils_fast.py", line 114, in __init__
+  File "C:\Python311\Lib\site-packages\transformers\tokenization_utils_fast.py", line 114, in __init__
     fast_tokenizer = convert_slow_tokenizer(slow_tokenizer)
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\convert_slow_tokenizer.py", line 1303, in convert_slow_tokenizer
+  File "C:\Python311\Lib\site-packages\transformers\convert_slow_tokenizer.py", line 1307, in convert_slow_tokenizer
     return converter_class(transformer_tokenizer).converted()
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\convert_slow_tokenizer.py", line 445, in __init__
+  File "C:\Python311\Lib\site-packages\transformers\convert_slow_tokenizer.py", line 445, in __init__
     from .utils import sentencepiece_model_pb2 as model_pb2
-File "C:\Python311\Lib\site-packages\transformers\utils\sentencepiece_model_pb2.py", line 28, in <module>
-    DESCRIPTOR = _descriptor.FileDescriptor(
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\google\protobuf\descriptor.py", line 1066, in __new__
-    return _message.default_pool.AddSerializedFile(serialized_pb)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\transformers\utils\sentencepiece_model_pb2.py", line 91, in <module>
+    _descriptor.EnumValueDescriptor(
+  File "C:\Python311\Lib\site-packages\google\protobuf\descriptor.py", line 796, in __new__
+    _message.Message._CheckCalledFromGeneratedFile()
+TypeError: Descriptors cannot not be created directly.
+If this call came from a _pb2.py file, your generated code is out of date and must be regenerated with protoc >= 3.19.0.
+If you cannot immediately regenerate your protos, some other possible workarounds are:
+ 1. Downgrade the protobuf package to 3.20.x or lower.
+ 2. Set PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python (but this will use pure-Python parsing and will be much slower).
+
+More information: https://developers.google.com/protocol-buffers/docs/news/2022-05-06#python-updates
+
+
+
+
+
+
+
+
 
 import pandas as pd
 import nltk
