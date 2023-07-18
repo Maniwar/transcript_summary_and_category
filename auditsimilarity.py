@@ -21,7 +21,7 @@ st.set_page_config(page_title="👨‍💻 Transcript Categorization")
 # Initialize BERT model
 @st.cache_resource
 def initialize_bert_model():
-    return SentenceTransformer('all-MiniLM-L6-v2')
+    return SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 
 # Create a dictionary to store precomputed embeddings
 @st.cache_resource
@@ -56,14 +56,14 @@ def perform_sentiment_analysis(text):
 # Function to summarize the text
 @st.cache_resource
 def summarize_text(text):
-    summarization_pipeline = pipeline("summarization", model="facebook/bart-large-cnn")
-    summary = summarization_pipeline(text, max_length=400, min_length=30, do_sample=False)
+    summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
+    summary = summarization_pipeline(text,  max_length=200, min_length=50, do_sample=False)
     return summary[0]['summary_text']
 
 # Function to summarize large texts
 def summarize_large_text(text):
     MAX_TOKENS = 2000  # Maximum number of tokens that BART can handle
-    MIN_TOKENS_FOR_SUMMARY = 250  # Any text longer than this will be summarized
+    MIN_TOKENS_FOR_SUMMARY = 100  # Any text longer than this will be summarized
     tokenized_text = nltk.word_tokenize(text)
 
     if len(tokenized_text) > MIN_TOKENS_FOR_SUMMARY:
@@ -259,7 +259,7 @@ default_categories = {
         "Had Trouble Getting Help Before Buying",
         "Couldn't Find Enough Product Information or Advice",
         "Customer Service Took Too Long to Respond",
-        "Received Incorrect Information",
+        "Received Incorrect Information From Customer Support",
         "Support Wasn't Helpful with Promotions or Deals",
         "Had Trouble Scheduling Store Visits or Pickups",
         "Got Inconsistent Information from Different Agents"
