@@ -1,77 +1,3 @@
-IndexError: index out of range in self
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\auditsimilarity.py", line 332, in <module>
-    summarized_comment = summarize_large_text(comment)
-                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\auditsimilarity.py", line 71, in summarize_large_text
-    summarized_chunks = [summarize_text(chunk) for chunk in chunks]
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\auditsimilarity.py", line 71, in <listcomp>
-    summarized_chunks = [summarize_text(chunk) for chunk in chunks]
-                         ^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
-    return cached_func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
-    return self._get_or_create_cached_value(args, kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
-    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
-    computed_value = self._info.func(*func_args, **func_kwargs)
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\auditsimilarity.py", line 60, in summarize_text
-    summary = summarization_pipeline(text, max_length=400, min_length=30, do_sample=False)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\pipelines\text2text_generation.py", line 265, in __call__
-    return super().__call__(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\pipelines\text2text_generation.py", line 165, in __call__
-    result = super().__call__(*args, **kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\pipelines\base.py", line 1119, in __call__
-    return self.run_single(inputs, preprocess_params, forward_params, postprocess_params)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\pipelines\base.py", line 1126, in run_single
-    model_outputs = self.forward(model_inputs, **forward_params)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\pipelines\base.py", line 1025, in forward
-    model_outputs = self._forward(model_inputs, **forward_params)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\pipelines\text2text_generation.py", line 187, in _forward
-    output_ids = self.model.generate(**model_inputs, **generate_kwargs)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\torch\utils\_contextlib.py", line 115, in decorate_context
-    return func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\generation\utils.py", line 1322, in generate
-    model_kwargs = self._prepare_encoder_decoder_kwargs_for_generation(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\generation\utils.py", line 638, in _prepare_encoder_decoder_kwargs_for_generation
-    model_kwargs["encoder_outputs"]: ModelOutput = encoder(**encoder_kwargs)
-                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\torch\nn\modules\module.py", line 1501, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\models\bart\modeling_bart.py", line 812, in forward
-    embed_pos = self.embed_positions(input)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\torch\nn\modules\module.py", line 1501, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\models\bart\modeling_bart.py", line 140, in forward
-    return super().forward(positions + self.offset)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\torch\nn\modules\sparse.py", line 162, in forward
-    return F.embedding(
-           ^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\torch\nn\functional.py", line 2210, in embedding
-    return torch.embedding(weight, input, padding_idx, scale_grad_by_freq, sparse)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 import pandas as pd
 import nltk
 from nltk.corpus import stopwords
@@ -136,7 +62,7 @@ def summarize_text(text):
 
 # Function to summarize large texts
 def summarize_large_text(text):
-    MAX_TOKENS = 4096  # Maximum number of tokens that BART can handle
+    MAX_TOKENS = 1024  # Maximum number of tokens that BART can handle
     MIN_TOKENS_FOR_SUMMARY = 250  # Any text longer than this will be summarized
     tokenized_text = nltk.word_tokenize(text)
 
@@ -210,6 +136,7 @@ default_categories = {
         "Confused Over How Bulk Discounts Applied",
         "Lacked Information on Seasonal Sales",
         "Faced Problems with Referral Program",
+        "Trade-in Credit Not Applied",
         "Encountered Unexpected Fees"
     ],
     "Pre-Order & Delivery Planning": [
@@ -246,18 +173,20 @@ default_categories = {
         "Payment Failed During Checkout",
         "Had Issues with Shopping Cart",
         "Couldn't Modify My Order",
-        "Had Trouble with Gift Wrapping or Special Instructions",
         "Couldn't Cancel My Order",
         "Didn't Receive Order Confirmation",
         "My Order Was Cancelled Unexpectedly",
         "No Option for Express Checkout",
+        "Price Changed at Checkout",
+        "Items in Cart were Not Saved",
+        "My Order Keeps Getting Cancelled",
         "Had Problems Reviewing Order Before Checkout"
     ],
     "Payment & Billing": [
         "Was Charged Incorrectly",
         "Payment Was Declined During Checkout",
+        "Financing Was Declined During Checkout",
         "Was Confused About Applying Discount/Coupon",
-        "Unexpected Conversion Rates Were Applied",
         "Payment Options Were Limited",
         "Had Difficulty Saving Payment Information",
         "Noticed Suspicious Charges",
@@ -347,7 +276,7 @@ default_categories = {
         "Self-Service Options Were Limited"
     ],
     "Technical/Product Support": [
-        "Need Help With Purchased Product",
+        "Need Help Troubleshooting Product",
         "Had Trouble Receiving Technical Support",
         "Troubleshooting Advice from Tech Support Wasn't Helpful",
         "Technical Issues Weren't Resolved by Support",
@@ -452,4 +381,3 @@ st.dataframe(top_10_items)
 # Print similarity scores
 st.subheader("Similarity Scores")
 st.dataframe(similarity_scores)
-
