@@ -62,7 +62,7 @@ def summarize_text(text):
 
 # Function to summarize large texts
 def summarize_large_text(text):
-    MAX_TOKENS = 1024  # Maximum number of tokens that BART can handle
+    MAX_TOKENS = 2000  # Maximum number of tokens that BART can handle
     MIN_TOKENS_FOR_SUMMARY = 250  # Any text longer than this will be summarized
     tokenized_text = nltk.word_tokenize(text)
 
