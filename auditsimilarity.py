@@ -21,7 +21,7 @@ st.set_page_config(page_title="👨‍💻 Transcript Categorization")
 # Initialize BERT model
 @st.cache_resource
 def initialize_bert_model():
-    return SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+    return SentenceTransformer('paraphrase-MiniLM-L12-v2')
 
 # Create a dictionary to store precomputed embeddings
 @st.cache_resource
@@ -57,7 +57,7 @@ def perform_sentiment_analysis(text):
 @st.cache_resource
 def summarize_text(text):
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
-    summary = summarization_pipeline(text,  max_length=200, min_length=50, do_sample=False)
+    summary = summarization_pipeline(text,  max_length=100, min_length=50, do_sample=False)
     return summary[0]['summary_text']
 
 # Function to summarize large texts
