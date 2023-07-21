@@ -1,30 +1,35 @@
-import streamlit as st
 import pandas as pd
 import nltk
-from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.sentiment import SentimentIntensityAnalyzer
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-import base64
-from io import BytesIO
 import datetime
 import numpy as np
 import xlsxwriter
 import chardet
+from transformers import pipeline
+import base64
+from io import BytesIO
+import streamlit as st
+import textwrap
+
+# Set page title and layout
+st.set_page_config(page_title="👨‍💻 Transcript Categorization")
 
 # Initialize BERT model
-@st.cache_resource  # Cache the BERT model as a resource
+@st.cache_resource
 def initialize_bert_model():
     #return SentenceTransformer('all-MiniLM-L6-v2')
     #return SentenceTransformer('all-MiniLM-L12-v2')
     #return SentenceTransformer('paraphrase-MiniLM-L6-v2')
-    #return SentenceTransformer('paraphrase-MiniLM-L12-v2')
-    return SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+    return SentenceTransformer('paraphrase-MiniLM-L12-v2')
+    #return SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
     #return SentenceTransformer('stsb-roberta-base')
     #return SentenceTransformer('distilroberta-base-paraphrase-v1')
 
 # Create a dictionary to store precomputed embeddings
+@st.cache_resource
 def compute_keyword_embeddings(keywords):
     model = initialize_bert_model()
     keyword_embeddings = {}
@@ -33,6 +38,7 @@ def compute_keyword_embeddings(keywords):
     return keyword_embeddings
 
 # Function to preprocess the text
+@st.cache_data
 def preprocess_text(text):
     # Convert to string if input is a float
     if isinstance(text, float):
@@ -44,25 +50,47 @@ def preprocess_text(text):
     # Return the text without removing stop words
     return text
 
-# Function to compute semantic similarity
-def compute_semantic_similarity(embedding1, embedding2):
-    return cosine_similarity([embedding1], [embedding2])[0][0]
-
 # Function to perform sentiment analysis
+@st.cache_data
 def perform_sentiment_analysis(text):
     analyzer = SentimentIntensityAnalyzer()
     sentiment_scores = analyzer.polarity_scores(text)
     compound_score = sentiment_scores['compound']
     return compound_score
 
+# Function to summarize the text
+@st.cache_resource
+def summarize_text(text, max_length=100, min_length=50):
+    # Initialize the summarization pipeline
+    summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
+
+    # Split the text into chunks of approximately 1024 words
+    text_chunks = textwrap.wrap(text, width=2000)
+
+    # Initialize an empty string to store the full summary
+    full_summary = ""
+
+    # For each chunk of text...
+    for chunk in text_chunks:
+        # Summarize the chunk and add the result to the full summary
+        summary = summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False)
+        full_summary += summary[0]['summary_text'] + " "
+
+    # Return the full summary
+    return full_summary.strip()
+
+# Function to compute semantic similarity
+def compute_semantic_similarity(embedding1, embedding2):
+    return cosine_similarity([embedding1], [embedding2])[0][0]
+
 # Streamlit interface
-st.title("👨‍💻 Feedback Categorization")
+st.title("👨‍💻 Transcript Categorization")
 
 # Add checkbox for emerging issue mode
 emerging_issue_mode = st.sidebar.checkbox("Emerging Issue Mode")
 
-#Sidebar description for emerging issue mode
-st.sidebar.write("Emerging issue mode allows you to set a minimum similiary score. If the comment doesn't match up to the categories based on the threashold it will be set to  NO MATCH.")
+# Sidebar description for emerging issue mode
+st.sidebar.write("Emerging issue mode allows you to set a minimum similarity score. If the comment doesn't match up to the categories based on the threshold, it will be set to NO MATCH.")
 
 # Add slider for semantic similarity threshold in emerging issue mode
 similarity_threshold = None
@@ -76,154 +104,221 @@ if emerging_issue_mode:
 # Edit categories and keywords
 st.sidebar.header("Edit Categories")
 default_categories = {
-    "Product Discovery Issues": [
-        "Difficulty Finding Products",
-        "Insufficient Product Information",
-        "Mobile Webpage Layout Problems",
-        "Search Functionality Problems",
-        "Issues with Product Filters",
-        "User Interface Discrepancies"
+    "Product Discovery & Selection": [
+        "Had Trouble Searching for a Specific Product",
+        "Found Product Information Unclear or Incomplete",
+        "Lacked Enough Information in Product Reviews",
+        "Product Specifications Seemed Inaccurate",
+        "Product Images Seemed Outdated",
+        "Couldn't Determine if Product Was in Stock",
+        "Struggled to Compare Different Products",
+        "Wanted Product Wasn't Available",
+        "Confused About Different Product Options",
+        "Overwhelmed by Too Many Product Options",
+        "Product Filters Didn't Help Narrow Down Choices",
+        "Products Seemed Misclassified",
+        "Product Recommendations Didn't Seem Relevant",
+        "Had Trouble Saving Favorite Products",
+        "Didn't Get Enough Information from Product Manufacturer"
     ],
-    "Product Selection Issues": [
-        "Problems Comparing Products",
-        "Confusing Product Descriptions",
-        "Issues with Configurator Performance",
-        "Configurator Inaccuracies",
-        "Usability Issues with Configurator",
-        "Limited Product Varieties",
-        "Unavailability of Certain Sizes",
-        "Product Not Available In my Area or Zip code",
-        "Product Availability Best Buy Pick-up Option Unclear ",
-        "Frequent Stock Shortages"
+    "Stock & Availability": [
+        "Product Was Out of Stock",
+        "Had to Wait Too Long for Product Restock",
+        "Product Was Excluded from Promotions",
+        "Limited Availability for Deals",
+        "Deal Restrictions Were Based on My Location",
+        "Was Restricted on the Quantity I Could Purchase"
     ],
-    "Cart & Checkout Issues": [
-        "Complexities in Cart Management",
-        "Items were removed from my Cart",
-        "Product Unavailability in Cart",
-        "Limited Shipping Methods",
-        "Complicated Checkout Process",
-        "Inconveniences in Store Pick-up",
-        "Delivery Date Calculation Errors",
-        "Address Verification Problems"
+    "Pricing & Promotions": [
+        "Promotion Didn't Apply to My Purchase",
+        "Promotion Terms Were Unclear",
+        "Saw Outdated Promotion Still Being Displayed",
+        "Deal Fulfillment Didn't Go Through",
+        "Had Trouble Locating Promotions on the Site",
+        "Faced Issues When Applying Discounts",
+        "Noticed Inconsistencies in Pricing",
+        "Discounts Were Not Clearly Visible",
+        "Encountered Problems with Membership Program",
+        "Felt Pricing Was Deceptive",
+        "Confused Over How Bulk Discounts Applied",
+        "Lacked Information on Seasonal Sales",
+        "Faced Problems with Referral Program",
+        "Trade-in Credit Not Applied",
+        "Encountered Unexpected Fees"
     ],
-    "Order Processing Issues": [
-        "My order keeps getting cancelled",
-        "Delays due to Stock Issues",
-        "Order Modification Difficulties"
+    "Pre-Order & Delivery Planning": [
+        "Encountered Problems During Pre-Order",
+        "Experienced Delays in Pre-Order",
+        "Received Inaccurate Pre-Order Information",
+        "Pre-Order Was Cancelled Unexpectedly",
+        "Faced Unexpected Charges for Pre-Order",
+        "Didn't Receive Updates on Pre-Order Status",
+        "Had Issues with Delivery of Pre-Ordered Product",
+        "Pre-Order Process Was Confusing",
+        "Couldn't Pre-Order the Product",
+        "Delivery Timelines Were Unclear",
+        "Mismatch Between Pre-Ordered and Delivered Product",
+        "Had Issues with Partial Payments",
+        "Had Trouble Modifying Pre-Order Details",
+        "Limited Options for Delivery Date",
+        "Had Issues with Delivering Split Orders"
     ],
-    "Payment Processing Issues": [
-        "Payment Declined",
-        "Unauthorized Charges",
-        "Payment Gateway Errors",
-        "Payment Verification Issues",
-        "Refund Delays",
-        "Coupon Code Malfunctions"
+    "Website & App Interface": [
+        "Experienced Glitches on Website",
+        "Website Performance Was Slow",
+        "Had Trouble Navigating the Interface",
+        "Found Broken Links on Website",
+        "Couldn't Locate Features on Website",
+        "User Experience Was Inconsistent Across Different Devices",
+        "User Interface Was Confusing",
+        "Had Issues with Mobile Functionality",
+        "Website Didn't Adjust Well to My Location"
     ],
-    "Delivery Issues": [
-        "Promised Delivery Date was Missed or Late",
-        "Order was not Delivered",
-        "Problems with UPS",
-        "Problems with AGS",
-        "Problems with XPO",
-        "Problems with FEDEX",
-        "Poor Condition of Delivered Packages",
-        "Problems with In-store Pick-up",
-        "Package contained wrong product",
-        "Missing Items in Delivered Package",
-        "Received Damaged or Defective Item",
-        "Limited Delivery Zones"
+    "Order Management & Checkout": [
+        "Experienced Glitches During Ordering",
+        "Checkout Process Was Too Lengthy",
+        "Payment Failed During Checkout",
+        "Had Issues with Shopping Cart",
+        "Couldn't Modify My Order",
+        "Couldn't Cancel My Order",
+        "Didn't Receive Order Confirmation",
+        "My Order Was Cancelled Unexpectedly",
+        "No Option for Express Checkout",
+        "Price Changed at Checkout",
+        "Items in Cart were Not Saved",
+        "My Order Keeps Getting Cancelled",
+        "Had Problems Reviewing Order Before Checkout"
     ],
-    "Installation Problems": [
-        "Complex Installation Process",
-        "Unprofessional Installation Process",
-        "Vague Installation Instructions",
-        "Missing Installation Parts",
-        "Issues Detected Post-Installation",
-        "Inadequate Installation Support",
-        "Incompatibility of Products"
+    "Payment & Billing": [
+        "Was Charged Incorrectly",
+        "Payment Was Declined During Checkout",
+        "Financing Was Declined During Checkout",
+        "Was Confused About Applying Discount/Coupon",
+        "Payment Options Were Limited",
+        "Had Difficulty Saving Payment Information",
+        "Noticed Suspicious Charges",
+        "Had Problems with Installment Payment",
+        "Had Difficulty Splitting Payment",
+        "Concerned About Data Security During Payment",
+        "Had Problems with Tax Calculation"
     ],
-    "Service & Repair Problems": [
-        "Inferior On-Site Service",
-        "Delayed Service Response",
-        "Substandard Repair Work",
-        "Slow Repair Process",
-        "Lack of Cost Transparency in Service & Repair",
-        "Poor Communication during Service & Repair",
-        "Insufficient Warranty Coverage"
+    "Delivery & Shipping": [
+        "Delivery Was Late",
+        "Product Wasn't Delivered",
+        "Received Wrong Product",
+        "Product Was Damaged Upon Arrival",
+        "Delivery Was Incomplete",
+        "Had Problems Tracking My Delivery",
+        "Had Issues with the Courier Service",
+        "Delivery Options Were Limited",
+        "Product Packaging Was Poor",
+        "Had Difficulties with International Shipping",
+        "Delivery Restrictions Were Based on My Zip Code",
+        "Didn't Receive Updates on Delivery Status",
+        "Limited Options for Same-Day/Next-Day Delivery",
+        "Fragile Items Were Handled Poorly During Delivery",
+        "Didn't Get Adequate Communication from Courier",
+        "Delivery Address Was Incorrect"
     ],
-    "Customer Support Issues": [
-        "Long Wait Times for Support Response",
-        "Unsatisfactory Support Quality",
-        "Multiple Chat Transfers",
-        "Limited Knowledge of Support Staff",
-        "Unresolved Customer Issues",
-        "Poor Follow-up Support",
-        "Difficulty Reaching Support",
-        "Unresponsive Support Staff",
-        "Inaccessible Support Channels",
-        "Lack of Empathy from Support Staff"
+    "Store & Pickup Services": [
+        "Had Trouble Locating Stores",
+        "Mismatch Between Chosen and Actual Pickup Location",
+        "Had to Change Pickup Store",
+        "Instructions for In-Store Pickup Were Unclear",
+        "Received Poor Support In-Store",
+        "Waited Too Long for Pickup",
+        "Had Difficulty Scheduling Pickup Time",
+        "Confused About Store Purchase Return Policy",
+        "Had Difficulty Accessing Order History"
     ],
-    "Return & Refund Issues": [
-        "Complex Return Process",
-        "Delayed Refund Process",
-        "Unclear Return Policy",
-        "Disagreement over Return Shipping Responsibility",
-        "Brief Return Window",
-        "Exchange Policy Problems",
-        "Refund Amount Discrepancies"
+    "Product Installation & Setup": [
+        "Had Difficulty During Product Installation",
+        "Installation Instructions Were Missing",
+        "Had Problems with Product After Installation",
+        "Didn't Get Enough Assistance During Setup",
+        "Received Incorrect Assembly Parts",
+        "Had Issues with Product Compatibility",
+        "Faced Unexpected Requirements During Setup",
+        "Mismatch Between Product and Manual",
+        "Lacked Technical Support",
+        "Didn't Find Troubleshooting Guides Helpful",
+        "Needed Professional Installation",
+        "Needed Additional Tools Unexpectedly",
+        "Had Problems After Setup Update"
     ],
-    "Website & Mobile App Performance Issues": [
-        "Slow Website Load Speed",
-        "Mobile App Usability Issues",
-        "Website Design Criticisms",
-        "Challenges Navigating Website",
-        "Distractions from Pop-ups",
-        "Poor Website Scrolling Experience"
+    "Returns, Refunds & Exchanges": [
+        "Had Difficulty Initiating a Return",
+        "I want a Refund",
+        "I want an Exchange",
+        "Refund Wasn't Issued After Return",
+        "Was Ineligible for Return",
+        "Confused Over Restocking Fees",
+        "Had Problems with Pickup for Return",
+        "Refund Process Was Too Long",
+        "Discrepancies in Partial Refunds",
+        "Had Difficulty Tracking Returned Item",
+        "Had Difficulties with International Return",
+        "Product Was Damaged During Return Shipping",
+        "Limited Options for Size/Color Exchanges",
+        "Had Problems with Return Label"
     ],
-    "Customer Communication Issues": [
-        "Excessive Email Notifications",
-        "Irrelevant Email Content",
-        "Issues Unsubscribing from Emails",
-        "Poor Response to Customer Feedback",
-        "Delays in Communication"
+    "Pre-Purchase Assistance": [
+        "Had Trouble Getting Help Before Buying",
+        "Couldn't Find Enough Product Information or Advice",
+        "Customer Service Took Too Long to Respond",
+        "Received Incorrect Information",
+        "Support Wasn't Helpful with Promotions or Deals",
+        "Had Trouble Scheduling Store Visits or Pickups",
+        "Got Inconsistent Information from Different Agents"
     ],
-    "Privacy & Security Issues": [
-        "Concerns about Data Privacy",
-        "Concerns about Data Security",
-        "Problems with Login",
-        "Two-Factor Authentication Difficulties",
-        "Poor Account Management",
-        "Lack of Transparency in Data Usage",
-        "Experiences of Scams & Phishing",
-        "Payment Information Security Concerns"
+    "Post-Purchase Assistance": [
+        "Had Trouble Contacting Support After Purchase",
+        "Post-Purchase Customer Service Response Was Slow",
+        "Issues Were Not Resolved by Customer Service",
+        "Didn't Get Enough Help Setting Up or Using Product",
+        "Trouble Understanding Product Features Due to Poor Support",
+        "Had Difficulty Getting Assistance During Product Installation",
+        "Had Trouble Contacting Customer Service for Delivery-Related Issues",
+        "Had Trouble Escalating Issues",
+        "Self-Service Options Were Limited"
     ],
-    "Product Feedback": [
-        "Absence of Charger",
-        "Product Durability Concerns",
-        "Issues with Firmware",
-        "General Product Feedback",
-        "Problems with Mobile Apps",
-        "Problems with Shop Mobile App",
-        "Software Malfunctions",
-        "Hardware Problems",
-        "Poor Product Quality",
-        "Poor Product Performance"
+    "Technical/Product Support": [
+        "Need Help Troubleshooting Product",
+        "Had Trouble Receiving Technical Support",
+        "Troubleshooting Advice from Tech Support Wasn't Helpful",
+        "Technical Issues Weren't Resolved by Support",
+        "Technical Instructions Were Difficult to Understand",
+        "Tech Support Didn't Follow Up",
+        "Received Incorrect Advice from Tech Support",
+        "Automated Technical Support Was Problematic",
+        "Technical Support Hours Were Limited"
     ],
-    "Policy Feedback": [
-        "Inability to Replace Items",
-        "Concerns about Device Locking Policies",
-        "Feedback on Trade-In Process",
-        "Shipping Policy Critiques",
-        "Return Policy Critiques"
+    "Repair Services": [
+        "Had Trouble Scheduling Repair",
+        "Repair Work Was Unsatisfactory",
+        "Repair Took Too Long",
+        "Confused About Repair Charges",
+        "No Follow-Up After Repair",
+        "Received Incorrect Advice from Repair Service",
+        "Repair Resolution Process Was Inefficient"
     ],
-    "Unexpected Pricing": [
-        "Unexpected Price Changes in Cart",
-        "Issues with Applying Discounts",
-        "Employee Purchase Program Difficulties",
-        "First Responder Program Difficulties",
-        "Lack of Pricing Transparency",
-        "Uncompetitive Pricing"
-    ]
+    "Account Management": [
+        "Had Difficulty Logging In",
+        "Couldn't Retrieve Lost Password",
+        "Didn't Receive Account Verification Email",
+        "Had Trouble Changing Account Information",
+        "Had Problems with Account Security",
+        "Experienced Glitches During Account Creation",
+        "Not Able to Deactivate Account",
+        "Had Issues with Privacy Settings",
+        "Account Was Suspended or Banned Unexpectedly",
+        "Had Difficulty Linking Multiple Accounts",
+        "Didn't Get Email Notifications",
+        "Had Issues with Subscription Management",
+        "Couldn't Track Order History",
+        "Received Unwanted Marketing Emails",
+        "Trouble Setting Preferences in Account"
+    ],
 }
 categories = {}
 for category, keywords in default_categories.items():
@@ -245,6 +340,9 @@ comment_column = None
 date_column = None
 trends_data = None
 
+# Define an empty DataFrame for feedback_data
+feedback_data = pd.DataFrame()
+
 if uploaded_file is not None:
     # Read customer feedback from uploaded file
     csv_data = uploaded_file.read()
@@ -264,18 +362,28 @@ if uploaded_file is not None:
     if comment_column is not None and date_column is not None and grouping_option is not None and process_button:
         # Check if the processed DataFrame is already cached
         @st.cache_data
-        def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold, similarity_score, best_match_score):
+        def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold):
             # Compute keyword embeddings
             keyword_embeddings = compute_keyword_embeddings([keyword for keywords in categories.values() for keyword in keywords])
-            # Initialize lists for categorized_comments, sentiments, and similarity scores
+
+            # Initialize lists for categorized_comments, sentiments, similarity scores, and summaries
             categorized_comments = []
             sentiments = []
             similarity_scores = []
+            summarized_texts = []
+            categories_list = []
+
+            # Initialize the BERT model once
+            model = initialize_bert_model()
 
             # Process each comment
             for index, row in feedback_data.iterrows():
                 preprocessed_comment = preprocess_text(row[comment_column])
-                comment_embedding = initialize_bert_model().encode([preprocessed_comment])[0]  # Compute the comment embedding once
+                if len(preprocessed_comment.split()) > 100:
+                    summarized_text = summarize_text(preprocessed_comment)
+                else:
+                    summarized_text = preprocessed_comment
+                comment_embedding = model.encode([summarized_text])[0]  # Compute the comment embedding once
                 sentiment_score = perform_sentiment_analysis(preprocessed_comment)
                 category = 'Other'
                 sub_category = 'Other'
@@ -301,14 +409,16 @@ if uploaded_file is not None:
                     sub_category = 'No Match'
 
                 parsed_date = row[date_column].split(' ')[0] if isinstance(row[date_column], str) else None
-                row_extended = row.tolist() + [preprocessed_comment, category, sub_category, sentiment_score, best_match_score, parsed_date]
+                row_extended = row.tolist() + [preprocessed_comment, summarized_text, category, sub_category, sentiment_score, best_match_score, parsed_date]
                 categorized_comments.append(row_extended)
                 sentiments.append(sentiment_score)
                 similarity_scores.append(similarity_score)
+                summarized_texts.append(summarized_text)
+                categories_list.append(category)
 
             # Create a new DataFrame with extended columns
             existing_columns = feedback_data.columns.tolist()
-            additional_columns = [comment_column, 'Category', 'Sub-Category', 'Sentiment', 'Best Match Score', 'Parsed Date']
+            additional_columns = [comment_column, 'Summarized Text', 'Category', 'Sub-Category', 'Sentiment', 'Best Match Score', 'Parsed Date']
             headers = existing_columns + additional_columns
             trends_data = pd.DataFrame(categorized_comments, columns=headers)
             trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce').dt.date
@@ -323,9 +433,8 @@ if uploaded_file is not None:
 
             return trends_data
 
-
         # Process feedback data and cache the result
-        trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold, similarity_score, best_match_score)
+        trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold)
 
         # Display trends and insights
         if trends_data is not None:
@@ -374,6 +483,7 @@ if uploaded_file is not None:
                     fill_value=0
                 )
 
+
             pivot.columns = pivot.columns.astype(str)  # Convert column labels to strings
 
             # Sort the pivot table rows based on the highest count
@@ -403,12 +513,12 @@ if uploaded_file is not None:
 
             # Create pivot tables with counts
             pivot1 = trends_data.groupby('Category')['Sentiment'].agg(['mean', 'count'])
-            pivot1.columns = ['Average Sentiment', 'Survey Count']
-            pivot1 = pivot1.sort_values('Survey Count', ascending=False)
+            pivot1.columns = ['Average Sentiment', 'Quantity']
+            pivot1 = pivot1.sort_values('Quantity', ascending=False)
 
             pivot2 = trends_data.groupby(['Category', 'Sub-Category'])['Sentiment'].agg(['mean', 'count'])
-            pivot2.columns = ['Average Sentiment', 'Survey Count']
-            pivot2 = pivot2.sort_values('Survey Count', ascending=False)
+            pivot2.columns = ['Average Sentiment', 'Quantity']
+            pivot2 = pivot2.sort_values('Quantity', ascending=False)
 
             # Reset index for pivot2
             pivot2_reset = pivot2.reset_index()
@@ -418,17 +528,17 @@ if uploaded_file is not None:
             pivot2_reset.set_index('Sub-Category', inplace=True)
 
             # Create and display a bar chart for pivot1 with counts
-            st.bar_chart(pivot1['Survey Count'])
+            st.bar_chart(pivot1['Quantity'])
 
             # Display pivot table with counts for Category
-            st.subheader("Category vs Sentiment and Survey Count")
+            st.subheader("Category vs Sentiment and Quantity")
             st.dataframe(pivot1)
 
             # Create and display a bar chart for pivot2 with counts
-            st.bar_chart(pivot2_reset['Survey Count'])
+            st.bar_chart(pivot2_reset['Quantity'])
 
             # Display pivot table with counts for Sub-Category
-            st.subheader("Sub-Category vs Sentiment and Survey Count")
+            st.subheader("Sub-Category vs Sentiment and Quantity")
             st.dataframe(pivot2_reset)
 
             # Display top 10 most recent comments for each of the 10 top subcategories
@@ -445,7 +555,7 @@ if uploaded_file is not None:
                 filtered_data = trends_data[trends_data['Sub-Category'] == subcategory]
 
                 # Get the top 10 most recent comments for the current subcategory
-                top_comments = filtered_data.nlargest(10, 'Parsed Date')[['Parsed Date', comment_column,'Sentiment', 'Best Match Score']]
+                top_comments = filtered_data.nlargest(10, 'Parsed Date')[['Parsed Date', comment_column,'Summarized Text','Sentiment', 'Best Match Score']]
 
                 # Format the parsed date to display only the date part
                 top_comments['Parsed Date'] = top_comments['Parsed Date'].dt.date.astype(str)
