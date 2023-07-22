@@ -1,3 +1,4 @@
+import pandas as pd
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.sentiment import SentimentIntensityAnalyzer
@@ -49,16 +50,13 @@ def preprocess_text(text):
     # Return the text without removing stop words
     return text
 
-# Initialize the sentiment analyzer
-sentiment_analyzer = SentimentIntensityAnalyzer()
-
 # Function to perform sentiment analysis
 @st.cache_data
-def perform_sentiment_analysis(text, analyzer):
+def perform_sentiment_analysis(text):
+    analyzer = SentimentIntensityAnalyzer()
     sentiment_scores = analyzer.polarity_scores(text)
     compound_score = sentiment_scores['compound']
     return compound_score
-
 
 # Function to summarize the text
 @st.cache_resource
@@ -69,14 +67,17 @@ def summarize_text(text, max_length=100, min_length=50):
     # Split the text into chunks of approximately 1024 words
     text_chunks = textwrap.wrap(text, width=2000)
 
-    # Summarize all chunks at once
-    summaries = summarization_pipeline(text_chunks, max_length=max_length, min_length=min_length, do_sample=False)
+    # Initialize an empty string to store the full summary
+    full_summary = ""
 
-    # Join the summaries together
-    full_summary = " ".join([summary['summary_text'] for summary in summaries])
+    # For each chunk of text...
+    for chunk in text_chunks:
+        # Summarize the chunk and add the result to the full summary
+        summary = summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False)
+        full_summary += summary[0]['summary_text'] + " "
 
+    # Return the full summary
     return full_summary.strip()
-
 
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
@@ -103,7 +104,222 @@ if emerging_issue_mode:
 # Edit categories and keywords
 st.sidebar.header("Edit Categories")
 default_categories = {
-    }
+    "Product Discovery & Selection": [
+        "Had Trouble Searching for a Specific Product",
+        "Found Product Information Unclear or Incomplete",
+        "Lacked Enough Information in Product Reviews",
+        "Product Specifications Seemed Inaccurate",
+        "Product Images Seemed Outdated",
+        "Couldn't Determine if Product Was in Stock",
+        "Struggled to Compare Different Products",
+        "Wanted Product Wasn't Available",
+        "Confused About Different Product Options",
+        "Overwhelmed by Too Many Product Options",
+        "Product Filters Didn't Help Narrow Down Choices",
+        "Products Seemed Misclassified",
+        "Product Recommendations Didn't Seem Relevant",
+        "Had Trouble Saving Favorite Products",
+        "Didn't Get Enough Information from Product Manufacturer"
+    ],
+    "Stock & Availability": [
+        "Product Was Out of Stock",
+        "Had to Wait Too Long for Product Restock",
+        "Product Was Excluded from Promotions",
+        "Limited Availability for Deals",
+        "Deal Restrictions Were Based on My Location",
+        "Was Restricted on the Quantity I Could Purchase"
+    ],
+    "Pricing & Promotions": [
+        "Promotion Didn't Apply to My Purchase",
+        "Promotion Terms Were Unclear",
+        "Saw Outdated Promotion Still Being Displayed",
+        "Deal Fulfillment Didn't Go Through",
+        "Had Trouble Locating Promotions on the Site",
+        "Faced Issues When Applying Discounts",
+        "Noticed Inconsistencies in Pricing",
+        "Discounts Were Not Clearly Visible",
+        "Encountered Problems with Membership Program",
+        "Felt Pricing Was Deceptive",
+        "Confused Over How Bulk Discounts Applied",
+        "Lacked Information on Seasonal Sales",
+        "Faced Problems with Referral Program",
+        "Trade-in Credit Not Applied",
+        "Encountered Unexpected Fees"
+    ],
+    "Pre-Order & Delivery Planning": [
+        "Encountered Problems During Pre-Order",
+        "Experienced Delays in Pre-Order",
+        "Received Inaccurate Pre-Order Information",
+        "Pre-Order Was Cancelled Unexpectedly",
+        "Faced Unexpected Charges for Pre-Order",
+        "Didn't Receive Updates on Pre-Order Status",
+        "Had Issues with Delivery of Pre-Ordered Product",
+        "Pre-Order Process Was Confusing",
+        "Couldn't Pre-Order the Product",
+        "Delivery Timelines Were Unclear",
+        "Mismatch Between Pre-Ordered and Delivered Product",
+        "Had Issues with Partial Payments",
+        "Had Trouble Modifying Pre-Order Details",
+        "Limited Options for Delivery Date",
+        "Had Issues with Delivering Split Orders"
+    ],
+    "Website & App Interface": [
+        "Experienced Glitches on Website",
+        "Website Performance Was Slow",
+        "Had Trouble Navigating the Interface",
+        "Found Broken Links on Website",
+        "Couldn't Locate Features on Website",
+        "User Experience Was Inconsistent Across Different Devices",
+        "User Interface Was Confusing",
+        "Had Issues with Mobile Functionality",
+        "Website Didn't Adjust Well to My Location"
+    ],
+    "Order Management & Checkout": [
+        "Experienced Glitches During Ordering",
+        "Checkout Process Was Too Lengthy",
+        "Payment Failed During Checkout",
+        "Had Issues with Shopping Cart",
+        "Couldn't Modify My Order",
+        "Couldn't Cancel My Order",
+        "Didn't Receive Order Confirmation",
+        "My Order Was Cancelled Unexpectedly",
+        "No Option for Express Checkout",
+        "Price Changed at Checkout",
+        "Items in Cart were Not Saved",
+        "My Order Keeps Getting Cancelled",
+        "Had Problems Reviewing Order Before Checkout"
+    ],
+    "Payment & Billing": [
+        "Was Charged Incorrectly",
+        "Payment Was Declined During Checkout",
+        "Financing Was Declined During Checkout",
+        "Was Confused About Applying Discount/Coupon",
+        "Payment Options Were Limited",
+        "Had Difficulty Saving Payment Information",
+        "Noticed Suspicious Charges",
+        "Had Problems with Installment Payment",
+        "Had Difficulty Splitting Payment",
+        "Concerned About Data Security During Payment",
+        "Had Problems with Tax Calculation"
+    ],
+    "Delivery & Shipping": [
+        "Delivery Was Late",
+        "Product Wasn't Delivered",
+        "Received Wrong Product",
+        "Product Was Damaged Upon Arrival",
+        "Delivery Was Incomplete",
+        "Had Problems Tracking My Delivery",
+        "Had Issues with the Courier Service",
+        "Delivery Options Were Limited",
+        "Product Packaging Was Poor",
+        "Had Difficulties with International Shipping",
+        "Delivery Restrictions Were Based on My Zip Code",
+        "Didn't Receive Updates on Delivery Status",
+        "Limited Options for Same-Day/Next-Day Delivery",
+        "Fragile Items Were Handled Poorly During Delivery",
+        "Didn't Get Adequate Communication from Courier",
+        "Delivery Address Was Incorrect"
+    ],
+    "Store & Pickup Services": [
+        "Had Trouble Locating Stores",
+        "Mismatch Between Chosen and Actual Pickup Location",
+        "Had to Change Pickup Store",
+        "Instructions for In-Store Pickup Were Unclear",
+        "Received Poor Support In-Store",
+        "Waited Too Long for Pickup",
+        "Had Difficulty Scheduling Pickup Time",
+        "Confused About Store Purchase Return Policy",
+        "Had Difficulty Accessing Order History"
+    ],
+    "Product Installation & Setup": [
+        "Had Difficulty During Product Installation",
+        "Installation Instructions Were Missing",
+        "Had Problems with Product After Installation",
+        "Didn't Get Enough Assistance During Setup",
+        "Received Incorrect Assembly Parts",
+        "Had Issues with Product Compatibility",
+        "Faced Unexpected Requirements During Setup",
+        "Mismatch Between Product and Manual",
+        "Lacked Technical Support",
+        "Didn't Find Troubleshooting Guides Helpful",
+        "Needed Professional Installation",
+        "Needed Additional Tools Unexpectedly",
+        "Had Problems After Setup Update"
+    ],
+    "Returns, Refunds & Exchanges": [
+        "Had Difficulty Initiating a Return",
+        "I want a Refund",
+        "I want an Exchange",
+        "Refund Wasn't Issued After Return",
+        "Was Ineligible for Return",
+        "Confused Over Restocking Fees",
+        "Had Problems with Pickup for Return",
+        "Refund Process Was Too Long",
+        "Discrepancies in Partial Refunds",
+        "Had Difficulty Tracking Returned Item",
+        "Had Difficulties with International Return",
+        "Product Was Damaged During Return Shipping",
+        "Limited Options for Size/Color Exchanges",
+        "Had Problems with Return Label"
+    ],
+    "Pre-Purchase Assistance": [
+        "Had Trouble Getting Help Before Buying",
+        "Couldn't Find Enough Product Information or Advice",
+        "Customer Service Took Too Long to Respond",
+        "Received Incorrect Information",
+        "Support Wasn't Helpful with Promotions or Deals",
+        "Had Trouble Scheduling Store Visits or Pickups",
+        "Got Inconsistent Information from Different Agents"
+    ],
+    "Post-Purchase Assistance": [
+        "Had Trouble Contacting Support After Purchase",
+        "Post-Purchase Customer Service Response Was Slow",
+        "Issues Were Not Resolved by Customer Service",
+        "Didn't Get Enough Help Setting Up or Using Product",
+        "Trouble Understanding Product Features Due to Poor Support",
+        "Had Difficulty Getting Assistance During Product Installation",
+        "Had Trouble Contacting Customer Service for Delivery-Related Issues",
+        "Had Trouble Escalating Issues",
+        "Self-Service Options Were Limited"
+    ],
+    "Technical/Product Support": [
+        "Need Help Troubleshooting Product",
+        "Had Trouble Receiving Technical Support",
+        "Troubleshooting Advice from Tech Support Wasn't Helpful",
+        "Technical Issues Weren't Resolved by Support",
+        "Technical Instructions Were Difficult to Understand",
+        "Tech Support Didn't Follow Up",
+        "Received Incorrect Advice from Tech Support",
+        "Automated Technical Support Was Problematic",
+        "Technical Support Hours Were Limited"
+    ],
+    "Repair Services": [
+        "Had Trouble Scheduling Repair",
+        "Repair Work Was Unsatisfactory",
+        "Repair Took Too Long",
+        "Confused About Repair Charges",
+        "No Follow-Up After Repair",
+        "Received Incorrect Advice from Repair Service",
+        "Repair Resolution Process Was Inefficient"
+    ],
+    "Account Management": [
+        "Had Difficulty Logging In",
+        "Couldn't Retrieve Lost Password",
+        "Didn't Receive Account Verification Email",
+        "Had Trouble Changing Account Information",
+        "Had Problems with Account Security",
+        "Experienced Glitches During Account Creation",
+        "Not Able to Deactivate Account",
+        "Had Issues with Privacy Settings",
+        "Account Was Suspended or Banned Unexpectedly",
+        "Had Difficulty Linking Multiple Accounts",
+        "Didn't Get Email Notifications",
+        "Had Issues with Subscription Management",
+        "Couldn't Track Order History",
+        "Received Unwanted Marketing Emails",
+        "Trouble Setting Preferences in Account"
+    ],
+}
 categories = {}
 for category, keywords in default_categories.items():
     category_name = st.sidebar.text_input(f"{category} Category", value=category)
@@ -160,41 +376,41 @@ if uploaded_file is not None:
             # Initialize the BERT model once
             model = initialize_bert_model()
 
-           # Initialize the sentiment analyzer outside the loop
-            sentiment_analyzer = SentimentIntensityAnalyzer()
-            
             # Process each comment
-            preprocessed_comments = [preprocess_text(row[comment_column]) for _, row in feedback_data.iterrows()]
-            summarized_texts = [summarize_text(text) if len(text.split()) > 100 else text for text in preprocessed_comments]
-            comment_embeddings = model.encode(summarized_texts)  # Compute all the embeddings at once
-            
-            for i, row in enumerate(feedback_data.itertuples()):
-                sentiment_score = perform_sentiment_analysis(preprocessed_comments[i], sentiment_analyzer)
+            for index, row in feedback_data.iterrows():
+                preprocessed_comment = preprocess_text(row[comment_column])
+                if len(preprocessed_comment.split()) > 100:
+                    summarized_text = summarize_text(preprocessed_comment)
+                else:
+                    summarized_text = preprocessed_comment
+                comment_embedding = model.encode([summarized_text])[0]  # Compute the comment embedding once
+                sentiment_score = perform_sentiment_analysis(preprocessed_comment)
                 category = 'Other'
                 sub_category = 'Other'
                 best_match_score = float('-inf')  # Initialized to negative infinity
-            
+
+                # Tokenize the preprocessed_comment
+                tokens = word_tokenize(preprocessed_comment)
+
                 for main_category, keywords in categories.items():
                     for keyword in keywords:
                         keyword_embedding = keyword_embeddings[keyword]  # Use the precomputed keyword embedding
-                        similarity_score = compute_semantic_similarity(keyword_embedding, comment_embeddings[i])
+                        similarity_score = compute_semantic_similarity(keyword_embedding, comment_embedding)
                         # If similarity_score equals best_match_score, we pick the first match.
                         # If similarity_score > best_match_score, we update best_match.
                         if similarity_score >= best_match_score:
                             category = main_category
                             sub_category = keyword
                             best_match_score = similarity_score
-            
+
                 # If in emerging issue mode and the best match score is below the threshold, set category and sub-category to 'No Match'
                 if emerging_issue_mode and best_match_score < similarity_threshold:
                     category = 'No Match'
                     sub_category = 'No Match'
-            
+
                 parsed_date = row[date_column].split(' ')[0] if isinstance(row[date_column], str) else None
-                row_extended = list(row) + [preprocessed_comments[i], summarized_texts[i], category, sub_category, sentiment_score, best_match_score, parsed_date]
+                row_extended = row.tolist() + [preprocessed_comment, summarized_text, category, sub_category, sentiment_score, best_match_score, parsed_date]
                 categorized_comments.append(row_extended)
-
-
                 sentiments.append(sentiment_score)
                 similarity_scores.append(similarity_score)
                 summarized_texts.append(summarized_text)
@@ -219,7 +435,6 @@ if uploaded_file is not None:
 
         # Process feedback data and cache the result
         trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold)
-
 
         # Display trends and insights
         if trends_data is not None:
