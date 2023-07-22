@@ -20,7 +20,13 @@ st.set_page_config(page_title="👨‍💻 Transcript Categorization")
 # Initialize BERT model
 @st.cache_resource
 def initialize_bert_model():
-    return SentenceTransformer('all-MiniLM-L6-v2')
+    #return SentenceTransformer('all-MiniLM-L6-v2')
+    #return SentenceTransformer('all-MiniLM-L12-v2')
+    #return SentenceTransformer('paraphrase-MiniLM-L6-v2')
+    return SentenceTransformer('paraphrase-MiniLM-L12-v2')
+    #return SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+    #return SentenceTransformer('stsb-roberta-base')
+    #return SentenceTransformer('distilroberta-base-paraphrase-v1')
 
 # Create a dictionary to store precomputed embeddings
 @st.cache_resource
@@ -54,7 +60,7 @@ def perform_sentiment_analysis(text):
 
 # Function to summarize the text
 @st.cache_resource
-def summarize_text(text, max_length=100, min_length=30):
+def summarize_text(text, max_length=100, min_length=50):
     # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
 
@@ -373,7 +379,7 @@ if uploaded_file is not None:
             # Process each comment
             for index, row in feedback_data.iterrows():
                 preprocessed_comment = preprocess_text(row[comment_column])
-                if len(preprocessed_comment.split()) > 250:
+                if len(preprocessed_comment.split()) > 100:
                     summarized_text = summarize_text(preprocessed_comment)
                 else:
                     summarized_text = preprocessed_comment
