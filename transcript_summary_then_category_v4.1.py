@@ -50,16 +50,13 @@ def preprocess_text(text):
     # Return the text without removing stop words
     return text
 
-# Initialize the sentiment analyzer
-sentiment_analyzer = SentimentIntensityAnalyzer()
-
 # Function to perform sentiment analysis
 @st.cache_data
-def perform_sentiment_analysis(text, analyzer):
+def perform_sentiment_analysis(text):
+    analyzer = SentimentIntensityAnalyzer()
     sentiment_scores = analyzer.polarity_scores(text)
     compound_score = sentiment_scores['compound']
     return compound_score
-
 
 # Function to summarize the text
 @st.cache_resource
@@ -70,14 +67,17 @@ def summarize_text(text, max_length=100, min_length=50):
     # Split the text into chunks of approximately 1024 words
     text_chunks = textwrap.wrap(text, width=2000)
 
-    # Summarize all chunks at once
-    summaries = summarization_pipeline(text_chunks, max_length=max_length, min_length=min_length, do_sample=False)
+    # Initialize an empty string to store the full summary
+    full_summary = ""
 
-    # Join the summaries together
-    full_summary = " ".join([summary['summary_text'] for summary in summaries])
+    # For each chunk of text...
+    for chunk in text_chunks:
+        # Summarize the chunk and add the result to the full summary
+        summary = summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False)
+        full_summary += summary[0]['summary_text'] + " "
 
+    # Return the full summary
     return full_summary.strip()
-
 
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
@@ -376,20 +376,17 @@ if uploaded_file is not None:
             # Initialize the BERT model once
             model = initialize_bert_model()
 
-           # Initialize the sentiment analyzer outside the loop
-            sentiment_analyzer = SentimentIntensityAnalyzer()
-            
             # Process each comment
             preprocessed_comments = [preprocess_text(row[comment_column]) for _, row in feedback_data.iterrows()]
             summarized_texts = [summarize_text(text) if len(text.split()) > 100 else text for text in preprocessed_comments]
             comment_embeddings = model.encode(summarized_texts)  # Compute all the embeddings at once
-            
+
             for i, row in enumerate(feedback_data.itertuples()):
                 sentiment_score = perform_sentiment_analysis(preprocessed_comments[i], sentiment_analyzer)
                 category = 'Other'
                 sub_category = 'Other'
                 best_match_score = float('-inf')  # Initialized to negative infinity
-            
+
                 for main_category, keywords in categories.items():
                     for keyword in keywords:
                         keyword_embedding = keyword_embeddings[keyword]  # Use the precomputed keyword embedding
@@ -400,17 +397,15 @@ if uploaded_file is not None:
                             category = main_category
                             sub_category = keyword
                             best_match_score = similarity_score
-            
+
                 # If in emerging issue mode and the best match score is below the threshold, set category and sub-category to 'No Match'
                 if emerging_issue_mode and best_match_score < similarity_threshold:
                     category = 'No Match'
                     sub_category = 'No Match'
-            
+
                 parsed_date = row[date_column].split(' ')[0] if isinstance(row[date_column], str) else None
                 row_extended = list(row) + [preprocessed_comments[i], summarized_texts[i], category, sub_category, sentiment_score, best_match_score, parsed_date]
                 categorized_comments.append(row_extended)
-
-
                 sentiments.append(sentiment_score)
                 similarity_scores.append(similarity_score)
                 summarized_texts.append(summarized_text)
