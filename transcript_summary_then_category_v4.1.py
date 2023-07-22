@@ -67,17 +67,14 @@ def summarize_text(text, max_length=100, min_length=50):
     # Split the text into chunks of approximately 1024 words
     text_chunks = textwrap.wrap(text, width=2000)
 
-    # Initialize an empty string to store the full summary
-    full_summary = ""
+    # Summarize all chunks at once
+    summaries = summarization_pipeline(text_chunks, max_length=max_length, min_length=min_length, do_sample=False)
 
-    # For each chunk of text...
-    for chunk in text_chunks:
-        # Summarize the chunk and add the result to the full summary
-        summary = summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False)
-        full_summary += summary[0]['summary_text'] + " "
+    # Join the summaries together
+    full_summary = " ".join([summary['summary_text'] for summary in summaries])
 
-    # Return the full summary
     return full_summary.strip()
+
 
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
