@@ -1,0 +1,10 @@
+2023-07-23 13:42:46.022 Uncaught app exception
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
+    exec(code, module.__dict__)
+  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\transcript_summary_then_category_v4.1.py", line 14, in <module>
+    from categories_mani import default_categories
+  File "<frozen importlib._bootstrap>", line 1178, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1149, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 701, in _load_unlocked
+KeyError: 'categories_mani'
