@@ -18,11 +18,17 @@ default_categories = {
     ],
     "Stock & Availability": [
         "Product Was Out of Stock",
-        "Had to Wait Too Long for Product Restock",
+        "Had to Wait Too Long for backorder",
         "Product Was Excluded from Promotions",
         "Limited Availability for Deals",
         "Deal Restrictions Were Based on My Location",
         "Was Restricted on the Quantity I Could Purchase"
+    ],
+    "Product Quality": [
+        "Unhappy with Product Quality",
+        "Product Battery Life is below Expectations",
+        "Regret Buying Product Due to Quality Issues",
+        "Product Broke Sooner than it should have"
     ],
     "Pricing & Promotions": [
         "Promotion Didn't Apply to My Purchase",
@@ -64,9 +70,7 @@ default_categories = {
         "Had Trouble Navigating the Interface",
         "Found Broken Links on Website",
         "Couldn't Locate Features on Website",
-        "User Experience Was Inconsistent Across Different Devices",
         "User Interface Was Confusing",
-        "Had Issues with Mobile Functionality",
         "Website Didn't Adjust Well to My Location"
     ],
     "Order Management & Checkout": [
@@ -149,7 +153,7 @@ default_categories = {
         "Was Ineligible for Return",
         "Confused Over Restocking Fees",
         "Had Problems with Pickup for Return",
-        "Refund Process Was Too Long",
+        "Had to wait too long for product refund",
         "Discrepancies in Partial Refunds",
         "Had Difficulty Tracking Returned Item",
         "Had Difficulties with International Return",
@@ -186,22 +190,28 @@ default_categories = {
         "Tech Support Didn't Follow Up",
         "Received Incorrect Advice from Tech Support",
         "Automated Technical Support Was Problematic",
+        "Not happy about limitations of warranty support",
         "Technical Support Hours Were Limited"
     ],
     "Repair Services": [
         "Had Trouble Scheduling Repair",
         "Repair Work Was Unsatisfactory",
-        "Repair Took Too Long",
+        "Repair Work Took Too Long",
+        "Parts Replacement Took Too Long",
+        "Had to wait too long for Defective Product Replacement",
         "Confused About Repair Charges",
         "No Follow-Up After Repair",
         "Received Incorrect Advice from Repair Service",
-        "Repair Resolution Process Was Inefficient"
+        "Repair Service Left Without Fixing Issue",
+        "Had to wait too long for Product Repair",
+        "Repair Resolution Process Was Inefficient",
+        "Bad Quality Product Required Expensive Repair"
     ],
     "Account Management": [
         "Had Difficulty Logging In",
         "Couldn't Retrieve Lost Password",
         "Didn't Receive Account Verification Email",
-        "Had Trouble Changing Account Information",
+        "Changing Account Information",
         "Had Problems with Account Security",
         "Experienced Glitches During Account Creation",
         "Not Able to Deactivate Account",
