@@ -58,22 +58,22 @@ def perform_sentiment_analysis(text):
     compound_score = sentiment_scores['compound']
     return compound_score
 
-# Function to summarize the text
+# New function to summarize a list of texts
 @st.cache_resource
-def summarize_text(text, max_length=100, min_length=50):
-    # Initialize the summarization pipeline
+def summarize_texts(texts, max_length=100, min_length=50):
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
 
-    # Split the text into chunks of approximately 1024 words
-    text_chunks = textwrap.wrap(text, width=2000)
+    summaries_list = []
+    for text in texts:
+        # Split the text into chunks of approximately 2000 words
+        text_chunks = textwrap.wrap(text, width=2000)
+        # Summarize all chunks at once
+        summaries = summarization_pipeline(text_chunks, max_length=max_length, min_length=min_length, do_sample=False)
+        # Join the summaries together
+        full_summary = " ".join([summary['summary_text'] for summary in summaries])
+        summaries_list.append(full_summary.strip())
 
-    # Summarize all chunks at once
-    summaries = summarization_pipeline(text_chunks, max_length=max_length, min_length=min_length, do_sample=False)
-
-    # Join the summaries together
-    full_summary = " ".join([summary['summary_text'] for summary in summaries])
-
-    return full_summary.strip()
+    return summaries_list
 
 
 # Function to compute semantic similarity
@@ -359,36 +359,44 @@ if uploaded_file is not None:
     if comment_column is not None and date_column is not None and grouping_option is not None and process_button:
         # Check if the processed DataFrame is already cached
         @st.cache_data
-        def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold):
+        def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold, emerging_issue_mode):
             # Compute keyword embeddings
             keyword_embeddings = compute_keyword_embeddings([keyword for keywords in categories.values() for keyword in keywords])
-
+        
             # Initialize lists for categorized_comments, sentiments, similarity scores, and summaries
             categorized_comments = []
             sentiments = []
             similarity_scores = []
             summarized_texts = []
             categories_list = []
-
+        
             # Initialize the BERT model once
             model = initialize_bert_model()
-
+        
             # Process each comment
             for index, row in feedback_data.iterrows():
                 preprocessed_comment = preprocess_text(row[comment_column])
-                if len(preprocessed_comment.split()) > 100:
-                    summarized_text = summarize_text(preprocessed_comment)
-                else:
-                    summarized_text = preprocessed_comment
-                comment_embedding = model.encode([summarized_text])[0]  # Compute the comment embedding once
+                summarized_texts.append(preprocessed_comment if len(preprocessed_comment.split()) <= 100 else None)
+        
+            # Summarize all the long texts at once
+            texts_to_summarize = [text for text in summarized_texts if text is not None]
+            summarized_texts_batch = summarize_texts(texts_to_summarize)
+        
+            # Replace the original long texts with their summaries
+            for i, summarized_text in enumerate(summarized_texts_batch):
+                summarized_texts[i] = summarized_text
+        
+            for index, row in enumerate(feedback_data.iterrows()):
+                preprocessed_comment = summarized_texts[index]
+                comment_embedding = model.encode([preprocessed_comment])[0]  # Compute the comment embedding once
                 sentiment_score = perform_sentiment_analysis(preprocessed_comment)
                 category = 'Other'
                 sub_category = 'Other'
                 best_match_score = float('-inf')  # Initialized to negative infinity
-
+        
                 # Tokenize the preprocessed_comment
                 tokens = word_tokenize(preprocessed_comment)
-
+        
                 for main_category, keywords in categories.items():
                     for keyword in keywords:
                         keyword_embedding = keyword_embeddings[keyword]  # Use the precomputed keyword embedding
@@ -399,20 +407,18 @@ if uploaded_file is not None:
                             category = main_category
                             sub_category = keyword
                             best_match_score = similarity_score
-
+        
                 # If in emerging issue mode and the best match score is below the threshold, set category and sub-category to 'No Match'
                 if emerging_issue_mode and best_match_score < similarity_threshold:
                     category = 'No Match'
                     sub_category = 'No Match'
-
+        
                 parsed_date = row[date_column].split(' ')[0] if isinstance(row[date_column], str) else None
-                row_extended = row.tolist() + [preprocessed_comment, summarized_text, category, sub_category, sentiment_score, best_match_score, parsed_date]
+                row_extended = row.tolist() + [preprocessed_comment, category, sub_category, sentiment_score, best_match_score, parsed_date]
                 categorized_comments.append(row_extended)
                 sentiments.append(sentiment_score)
                 similarity_scores.append(similarity_score)
-                summarized_texts.append(summarized_text)
                 categories_list.append(category)
-
             # Create a new DataFrame with extended columns
             existing_columns = feedback_data.columns.tolist()
             additional_columns = [comment_column, 'Summarized Text', 'Category', 'Sub-Category', 'Sentiment', 'Best Match Score', 'Parsed Date']
