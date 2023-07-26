@@ -1,26 +1,3 @@
-AttributeError: 'numpy.ndarray' object has no attribute 'append'
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary.py", line 233, in <module>
-    trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
-    return cached_func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
-    return self._get_or_create_cached_value(args, kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
-    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
-    computed_value = self._info.func(*func_args, **func_kwargs)
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary.py", line 193, in process_feedback_data
-    similarity_scores.append(similarity_score)
-    ^^^^^^^^^^^^^^^^^^^^^^^^
-
 import pandas as pd
 import nltk
 from nltk.tokenize import word_tokenize
@@ -36,7 +13,7 @@ import base64
 from io import BytesIO
 import streamlit as st
 import textwrap
-from categories import default_categories
+from categories_josh1 import default_categories
 # Set page title and layout
 st.set_page_config(page_title="👨‍💻 Transcript Categorization")
 
@@ -202,9 +179,9 @@ if uploaded_file is not None:
                 for main_category, keywords in categories.items():
                     for keyword in keywords:
                         keyword_embedding = keyword_embeddings[keyword]  # Use the precomputed keyword embedding
-                        similarity_scores = cosine_similarity([keyword_embedding], batch_embeddings)[0]
+                        batch_similarity_scores = cosine_similarity([keyword_embedding], batch_embeddings)[0]
                         # Update categories and sub-categories based on the highest similarity score
-                        for j, similarity_score in enumerate(similarity_scores):
+                        for j, similarity_score in enumerate(batch_similarity_scores):
                             if i+j < len(categories_list):
                                 if similarity_score > similarity_scores[i+j]:
                                     categories_list[i+j] = main_category
