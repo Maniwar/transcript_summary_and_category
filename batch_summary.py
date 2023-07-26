@@ -14,6 +14,7 @@ from io import BytesIO
 import streamlit as st
 import textwrap
 from categories_josh1 import default_categories
+
 # Set page title and layout
 st.set_page_config(page_title="👨‍💻 Transcript Categorization")
 
@@ -147,21 +148,21 @@ if uploaded_file is not None:
         def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold):
             # Compute keyword embeddings
             keyword_embeddings = compute_keyword_embeddings([keyword for keywords in categories.values() for keyword in keywords])
-        
+
             # Initialize lists for categorized_comments, sentiments, similarity scores, and summaries
             categorized_comments = []
             sentiments = []
             similarity_scores = []
             summarized_texts = []
             categories_list = []
-        
+
             # Initialize the BERT model once
             model = initialize_bert_model()
-        
+
             # Preprocess comments and summarize if necessary
             feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
             feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].apply(lambda x: summarize_text(x) if len(x.split()) > 100 else x)
-        
+
             # Compute comment embeddings in batches
             batch_size = 64  # Choose batch size based on your available memory
             comment_embeddings = []
@@ -169,10 +170,10 @@ if uploaded_file is not None:
                 batch = feedback_data['summarized_comments'][i:i+batch_size].tolist()
                 comment_embeddings.extend(model.encode(batch))
             feedback_data['comment_embeddings'] = comment_embeddings
-        
+
             # Compute sentiment scores
             feedback_data['sentiment_scores'] = feedback_data['preprocessed_comments'].apply(perform_sentiment_analysis)
-        
+
             # Compute semantic similarity and assign categories in batches
             for i in range(0, len(feedback_data), batch_size):
                 batch_embeddings = feedback_data['comment_embeddings'][i:i+batch_size].tolist()
@@ -191,7 +192,7 @@ if uploaded_file is not None:
                                 categories_list.append(main_category)
                                 summarized_texts.append(keyword)
                                 similarity_scores.append(similarity_score)
-        
+
             # Prepare final data
             for index, row in feedback_data.iterrows():
                 preprocessed_comment = row['preprocessed_comments']
@@ -200,23 +201,23 @@ if uploaded_file is not None:
                 sub_category = summarized_texts[index]
                 best_match_score = similarity_scores[index]
                 summarized_text = row['summarized_comments']
-        
+
                 # If in emerging issue mode and the best match score is below the threshold, set category and sub-category to 'No Match'
                 if emerging_issue_mode and best_match_score < similarity_threshold:
                     category = 'No Match'
                     sub_category = 'No Match'
-        
+
                 parsed_date = row[date_column].split(' ')[0] if isinstance(row[date_column], str) else None
                 row_extended = row.tolist() + [preprocessed_comment, summarized_text, category, sub_category, sentiment_score, best_match_score, parsed_date]
                 categorized_comments.append(row_extended)
-        
+
             # Create a new DataFrame with extended columns
             existing_columns = feedback_data.columns.tolist()
             additional_columns = [comment_column, 'Summarized Text', 'Category', 'Sub-Category', 'Sentiment', 'Best Match Score', 'Parsed Date']
             headers = existing_columns + additional_columns
             trends_data = pd.DataFrame(categorized_comments, columns=headers)
             trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce').dt.date
-        
+
             # Rename duplicate column names
             trends_data = trends_data.loc[:, ~trends_data.columns.duplicated()]
             duplicate_columns = set([col for col in trends_data.columns if trends_data.columns.tolist().count(col) > 1])
@@ -224,7 +225,7 @@ if uploaded_file is not None:
                 column_indices = [i for i, col in enumerate(trends_data.columns) if col == column]
                 for i, idx in enumerate(column_indices[1:], start=1):
                     trends_data.columns.values[idx] = f"{column}_{i}"
-        
+
             return trends_data
 
 
