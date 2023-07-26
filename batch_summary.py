@@ -1,25 +1,3 @@
-AttributeError: module 'pandas.io.parsers' has no attribute 'ParserBase'
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary.py", line 209, in <module>
-    trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
-    return cached_func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
-    return self._get_or_create_cached_value(args, kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
-    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
-    computed_value = self._info.func(*func_args, **func_kwargs)
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary.py", line 200, in process_feedback_data
-    feedback_data.columns = pd.io.parsers.ParserBase({'names':feedback_data.columns})._maybe_dedup_names(feedback_data.columns)
-                            ^^^^^^^^^^^^^^^^^^^^^^^^
 import pandas as pd
 import nltk
 from nltk.tokenize import word_tokenize
@@ -170,6 +148,13 @@ if uploaded_file is not None:
             # Compute keyword embeddings
             keyword_embeddings = compute_keyword_embeddings([keyword for keywords in categories.values() for keyword in keywords])
         
+            # Initialize lists for categorized_comments, sentiments, similarity scores, and summaries
+            categorized_comments = []
+            sentiments = []
+            similarity_scores = []
+            summarized_texts = []
+            categories_list = []
+        
             # Initialize the BERT model once
             model = initialize_bert_model()
         
@@ -188,43 +173,60 @@ if uploaded_file is not None:
             # Compute sentiment scores
             feedback_data['sentiment_scores'] = feedback_data['preprocessed_comments'].apply(perform_sentiment_analysis)
         
-            # Initialize lists for categories, sub-categories and best match scores
-            categories_list = ['Other'] * len(feedback_data)
-            sub_categories_list = ['Other'] * len(feedback_data)
-            best_match_scores = [float('-inf')] * len(feedback_data)  # Initialized to negative infinity
-        
             # Compute semantic similarity and assign categories in batches
-            for main_category, keywords in categories.items():
-                for keyword in keywords:
-                    keyword_embedding = keyword_embeddings[keyword]  # Use the precomputed keyword embedding
-                    for i in range(0, len(feedback_data), batch_size):
-                        batch_embeddings = feedback_data['comment_embeddings'][i:i+batch_size].tolist()
+            for i in range(0, len(feedback_data), batch_size):
+                batch_embeddings = feedback_data['comment_embeddings'][i:i+batch_size].tolist()
+                for main_category, keywords in categories.items():
+                    for keyword in keywords:
+                        keyword_embedding = keyword_embeddings[keyword]  # Use the precomputed keyword embedding
                         similarity_scores = cosine_similarity([keyword_embedding], batch_embeddings)[0]
+                        # Update categories and sub-categories based on the highest similarity score
                         for j, similarity_score in enumerate(similarity_scores):
-                            # If similarity_score equals best_match_score, we pick the first match.
-                            # If similarity_score > best_match_score, we update best_match.
-                            if similarity_score >= best_match_scores[i+j]:
-                                categories_list[i+j] = main_category
-                                sub_categories_list[i+j] = keyword
-                                best_match_scores[i+j] = similarity_score
+                            if i+j < len(categories_list):
+                                if similarity_score > similarity_scores[i+j]:
+                                    categories_list[i+j] = main_category
+                                    summarized_texts[i+j] = keyword
+                                    similarity_scores[i+j] = similarity_score
+                            else:
+                                categories_list.append(main_category)
+                                summarized_texts.append(keyword)
+                                similarity_scores.append(similarity_score)
         
-            feedback_data['Category'] = categories_list
-            feedback_data['Sub-Category'] = sub_categories_list
-            feedback_data['Best Match Score'] = best_match_scores
+            # Prepare final data
+            for index, row in feedback_data.iterrows():
+                preprocessed_comment = row['preprocessed_comments']
+                sentiment_score = row['sentiment_scores']
+                category = categories_list[index]
+                sub_category = summarized_texts[index]
+                best_match_score = similarity_scores[index]
+                summarized_text = row['summarized_comments']
         
-            # If in emerging issue mode and the best match score is below the threshold, set category and sub-category to 'No Match'
-            if emerging_issue_mode:
-                feedback_data.loc[feedback_data['Best Match Score'] < similarity_threshold, ['Category', 'Sub-Category']] = 'No Match'
+                # If in emerging issue mode and the best match score is below the threshold, set category and sub-category to 'No Match'
+                if emerging_issue_mode and best_match_score < similarity_threshold:
+                    category = 'No Match'
+                    sub_category = 'No Match'
         
-            feedback_data['Parsed Date'] = pd.to_datetime(feedback_data[date_column].str.split(' ').str[0], errors='coerce').dt.date
+                parsed_date = row[date_column].split(' ')[0] if isinstance(row[date_column], str) else None
+                row_extended = row.tolist() + [preprocessed_comment, summarized_text, category, sub_category, sentiment_score, best_match_score, parsed_date]
+                categorized_comments.append(row_extended)
+        
+            # Create a new DataFrame with extended columns
+            existing_columns = feedback_data.columns.tolist()
+            additional_columns = [comment_column, 'Summarized Text', 'Category', 'Sub-Category', 'Sentiment', 'Best Match Score', 'Parsed Date']
+            headers = existing_columns + additional_columns
+            trends_data = pd.DataFrame(categorized_comments, columns=headers)
+            trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce').dt.date
         
             # Rename duplicate column names
-            feedback_data.columns = pd.io.parsers.ParserBase({'names':feedback_data.columns})._maybe_dedup_names(feedback_data.columns)
-        
-            # Create trends_data DataFrame
-            trends_data = feedback_data.copy()
+            trends_data = trends_data.loc[:, ~trends_data.columns.duplicated()]
+            duplicate_columns = set([col for col in trends_data.columns if trends_data.columns.tolist().count(col) > 1])
+            for column in duplicate_columns:
+                column_indices = [i for i, col in enumerate(trends_data.columns) if col == column]
+                for i, idx in enumerate(column_indices[1:], start=1):
+                    trends_data.columns.values[idx] = f"{column}_{i}"
         
             return trends_data
+
 
 
         # Process feedback data and cache the result
