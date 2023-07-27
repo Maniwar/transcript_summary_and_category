@@ -74,8 +74,8 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=512):
 
     # Iterate over the texts
     for text in texts:
-        tokens = len(text.split())  # simple whitespace tokenization
-        if current_chunk_tokens + tokens > max_tokens or len(current_chunk) == 256:  # check if adding this text exceeds the token limit or the hard limit on number of texts in a batch (32 is a reasonable value)
+        tokens = len(summarization_pipeline.tokenizer(text)["input_ids"])  # simple whitespace tokenization
+        if current_chunk_tokens + tokens > max_tokens or len(current_chunk) == 128:  # check if adding this text exceeds the token limit or the hard limit on number of texts in a batch (32 is a reasonable value)
             # If it does, process the current chunk and start a new one
             summaries = summarization_pipeline(current_chunk, max_length=max_length, min_length=min_length, do_sample=False)
             all_summaries.extend([summary['summary_text'] for summary in summaries])
@@ -187,7 +187,7 @@ if uploaded_file is not None:
 
 
             # Compute comment embeddings in batches
-            batch_size = 256  # Choose batch size based on your available memory
+            batch_size = 128  # Choose batch size based on your available memory
             comment_embeddings = []
             for i in range(0, len(feedback_data), batch_size):
                 batch = feedback_data['summarized_comments'][i:i+batch_size].tolist()
