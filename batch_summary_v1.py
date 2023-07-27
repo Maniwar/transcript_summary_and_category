@@ -61,20 +61,34 @@ def perform_sentiment_analysis(text):
 
 # Function to summarize the text
 @st.cache_resource
-def summarize_text(texts, max_length=100, min_length=50):
+def summarize_text(texts, max_length=100, min_length=50, max_tokens=512):
     # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
-
-    # Define the batch size
-    batch_size = 50
 
     # Initialize a list to store the summaries
     all_summaries = []
 
-    # Split the texts into chunks and summarize each chunk
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i:i+batch_size]
-        summaries = summarization_pipeline(batch, max_length=max_length, min_length=min_length, do_sample=False)
+    # Initialize the current chunk
+    current_chunk = []
+    current_chunk_tokens = 0
+
+    # Iterate over the texts
+    for text in texts:
+        tokens = len(text.split())  # simple whitespace tokenization
+        if current_chunk_tokens + tokens > max_tokens or len(current_chunk) == 32:  # check if adding this text exceeds the token limit or the hard limit on number of texts in a batch (32 is a reasonable value)
+            # If it does, process the current chunk and start a new one
+            summaries = summarization_pipeline(current_chunk, max_length=max_length, min_length=min_length, do_sample=False)
+            all_summaries.extend([summary['summary_text'] for summary in summaries])
+            current_chunk = [text]
+            current_chunk_tokens = tokens
+        else:
+            # If not, add the text to the current chunk
+            current_chunk.append(text)
+            current_chunk_tokens += tokens
+
+    # Process the last chunk if it's not empty
+    if current_chunk:
+        summaries = summarization_pipeline(current_chunk, max_length=max_length, min_length=min_length, do_sample=False)
         all_summaries.extend([summary['summary_text'] for summary in summaries])
 
     return all_summaries
@@ -169,7 +183,8 @@ if uploaded_file is not None:
             long_comment_texts = feedback_data.loc[long_comments, 'preprocessed_comments']
             summaries = summarize_text(long_comment_texts)
             feedback_data.loc[long_comments, 'summarized_comments'] = summaries
-            feedback_data.loc[~long_comments, 'summarized_comments'] = feedback_data.loc[~long_comments, 'preprocessed_comments']
+            feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].where(feedback_data['summarized_comments'].isna(), feedback_data['summarized_comments'])
+
 
             # Compute comment embeddings in batches
             batch_size = 64  # Choose batch size based on your available memory
