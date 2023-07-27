@@ -21,7 +21,13 @@ st.set_page_config(page_title="👨‍💻 Transcript Categorization")
 # Initialize BERT model
 @st.cache_resource
 def initialize_bert_model():
+    #return SentenceTransformer('all-MiniLM-L6-v2')
+    #return SentenceTransformer('all-MiniLM-L12-v2')
+    #return SentenceTransformer('paraphrase-MiniLM-L6-v2')
     return SentenceTransformer('paraphrase-MiniLM-L12-v2')
+    #return SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+    #return SentenceTransformer('stsb-roberta-base')
+    #return SentenceTransformer('distilroberta-base-paraphrase-v1')
 
 # Create a dictionary to store precomputed embeddings
 @st.cache_resource
@@ -42,6 +48,7 @@ def preprocess_text(text):
     # Remove unnecessary characters and weird characters
     text = text.encode('ascii', 'ignore').decode('utf-8')
 
+    # Return the text without removing stop words
     return text
 
 # Function to perform sentiment analysis
@@ -58,13 +65,20 @@ def summarize_text(texts, max_length=100, min_length=50):
     # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
 
-    # Summarize all texts at once
-    summaries = summarization_pipeline(texts, max_length=max_length, min_length=min_length, do_sample=False)
+    # Define the batch size
+    batch_size = 50
 
-    # Join the summaries together
-    full_summaries = [summary['summary_text'] for summary in summaries]
+    # Initialize a list to store the summaries
+    all_summaries = []
 
-    return full_summaries
+    # Split the texts into chunks and summarize each chunk
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i+batch_size]
+        summaries = summarization_pipeline(batch, max_length=max_length, min_length=min_length, do_sample=False)
+        all_summaries.extend([summary['summary_text'] for summary in summaries])
+
+    return all_summaries
+
 
 
 # Function to compute semantic similarity
@@ -87,6 +101,7 @@ best_match_score = None
 
 if emerging_issue_mode:
     similarity_threshold = st.sidebar.slider("Semantic Similarity Threshold", min_value=0.0, max_value=1.0, value=0.35)
+
 
 # Edit categories and keywords
 st.sidebar.header("Edit Categories")
@@ -131,6 +146,8 @@ if uploaded_file is not None:
     process_button = st.button("Process Feedback")
 
     if comment_column is not None and date_column is not None and grouping_option is not None and process_button:
+        # Check if the processed DataFrame is already cached
+
         @st.cache_data
         def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold):
             # Compute keyword embeddings
@@ -146,20 +163,16 @@ if uploaded_file is not None:
             # Initialize the BERT model once
             model = initialize_bert_model()
 
-            # Preprocess comments
+            # Preprocess comments and summarize if necessary
             feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
-
-            # Summarize comments in batches if necessary
-            batch_size = 64  # Choose batch size based on your available memory
-            summarized_comments = []
-            for i in range(0, len(feedback_data), batch_size):
-                batch_comments = feedback_data['preprocessed_comments'][i:i+batch_size].tolist()
-                batch_summaries = summarize_text(batch_comments)
-                summarized_comments.extend(batch_summaries)
-
-            feedback_data['summarized_comments'] = summarized_comments
+            long_comments = feedback_data['preprocessed_comments'].apply(lambda x: len(x.split()) > 100)
+            long_comment_texts = feedback_data.loc[long_comments, 'preprocessed_comments']
+            summaries = summarize_text(long_comment_texts)
+            feedback_data.loc[long_comments, 'summarized_comments'] = summaries
+            feedback_data.loc[~long_comments, 'summarized_comments'] = feedback_data.loc[~long_comments, 'preprocessed_comments']
 
             # Compute comment embeddings in batches
+            batch_size = 64  # Choose batch size based on your available memory
             comment_embeddings = []
             for i in range(0, len(feedback_data), batch_size):
                 batch = feedback_data['summarized_comments'][i:i+batch_size].tolist()
@@ -168,54 +181,65 @@ if uploaded_file is not None:
 
             # Compute sentiment scores
             feedback_data['sentiment_scores'] = feedback_data['preprocessed_comments'].apply(perform_sentiment_analysis)
-    
-            # Categorize comments
-            for i in range(len(feedback_data)):
-                comment_embedding = feedback_data['comment_embeddings'].values[i]
-                best_match = "NO MATCH"
-                best_match_score = 0.0
-    
-                for category, keywords in categories.items():
-                    for keyword in keywords:
-                        keyword_embedding = keyword_embeddings[keyword]
-                        similarity_score = compute_semantic_similarity(comment_embedding, keyword_embedding)
-                        if similarity_score > best_match_score:
-                            best_match = category
-                            best_match_score = similarity_score
-    
-                # If emerging issue mode is enabled and no match is found, set the category to NO MATCH
-                if emerging_issue_mode and best_match_score < similarity_threshold:
-                    best_match = "NO MATCH"
-    
-                categorized_comments.append(best_match)
-                similarity_scores.append(best_match_score)
-                sentiments.append(feedback_data['sentiment_scores'].values[i])
-                summarized_texts.append(feedback_data['summarized_comments'].values[i])
-                categories_list.append(best_match)
-    
-            feedback_data['categorized_comments'] = categorized_comments
-            feedback_data['similarity_scores'] = similarity_scores
-            feedback_data['sentiments'] = sentiments
-            feedback_data['summarized_texts'] = summarized_texts
-    
-            # Group feedback data by date
-            if grouping_option == "Date":
-                feedback_data[date_column] = pd.to_datetime(feedback_data[date_column])
-                trends_data = feedback_data.groupby([pd.Grouper(key=date_column, freq='D')]).mean()
-            elif grouping_option == "Week":
-                feedback_data[date_column] = pd.to_datetime(feedback_data[date_column])
-                trends_data = feedback_data.groupby([pd.Grouper(key=date_column, freq='W')]).mean()
-            elif grouping_option == "Month":
-                feedback_data[date_column] = pd.to_datetime(feedback_data[date_column])
-                trends_data = feedback_data.groupby([pd.Grouper(key=date_column, freq='M')]).mean()
-            elif grouping_option == "Quarter":
-                feedback_data[date_column] = pd.to_datetime(feedback_data[date_column])
-                trends_data = feedback_data.groupby([pd.Grouper(key=date_column, freq='Q')]).mean()
-    
-            return trends_data
-    
-        trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold)
 
+            # Compute semantic similarity and assign categories in batches
+            for i in range(0, len(feedback_data), batch_size):
+                batch_embeddings = feedback_data['comment_embeddings'][i:i+batch_size].tolist()
+                for main_category, keywords in categories.items():
+                    for keyword in keywords:
+                        keyword_embedding = keyword_embeddings[keyword]  # Use the precomputed keyword embedding
+                        batch_similarity_scores = cosine_similarity([keyword_embedding], batch_embeddings)[0]
+                        # Update categories and sub-categories based on the highest similarity score
+                        for j, similarity_score in enumerate(batch_similarity_scores):
+                            if i+j < len(categories_list):
+                                if similarity_score > similarity_scores[i+j]:
+                                    categories_list[i+j] = main_category
+                                    summarized_texts[i+j] = keyword
+                                    similarity_scores[i+j] = similarity_score
+                            else:
+                                categories_list.append(main_category)
+                                summarized_texts.append(keyword)
+                                similarity_scores.append(similarity_score)
+
+            # Prepare final data
+            for index, row in feedback_data.iterrows():
+                preprocessed_comment = row['preprocessed_comments']
+                sentiment_score = row['sentiment_scores']
+                category = categories_list[index]
+                sub_category = summarized_texts[index]
+                best_match_score = similarity_scores[index]
+                summarized_text = row['summarized_comments']
+
+                # If in emerging issue mode and the best match score is below the threshold, set category and sub-category to 'No Match'
+                if emerging_issue_mode and best_match_score < similarity_threshold:
+                    category = 'No Match'
+                    sub_category = 'No Match'
+
+                parsed_date = row[date_column].split(' ')[0] if isinstance(row[date_column], str) else None
+                row_extended = row.tolist() + [preprocessed_comment, summarized_text, category, sub_category, sentiment_score, best_match_score, parsed_date]
+                categorized_comments.append(row_extended)
+
+            # Create a new DataFrame with extended columns
+            existing_columns = feedback_data.columns.tolist()
+            additional_columns = [comment_column, 'Summarized Text', 'Category', 'Sub-Category', 'Sentiment', 'Best Match Score', 'Parsed Date']
+            headers = existing_columns + additional_columns
+            trends_data = pd.DataFrame(categorized_comments, columns=headers)
+            trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce').dt.date
+
+            # Rename duplicate column names
+            trends_data = trends_data.loc[:, ~trends_data.columns.duplicated()]
+            duplicate_columns = set([col for col in trends_data.columns if trends_data.columns.tolist().count(col) > 1])
+            for column in duplicate_columns:
+                column_indices = [i for i, col in enumerate(trends_data.columns) if col == column]
+                for i, idx in enumerate(column_indices[1:], start=1):
+                    trends_data.columns.values[idx] = f"{column}_{i}"
+
+            return trends_data
+
+
+
+        # Process feedback data and cache the result
+        trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold)
 
         # Display trends and insights
         if trends_data is not None:
