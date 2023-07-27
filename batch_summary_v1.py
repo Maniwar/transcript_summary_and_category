@@ -60,7 +60,8 @@ def perform_sentiment_analysis(text):
     return compound_score
 
 # Function to summarize the text
-def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_chunk_len=128):
+@st.cache_resource
+def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chunk_len=128):
     # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
 
@@ -87,9 +88,8 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_ch
                     # If the current chunk reaches the token limit, summarize the current chunk
                     if current_chunk:
                         try:
-                            # Summarize the current chunk as a single text
-                            chunk_summary = summarization_pipeline(' '.join(current_chunk), max_length=max_length, min_length=min_length, do_sample=False)
-                            all_summaries.append(chunk_summary[0]['summary_text'])
+                            summaries = summarization_pipeline(current_chunk, max_length=max_length, min_length=min_length, do_sample=False)
+                            all_summaries.extend([summary['summary_text'] for summary in summaries])
                         except Exception as e:
                             print(f"Error summarizing chunk {idx + 1}: {e}")
 
@@ -104,17 +104,15 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_ch
             # Summarize the last chunk if it's not empty
             if current_chunk:
                 try:
-                    # Summarize the last chunk as a single text
-                    chunk_summary = summarization_pipeline(' '.join(current_chunk), max_length=max_length, min_length=min_length, do_sample=False)
-                    all_summaries.append(chunk_summary[0]['summary_text'])
+                    summaries = summarization_pipeline(current_chunk, max_length=max_length, min_length=min_length, do_sample=False)
+                    all_summaries.extend([summary['summary_text'] for summary in summaries])
                 except Exception as e:
                     print(f"Error summarizing the last chunk: {e}")
         else:
             # If the text is short enough, summarize it directly
             try:
-                # Summarize the whole text directly
                 summaries = summarization_pipeline(text, max_length=max_length, min_length=min_length, do_sample=False)
-                all_summaries.append(summaries[0]['summary_text'])
+                all_summaries.extend([summary['summary_text'] for summary in summaries])
             except Exception as e:
                 print(f"Error summarizing text {idx + 1}: {e}")
 
