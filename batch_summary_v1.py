@@ -61,7 +61,7 @@ def perform_sentiment_analysis(text):
 
 # Function to summarize the text
 @st.cache_resource
-def def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_chunk_len=128):
+def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_chunk_len=128):
     # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
 
