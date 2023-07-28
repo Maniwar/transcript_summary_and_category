@@ -1,27 +1,178 @@
-# Function to summarize a list of texts using batching
+import pandas as pd
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.sentiment import SentimentIntensityAnalyzer
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+import datetime
+import numpy as np
+import xlsxwriter
+import chardet
+from transformers import pipeline
+from transformers import AutoTokenizer
+import base64
+from io import BytesIO
+import streamlit as st
+import textwrap
+from categories_josh1 import default_categories
+import time
+
+# Set page title and layout
+st.set_page_config(page_title="👨‍💻 Transcript Categorization")
+
+# Initialize BERT model
 @st.cache_resource
-def summarize_text(texts, batch_size=10, max_length=70, min_length=30):
+def initialize_bert_model():
+    start_time = time.time()
+    print("Initializing BERT model...")
+    #return SentenceTransformer('all-MiniLM-L6-v2')
+    #return SentenceTransformer('all-MiniLM-L12-v2')
+    #return SentenceTransformer('paraphrase-MiniLM-L6-v2')
+    end_time = time.time()
+    print(f"BERT model initialized. Time taken: {end_time - start_time} seconds.")
+    return SentenceTransformer('paraphrase-MiniLM-L12-v2')
+    #return SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+    #return SentenceTransformer('stsb-roberta-base')
+    #return SentenceTransformer('distilroberta-base-paraphrase-v1')
+
+
+# Create a dictionary to store precomputed embeddings
+@st.cache_resource
+def compute_keyword_embeddings(keywords):
+    start_time = time.time()
+    print("Computing keyword embeddings...")
+    model = initialize_bert_model()
+    keyword_embeddings = {}
+    for keyword in keywords:
+        keyword_embeddings[keyword] = model.encode([keyword])[0]
+    end_time = time.time()
+    print(f"Keyword embeddings computed. Time taken: {end_time - start_time} seconds.")
+    return keyword_embeddings
+
+# Function to preprocess the text
+@st.cache_data
+def preprocess_text(text):
+    start_time = time.time()
+    print("Preprocessing text...")
+    # Convert to string if input is a float
+    if isinstance(text, float):
+        text = str(text)
+    end_time = time.time()
+    print(f"Preprocessing text completed. Time taken: {end_time - start_time} seconds.")
+    # Remove unnecessary characters and weird characters
+    text = text.encode('ascii', 'ignore').decode('utf-8')
+    # Return the text without removing stop words
+    return text
+
+# Function to perform sentiment analysis
+@st.cache_data
+def perform_sentiment_analysis(text):
+    start_time = time.time()
+    print("Perform Sentiment Analysis text...")
+    analyzer = SentimentIntensityAnalyzer()
+    sentiment_scores = analyzer.polarity_scores(text)
+    compound_score = sentiment_scores['compound']
+    end_time = time.time()
+    print(f"Sentiment Analysis completed. Time taken: {end_time - start_time} seconds.")
+    return compound_score
+
+
+ # Function to initialize the summarization pipeline
+@st.cache_resource
+def get_summarization_pipeline():
+    start_time = time.time()
+    print("Start Summarization Pipeline text...")
+    # Initialize the summarization pipeline
+    summarizer = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
+    # Capture end time
+    end_time = time.time()
+    print("Time taken to initialize summarization pipeline:", end_time - start_time)
+    return summarizer
+
+ # Function to initialize the summarization pipeline
+@st.cache_resource
+def get_summarization_pipeline():
+    start_time = time.time()
+    print("Start Summarization Pipeline text...")
+    # Initialize the summarization pipeline
+    summarizer = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
+    # Capture end time
+    end_time = time.time()
+    print("Time taken to initialize summarization pipeline:", end_time - start_time)
+    return summarizer
+
+# Function to summarize a list of texts using batching
+@st.cache_data
+def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max_length=1024):
+    start_time = time.time()
+    print("Start Summarizing text...")
     # Get the pre-initialized summarization pipeline
     summarization_pipeline = get_summarization_pipeline()
+
+    # Initialize the tokenizer
+    tokenizer = AutoTokenizer.from_pretrained('knkarthick/MEETING_SUMMARY')
 
     all_summaries = []
 
     # Iterate over the texts in batches
     for i in range(0, len(texts), batch_size):
         # Take the next batch of texts
-        batch_texts = texts[i:i+batch_size].tolist()  # Convert to list
+        batch_texts = texts.iloc[i:i + batch_size].tolist()  # Convert to list
         try:
             # Compute the summaries for a batch of texts
-            summaries = summarization_pipeline(batch_texts, max_length=max_length, min_length=min_length, do_sample=False)
-            # Extract the summaries from the output and add them to the list of summaries
-            batch_summaries = [summary['summary_text'] for summary in summaries]
+            batch_summaries = []
+            for text in batch_texts:
+                # Preprocess the text
+                preprocessed_text = preprocess_text(text)
+
+                # Tokenize the text
+                tokenized_text = tokenizer(preprocessed_text, truncation=True, max_length=model_max_length, return_tensors='pt')
+
+                # Split the tokenized text into chunks of appropriate size (limited by model_max_length)
+                chunk_tokens_list = []
+                for j in range(0, tokenized_text.input_ids.size(1), model_max_length):
+                    chunk_tokens = tokenized_text[:, j:j + model_max_length]
+                    chunk_tokens_list.append(chunk_tokens)
+
+                # Summarize each chunk in the tokenized text
+                chunk_summaries = []
+                for chunk_tokens in chunk_tokens_list:
+                    summary = summarization_pipeline.generate(chunk_tokens, max_length=max_length, min_length=min_length)
+                    chunk_summary = tokenizer.decode(summary[0], skip_special_tokens=True)
+                    chunk_summaries.append(chunk_summary)
+
+                # Combine the chunk summaries to form the final summary for the text
+                final_summary = ". ".join(chunk_summaries)
+                batch_summaries.append(final_summary)
+
+            # Extend the all_summaries list with batch_summaries (make sure batch_summaries contains only strings)
             all_summaries.extend(batch_summaries)
         except Exception as e:
             # If an error occurred while summarizing the texts, print the exception
             print(f"Error occurred during summarization: {e}")
-            all_summaries.extend(batch_texts)
+            all_summaries.extend(batch_texts)  # Add original texts instead of summaries
+    end_time = time.time()
+    print("Time taken to perform summarization:", end_time - start_time)
     return all_summaries
-
-
-C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py:98: FutureWarning: The behavior of `series[i:j]` with an integer-dtype index is deprecated. In a future version, this will be treated as *label-based* indexing, consistent with e.g. `series[i]` lookups. To retain the old behavior, use `series.iloc[i:j]`. To get the future behavior, use `series.loc[i:j]`.
-  batch_texts = texts[i:i+batch_size].tolist()  # Convert to list
+Initializing BERT model...
+BERT model initialized. Time taken: 0.0 seconds.
+Keyword embeddings computed. Time taken: 5.711493253707886 seconds.
+Preprocessing comments and summarizing if necessary...
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0009984970092773438 seconds.
+ 
+Preprocessing text completed. Time taken: 0.0 seconds.
+Error occurred during summarization: list indices must be integers or slices, not tuple
+Time taken to perform summarization: 4.1371848583221436
+Preprocessed comments and summarized. Time taken: 4.181187629699707 seconds.
+Start comment embeddings in batches
+Batch comment embeddings done. Time taken: 1.8520374298095703 seconds.
+Computing sentiment scores...
+Perform Sentiment Analysis text...
+Sentiment Analysis completed. Time taken: 0.010999441146850586 seconds.
+ 
+Sentiment scores computed. Time taken: 0.21100163459777832 seconds.
+Computing semantic similarity and assigning categories...
+Computed semantic similarity and assigned categories. Time taken: 0.0390315055847168 seconds.
+C:\Python311\Lib\site-packages\xlsxwriter\workbook.py:339: UserWarning: Calling close() on already closed file.
+  warn("Calling close() on already closed file.")
