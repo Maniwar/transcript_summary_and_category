@@ -91,7 +91,7 @@ def get_summarization_pipeline():
 
 # Function to summarize a list of texts using batching
 @st.cache_resource
-def summarize_text_v2(texts, batch_size=10, max_length=70, min_length=30, model_max_length=1024):
+def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max_length=1024):
     start_time = time.time()
     print("Start Summarizing text...")
     # Get the pre-initialized summarization pipeline
