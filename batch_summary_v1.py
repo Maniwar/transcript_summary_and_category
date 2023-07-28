@@ -96,13 +96,13 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30):
         start_time = time.time()
         try:
             # Compute the summaries for a batch of texts
-            summaries = summarization_pipeline(texts[i:i+batch_size], max_length=max_length, min_length=min_length, do_sample=False)
+            summaries = summarization_pipeline(texts.iloc[i:i+batch_size], max_length=max_length, min_length=min_length, do_sample=False)
             # Extract the summaries from the output and add them to the list of summaries
             batch_summaries = [summary['summary_text'] for summary in summaries]
             all_summaries.extend(batch_summaries)
         except Exception as e:
             # If an error occurred while summarizing the texts, add the original texts to the list of summaries
-            all_summaries.extend(texts[i:i+batch_size])
+            all_summaries.extend(texts.iloc[i:i+batch_size])
 
         # Capture end time
         end_time = time.time()
