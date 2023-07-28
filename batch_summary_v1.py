@@ -73,7 +73,7 @@ def perform_sentiment_analysis(text):
 
 # Function to summarize the text
 @st.cache_resource
-def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chunk_len=128):
+def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chunk_len=4):
     start_time = time.time()
     print("Summarize_text function start text...")
     # Initialize the summarization pipeline
@@ -237,7 +237,7 @@ if uploaded_file is not None:
             # Compute comment embeddings in batches
             start_time = time.time()
             print("Start comment embeddings in batches")
-            batch_size = 128  # Choose batch size based on your available memory
+            batch_size = 1024  # Choose batch size based on your available memory
             comment_embeddings = []
             for i in range(0, len(feedback_data), batch_size):
                 batch = feedback_data['summarized_comments'][i:i+batch_size].tolist()
