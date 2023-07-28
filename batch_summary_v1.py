@@ -89,13 +89,15 @@ def get_summarization_pipeline():
     print("Time taken to initialize summarization pipeline:", end_time - start_time)
     return summarizer
 
+import textwrap
+from transformers import pipeline
+
 # Function to summarize a list of texts using batching
-@st.cache_data
-def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_chunk_len=128):
+def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_chunk_len=128, min_word_count=100):
     start_time = time.time()
     print("Start Summarizing text...")
     # Initialize the summarization pipeline
-    summarization_pipeline = get_summarization_pipeline()
+    summarization_pipeline = pipeline("summarization")
 
     # Initialize a list to store the summaries
     all_summaries = []
@@ -109,6 +111,11 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_ch
 
     # Iterate over the texts
     for idx, text in enumerate(texts):
+        # Skip summarizing the text if the word count is below the threshold
+        if len(text.split()) <= min_word_count:
+            all_summaries.append(text)
+            continue
+
         tokens = len(summarization_pipeline.tokenizer(text)["input_ids"])  # simple whitespace tokenization
 
         # If a single text is too long, split it into multiple parts
@@ -147,7 +154,6 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_ch
     end_time = time.time()
     print("Time taken to process summarization:", end_time - start_time)
     return all_summaries
-
 
 
 
@@ -233,15 +239,34 @@ if uploaded_file is not None:
             # Initialize the BERT model once
             model = initialize_bert_model()
 
+
             # Preprocess comments and summarize if necessary
             start_time = time.time()
             print("Preprocessing comments and summarizing if necessary...")
+            
             feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
+            
+            # Identify long comments
             long_comments = feedback_data['preprocessed_comments'].apply(lambda x: len(x.split()) > 100)
-            long_comment_texts = feedback_data.loc[long_comments, 'preprocessed_comments']
+            
+            # Extract all long comments into a list
+            long_comment_texts = feedback_data.loc[long_comments, 'preprocessed_comments'].tolist()
+            
+            # Summarize the list of long comments in one go
             summaries = summarize_text(long_comment_texts)
-            feedback_data.loc[long_comments, 'summarized_comments'] = summaries
-            feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].where(feedback_data['summarized_comments'].isna(), feedback_data['summarized_comments'])
+            
+            # Create a new DataFrame from the long comments and their summaries
+            long_comments_summaries = pd.DataFrame({
+                'preprocessed_comments': long_comment_texts,
+                'summarized_comments': summaries
+            })
+            
+            # Merge the summarized comments back into the original DataFrame
+            feedback_data = pd.merge(feedback_data, long_comments_summaries, on='preprocessed_comments', how='left')
+            
+            # Fill in missing summarized comments with the original preprocessed comments
+            feedback_data['summarized_comments'] = feedback_data['summarized_comments'].fillna(feedback_data['preprocessed_comments'])
+            
             end_time = time.time()
             print(f"Preprocessed comments and summarized. Time taken: {end_time - start_time} seconds.")
 
