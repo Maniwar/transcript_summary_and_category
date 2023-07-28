@@ -92,7 +92,7 @@ def get_summarization_pipeline():
 # Function to summarize a list of texts using batching
 @st.cache_resource
 def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max_length=1024):
-    start_time = time.time()
+   start_time = time.time()
     print("Start Summarizing text...")
     # Get the pre-initialized summarization pipeline
     summarization_pipeline = get_summarization_pipeline()
@@ -124,8 +124,20 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
                 chunks.append(chunk)
                 chunk_summaries = []
                 for chunk in chunks:
-                    summary = summarization_pipeline([chunk], max_length=max_length, min_length=min_length, do_sample=False)
-                    chunk_summaries.append(summary[0]['summary_text'])
+                    if len(tokenizer.encode(chunk, truncation=True)) <= model_max_length:
+                        summary = summarization_pipeline([chunk], max_length=max_length, min_length=min_length, do_sample=False)
+                        chunk_summaries.append(summary[0]['summary_text'])
+                    else:
+                        print("The chunk is too large to be processed by the model. It will be splitted into smaller parts.")
+                        part_summaries = []
+                        words = chunk.split()
+                        num_parts = len(tokenizer.encode(chunk, truncation=True)) // model_max_length + 1
+                        words_per_part = len(words) // num_parts
+                        for p in range(num_parts):
+                            part = " ".join(words[p*words_per_part: (p+1)*words_per_part])
+                            part_summary = summarization_pipeline([part], max_length=max_length, min_length=min_length, do_sample=False)
+                            part_summaries.append(part_summary[0]['summary_text'])
+                        chunk_summaries.append(" ".join(part_summaries))
                 batch_summaries.append('. '.join(chunk_summaries))
             all_summaries.extend(batch_summaries)
         except Exception as e:
