@@ -76,7 +76,10 @@ def perform_sentiment_analysis(text):
     return compound_score
 
 
- # Function to initialize the summarization pipeline
+from transformers import AutoTokenizer
+import nltk
+nltk.download('punkt')
+
 @st.cache_resource
 def get_summarization_pipeline():
     start_time = time.time()
@@ -88,13 +91,15 @@ def get_summarization_pipeline():
     print("Time taken to initialize summarization pipeline:", end_time - start_time)
     return summarizer
 
-# Function to summarize a list of texts using batching
 @st.cache_resource
 def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max_length=1024):
     start_time = time.time()
     print("Start Summarizing text...")
     # Get the pre-initialized summarization pipeline
     summarization_pipeline = get_summarization_pipeline()
+
+    # Initialize the tokenizer
+    tokenizer = AutoTokenizer.from_pretrained('knkarthick/MEETING_SUMMARY')
 
     all_summaries = []
 
@@ -109,7 +114,15 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
             batch_summaries = []
             for text in batch_texts:
                 sentences = sent_detector.tokenize(text)
-                chunks = [' '.join(sentences[i:i + model_max_length]) for i in range(0, len(sentences), model_max_length)]
+                chunks = []
+                chunk = ""
+                for sentence in sentences:
+                    if len(tokenizer.encode(chunk + sentence, truncation=False)) > model_max_length:
+                        chunks.append(chunk)
+                        chunk = sentence
+                    else:
+                        chunk += " " + sentence
+                chunks.append(chunk)
                 chunk_summaries = []
                 for chunk in chunks:
                     summary = summarization_pipeline([chunk], max_length=max_length, min_length=min_length, do_sample=False)
@@ -123,6 +136,7 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
     end_time = time.time()
     print("Time taken to perform summarization :", end_time - start_time)
     return all_summaries
+
 
 
 # Function to compute semantic similarity
