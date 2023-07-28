@@ -58,10 +58,8 @@ def preprocess_text(text):
         text = str(text)
     end_time = time.time()
     print(f"Preprocessing text completed. Time taken: {end_time - start_time} seconds.")
-
     # Remove unnecessary characters and weird characters
     text = text.encode('ascii', 'ignore').decode('utf-8')
-
     # Return the text without removing stop words
     return text
 
@@ -73,32 +71,29 @@ def perform_sentiment_analysis(text):
     compound_score = sentiment_scores['compound']
     return compound_score
 
+
  # Function to initialize the summarization pipeline
 @st.cache_resource
 def get_summarization_pipeline():
     # Capture start time
-    start = datetime.now()
-    
+    start_time = time.time()
     # Initialize the summarization pipeline
     summarizer = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
-    
     # Capture end time
-    end = datetime.now()
-    
-    print("Time taken to initialize summarization pipeline:", end - start)
-    
+    end_time = time.time()
+    print("Time taken to initialize summarization pipeline:", end_time - start_time)
     return summarizer
-    
+
 # Function to summarize a list of texts using batching
 @st.cache_resource
 def summarize_text(texts, batch_size=10, max_length=70, min_length=30):
     # Get the pre-initialized summarization pipeline
     summarization_pipeline = get_summarization_pipeline()
-    
+
     all_summaries = []
     for i in range(0, len(texts), batch_size):
         # Capture start time
-        start = datetime.now()
+        start_time = time.time()
         try:
             # Compute the summaries for a batch of texts
             summaries = summarization_pipeline(texts[i:i+batch_size], max_length=max_length, min_length=min_length, do_sample=False)
@@ -108,11 +103,11 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30):
         except Exception as e:
             # If an error occurred while summarizing the texts, add the original texts to the list of summaries
             all_summaries.extend(texts[i:i+batch_size])
-        
+
         # Capture end time
-        end = datetime.now()
-        print("Time taken to summarize batch:", end - start)
-    
+        end_time = time.time()
+        print("Time taken to summarize batch:", end_time - start_time)
+
     return all_summaries
 
 
