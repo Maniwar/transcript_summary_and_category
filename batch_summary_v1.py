@@ -97,6 +97,14 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
     # Get the pre-initialized summarization pipeline
     summarization_pipeline = get_summarization_pipeline()
 
+    # Initiali# Function to summarize a list of texts using batching
+@st.cache_data
+def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max_length=1024):
+    start_time = time.time()
+    print("Start Summarizing text...")
+    # Get the pre-initialized summarization pipeline
+    summarization_pipeline = get_summarization_pipeline()
+
     # Initialize the tokenizer
     tokenizer = AutoTokenizer.from_pretrained('knkarthick/MEETING_SUMMARY')
 
@@ -125,16 +133,16 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
                 # Summarize each chunk in the tokenized text
                 chunk_summaries = []
                 for chunk_tokens in chunk_tokens_list:
-                    summary = summarization_pipeline.generate(chunk_tokens, max_length=max_length, min_length=min_length)
-                    if isinstance(summary[0], list):  # Handle cases where summarization pipeline returns a list of summaries (tuples)
-                        chunk_summary = tokenizer.decode(summary[0][0], skip_special_tokens=True)
-                    else:
-                        chunk_summary = tokenizer.decode(summary[0], skip_special_tokens=True)
-                    chunk_summaries.append(chunk_summary)
+                    print("Generating summary for chunk...")
+                    summaries = summarization_pipeline.generate(chunk_tokens, max_length=max_length, min_length=min_length)
+                    summaries_text = [tokenizer.decode(summary, skip_special_tokens=True) for summary in summaries]
+                    print("Generated summaries:", summaries_text)
+                    chunk_summaries.extend(summaries_text)
 
                 # Combine the chunk summaries to form the final summary for the text
                 final_summary = ". ".join(chunk_summaries)
                 batch_summaries.append(final_summary)
+                print("Batch Summaries:", batch_summaries)
 
             # Extend the all_summaries list with batch_summaries (make sure batch_summaries contains only strings)
             all_summaries.extend(batch_summaries)
