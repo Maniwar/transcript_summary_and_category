@@ -73,6 +73,7 @@ def perform_sentiment_analysis(text):
     compound_score = sentiment_scores['compound']
     return compound_score
 
+
 # Function to summarize the text
 @st.cache_resource
 def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chunk_len=16):
@@ -94,7 +95,7 @@ def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chu
                     if current_chunk:
                         chunk_text = summarization_pipeline.tokenizer.convert_tokens_to_string(current_chunk)
                         try:
-                            summaries = summarization_pipeline(chunk_text, max_length=max_length, min_length=min_length, do_sample=False)
+                            summaries = summarization_pipeline(chunk_text, max_length=len(current_chunk), min_length=int(0.75*len(current_chunk)), do_sample=False)
                             text_summaries.extend([summary['summary_text'] for summary in summaries])
                         except Exception as e:
                             print(f"Error summarizing chunk {idx + 1}: {e}")
@@ -108,7 +109,7 @@ def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chu
             if current_chunk:
                 chunk_text = summarization_pipeline.tokenizer.convert_tokens_to_string(current_chunk)
                 try:
-                    summaries = summarization_pipeline(chunk_text, max_length=max_length, min_length=min_length, do_sample=False)
+                    summaries = summarization_pipeline(chunk_text, max_length=len(current_chunk), min_length=int(0.75*len(current_chunk)), do_sample=False)
                     text_summaries.extend([summary['summary_text'] for summary in summaries])
                 except Exception as e:
                     print(f"Error summarizing the last chunk: {e}")
@@ -129,7 +130,6 @@ def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chu
     print("Summarization completed.")
     print(f"Summarization text completed. Time taken: {end_time - start_time} seconds.")
     return all_summaries
-
 
 
 
