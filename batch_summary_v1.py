@@ -56,6 +56,7 @@ def preprocess_text(text):
     # Convert to string if input is a float
     if isinstance(text, float):
         text = str(text)
+    end_time = time.time()
     print(f"Preprocessing text completed. Time taken: {end_time - start_time} seconds.")
 
     # Remove unnecessary characters and weird characters
@@ -134,7 +135,7 @@ def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chu
         # Print a progress message every max_chunk_len texts
         if (idx + 1) % max_chunk_len == 0 or (idx + 1) == total_texts:
             print(f"Summarized {idx + 1} out of {total_texts} texts.")
-
+    end_time = time.time()
     print("Summarization completed.")
     print(f"Summarization text completed. Time taken: {end_time - start_time} seconds.")
     return all_summaries
