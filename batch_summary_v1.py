@@ -50,9 +50,12 @@ def compute_keyword_embeddings(keywords):
 # Function to preprocess the text
 @st.cache_data
 def preprocess_text(text):
+    start_time = time.time()
+    print("Preprocessing text...")
     # Convert to string if input is a float
     if isinstance(text, float):
         text = str(text)
+    print(f"Preprocessing text completed. Time taken: {end_time - start_time} seconds.")
 
     # Remove unnecessary characters and weird characters
     text = text.encode('ascii', 'ignore').decode('utf-8')
@@ -71,6 +74,8 @@ def perform_sentiment_analysis(text):
 # Function to summarize the text
 @st.cache_resource
 def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chunk_len=128):
+    start_time = time.time()
+    print("Summarize_text function start text...")
     # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
 
@@ -130,10 +135,8 @@ def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chu
             print(f"Summarized {idx + 1} out of {total_texts} texts.")
 
     print("Summarization completed.")
+    print(f"Summarization text completed. Time taken: {end_time - start_time} seconds.")
     return all_summaries
-
-
-
 
 
 
@@ -249,7 +252,7 @@ if uploaded_file is not None:
             feedback_data['sentiment_scores'] = feedback_data['preprocessed_comments'].apply(perform_sentiment_analysis)
             end_time = time.time()
             print(f"Sentiment scores computed. Time taken: {end_time - start_time} seconds.")
-            
+
             # Compute semantic similarity and assign categories in batches
             start_time = time.time()
             print("Computing semantic similarity and assigning categories...")
@@ -270,8 +273,8 @@ if uploaded_file is not None:
                                 categories_list.append(main_category)
                                 summarized_texts.append(keyword)
                                 similarity_scores.append(similarity_score)
-                end_time = time.time()
-                print(f"Computed semantic similarity and assigned categories. Time taken: {end_time - start_time} seconds.")
+            end_time = time.time()
+            print(f"Computed semantic similarity and assigned categories. Time taken: {end_time - start_time} seconds.")
             # Prepare final data
             for index, row in feedback_data.iterrows():
                 preprocessed_comment = row['preprocessed_comments']
