@@ -84,32 +84,24 @@ def get_summarization_pipeline():
     print("Time taken to initialize summarization pipeline:", end_time - start_time)
     return summarizer
 
-# Function to summarize a list of texts using batching
-@st.cache_resource
-def summarize_text(texts, batch_size=10, max_length=70, min_length=30):
-    # Get the pre-initialized summarization pipeline
-    summarization_pipeline = get_summarization_pipeline()
-
+def summarize_text(texts, summarization_pipeline, batch_size=10, min_length=25, max_length=75):
     all_summaries = []
+
+    # Iterate over the texts in batches
     for i in range(0, len(texts), batch_size):
-        # Capture start time
-        start_time = time.time()
+        # Take the next batch of texts
+        batch_texts = texts[i:i+batch_size].tolist()  # Convert to list
         try:
             # Compute the summaries for a batch of texts
-            summaries = summarization_pipeline(texts.iloc[i:i+batch_size], max_length=max_length, min_length=min_length, do_sample=False)
+            summaries = summarization_pipeline(batch_texts, max_length=max_length, min_length=min_length, do_sample=False)
             # Extract the summaries from the output and add them to the list of summaries
             batch_summaries = [summary['summary_text'] for summary in summaries]
             all_summaries.extend(batch_summaries)
         except Exception as e:
-            # If an error occurred while summarizing the texts, add the original texts to the list of summaries
-            all_summaries.extend(texts.iloc[i:i+batch_size])
-
-        # Capture end time
-        end_time = time.time()
-        print("Time taken to summarize batch:", end_time - start_time)
-
+            # If an error occurred while summarizing the texts, print the exception
+            print(f"Error occurred during summarization: {e}")
+            all_summaries.extend(batch_texts)
     return all_summaries
-
 
 
 
