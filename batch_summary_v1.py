@@ -144,6 +144,7 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
 
 
 
+
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
     return cosine_similarity([embedding1], [embedding2])[0][0]
