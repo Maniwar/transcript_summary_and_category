@@ -97,7 +97,7 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
     # Get the pre-initialized summarization pipeline
     summarization_pipeline = get_summarization_pipeline()
 
-    # Initiali# Function to summarize a list of texts using batching
+# Function to summarize a list of texts using batching
 @st.cache_data
 def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max_length=1024):
     start_time = time.time()
@@ -141,6 +141,9 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
 
                 # Combine the chunk summaries to form the final summary for the text
                 final_summary = ". ".join(chunk_summaries)
+                print("Input text length:", len(preprocessed_text))
+                print("Chunk summaries length:", [len(summary) for summary in chunk_summaries])
+                print("Final summary length:", len(final_summary))
                 batch_summaries.append(final_summary)
                 print("Batch Summaries:", batch_summaries)
 
@@ -153,9 +156,6 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
     end_time = time.time()
     print("Time taken to perform summarization:", end_time - start_time)
     return all_summaries
-
-
-
 
 
 
