@@ -16,6 +16,8 @@ import streamlit as st
 import textwrap
 from categories_josh1 import default_categories
 import time
+from tqdm import tqdm
+
 
 # Set page title and layout
 st.set_page_config(page_title="👨‍💻 Transcript Categorization")
@@ -109,11 +111,15 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_ch
     total_texts = len(texts)  # total number of texts
     print(f"Starting summarization of {total_texts} texts...")
 
+    # Initialize progress bar
+    pbar = tqdm(total=total_texts)
+
     # Iterate over the texts
     for idx, text in enumerate(texts):
         # Skip summarizing the text if the word count is below the threshold
         if len(text.split()) <= min_word_count:
             all_summaries.append(text)
+            pbar.update(1)
             continue
 
         tokens = len(summarization_pipeline.tokenizer(text)["input_ids"])  # simple whitespace tokenization
@@ -141,20 +147,21 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_ch
                 current_chunk.append(text)
                 current_chunk_tokens += tokens
 
-        # Print a progress message every max_chunk_len texts
-        if (idx + 1) % max_chunk_len == 0 or (idx + 1) == total_texts:
-            print(f"Summarized {idx + 1} out of {total_texts} texts.")
+        # Update the progress bar
+        pbar.update(1)
 
     # Process the last chunk if it's not empty
     if current_chunk:
         summaries = summarization_pipeline(current_chunk, max_length=max_length, min_length=min_length, do_sample=False)
         all_summaries.extend([summary['summary_text'] for summary in summaries])
 
+    # Close the progress bar
+    pbar.close()
+
     print("Summarization completed.")
     end_time = time.time()
     print("Time taken to process summarization:", end_time - start_time)
     return all_summaries
-
 
 
 # Function to compute semantic similarity
