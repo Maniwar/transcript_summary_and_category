@@ -91,7 +91,7 @@ def get_summarization_pipeline():
 
 # Function to summarize a list of texts using batching
 @st.cache_resource
-def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max_length=1024):
+def summarize_text_v2(texts, batch_size=10, max_length=70, min_length=30, model_max_length=1024):
     start_time = time.time()
     print("Start Summarizing text...")
     # Get the pre-initialized summarization pipeline
@@ -102,8 +102,6 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
 
     all_summaries = []
 
-    sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
-
     # Iterate over the texts in batches
     for i in range(0, len(texts), batch_size):
         # Take the next batch of texts
@@ -112,42 +110,29 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
             # Compute the summaries for a batch of texts
             batch_summaries = []
             for text in batch_texts:
-                sentences = sent_detector.tokenize(text)
-                chunks = []
-                chunk = ""
-                for sentence in sentences:
-                    # Check if the current chunk plus the next sentence exceeds the model's max token limit
-                    if len(tokenizer.encode(chunk + sentence, truncation=False)) > model_max_length:
-                        # If it does, add the current chunk to the list and start a new chunk
-                        chunks.append(chunk)
-                        chunk = sentence
-                    else:
-                        # If it doesn't exceed the limit, add the next sentence to the current chunk
-                        chunk += " " + sentence
-                # Add the last chunk to the list of chunks
-                chunks.append(chunk)
+                # Preprocess the text
+                preprocessed_text = preprocess_text(text)
 
-                # Summarize each chunk separately and concatenate the summaries
+                # Tokenize the text
+                tokenized_text = tokenizer(preprocessed_text, truncation=True, max_length=model_max_length, return_tensors='pt')
+
+                # Split the tokenized text into chunks of appropriate size (limited by model_max_length)
+                chunk_tokens_list = []
+                for j in range(0, tokenized_text.input_ids.size(1), model_max_length):
+                    chunk_tokens = tokenized_text[:, j:j + model_max_length]
+                    chunk_tokens_list.append(chunk_tokens)
+
+                # Summarize each chunk in the tokenized text
                 chunk_summaries = []
-                for chunk in chunks:
-                    # Check if the chunk fits within the model's max token limit
-                    if len(tokenizer.encode(chunk, truncation=False)) <= model_max_length:
-                        # If it does, summarize the chunk and add it to the list of summaries
-                        summary = summarization_pipeline([chunk], max_length=max_length, min_length=min_length, do_sample=False)
-                        chunk_summaries.append(summary[0]['summary_text'])
-                    else:
-                        # If it doesn't fit within the limit, further divide the chunk
-                        # into sub-chunks that fit within the limit and summarize each sub-chunk
-                        sub_chunks = textwrap.wrap(chunk, width=(model_max_length - 2))  # Account for [CLS] and [SEP] tokens
-                        sub_chunk_summaries = []
-                        for sub_chunk in sub_chunks:
-                            summary = summarization_pipeline([sub_chunk], max_length=max_length, min_length=min_length, do_sample=False)
-                            sub_chunk_summaries.append(summary[0]['summary_text'])
-                        # Combine the summaries of sub-chunks into a single summary for the original chunk
-                        chunk_summaries.append(' '.join(sub_chunk_summaries))
+                for chunk_tokens in chunk_tokens_list:
+                    summary = summarization_pipeline.generate(chunk_tokens, max_length=max_length, min_length=min_length)
+                    chunk_summary = tokenizer.decode(summary[0], skip_special_tokens=True)
+                    chunk_summaries.append(chunk_summary)
 
-                # Combine the summaries of all chunks into a single summary for the whole text
-                batch_summaries.append('. '.join(chunk_summaries))
+                # Combine the chunk summaries to form the final summary for the text
+                final_summary = ". ".join(chunk_summaries)
+                batch_summaries.append(final_summary)
+
             all_summaries.extend(batch_summaries)
         except Exception as e:
             # If an error occurred while summarizing the texts, print the exception
