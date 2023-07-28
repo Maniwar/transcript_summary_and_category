@@ -101,9 +101,6 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
     tokenizer = AutoTokenizer.from_pretrained('knkarthick/MEETING_SUMMARY')
 
     all_summaries = []
-    categories_list = []  # Initialize categories_list
-    summarized_texts = []  # Initialize summarized_texts
-    similarity_scores = []  # Initialize similarity_scores
 
     # Iterate over the texts in batches
     for i in range(0, len(texts), batch_size):
@@ -121,7 +118,8 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
 
                 # Split the tokenized text into chunks of appropriate size (limited by model_max_length)
                 chunk_tokens_list = []
-                for j in range(0, tokenized_text.input_ids.size(1), model_max_length):
+                num_tokens = tokenized_text.input_ids.size(1)
+                for j in range(0, num_tokens, model_max_length):
                     chunk_tokens = tokenized_text[:, j:j + model_max_length]
                     chunk_tokens_list.append(chunk_tokens)
 
@@ -138,24 +136,16 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
 
             # Extend the all_summaries list with batch_summaries (make sure batch_summaries contains only strings)
             all_summaries.extend(batch_summaries)
-
-            # Update categories_list, summarized_texts, and similarity_scores
-            for summary in batch_summaries:
-                categories_list.append(None)  # Initialize with None
-                summarized_texts.append(None)  # Initialize with None
-                similarity_scores.append(0.0)  # Initialize with 0.0
         except Exception as e:
             # If an error occurred while summarizing the texts, print the exception
             print(f"Error occurred during summarization: {e}")
-            all_summaries.extend(batch_texts)  # Add original texts instead of summaries
-            for _ in batch_texts:
-                categories_list.append(None)  # Initialize with None
-                summarized_texts.append(None)  # Initialize with None
-                similarity_scores.append(0.0)  # Initialize with 0.0
+            # Append an empty string or None to indicate summarization failure
+            all_summaries.extend([""] * len(batch_texts))
 
     end_time = time.time()
     print("Time taken to perform summarization:", end_time - start_time)
     return all_summaries
+
 
 
 
