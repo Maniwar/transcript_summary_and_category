@@ -14,6 +14,7 @@ from io import BytesIO
 import streamlit as st
 import textwrap
 from categories_josh1 import default_categories
+import time
 
 # Set page title and layout
 st.set_page_config(page_title="👨‍💻 Transcript Categorization")
@@ -21,6 +22,8 @@ st.set_page_config(page_title="👨‍💻 Transcript Categorization")
 # Initialize BERT model
 @st.cache_resource
 def initialize_bert_model():
+    start_time = time.time()
+    print("Initializing BERT model...")
     #return SentenceTransformer('all-MiniLM-L6-v2')
     #return SentenceTransformer('all-MiniLM-L12-v2')
     #return SentenceTransformer('paraphrase-MiniLM-L6-v2')
@@ -28,14 +31,20 @@ def initialize_bert_model():
     #return SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
     #return SentenceTransformer('stsb-roberta-base')
     #return SentenceTransformer('distilroberta-base-paraphrase-v1')
+    end_time = time.time()
+    print(f"BERT model initialized. Time taken: {end_time - start_time} seconds.")
 
 # Create a dictionary to store precomputed embeddings
 @st.cache_resource
 def compute_keyword_embeddings(keywords):
+    start_time = time.time()
+    print("Computing keyword embeddings...")
     model = initialize_bert_model()
     keyword_embeddings = {}
     for keyword in keywords:
         keyword_embeddings[keyword] = model.encode([keyword])[0]
+    end_time = time.time()
+    print(f"Keyword embeddings computed. Time taken: {end_time - start_time} seconds.")
     return keyword_embeddings
 
 # Function to preprocess the text
@@ -211,26 +220,39 @@ if uploaded_file is not None:
             model = initialize_bert_model()
 
             # Preprocess comments and summarize if necessary
+            start_time = time.time()
+            print("Preprocessing comments and summarizing if necessary...")
             feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
             long_comments = feedback_data['preprocessed_comments'].apply(lambda x: len(x.split()) > 100)
             long_comment_texts = feedback_data.loc[long_comments, 'preprocessed_comments']
             summaries = summarize_text(long_comment_texts)
             feedback_data.loc[long_comments, 'summarized_comments'] = summaries
             feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].where(feedback_data['summarized_comments'].isna(), feedback_data['summarized_comments'])
-
+            end_time = time.time()
+            print(f"Preprocessed comments and summarized. Time taken: {end_time - start_time} seconds.")
 
             # Compute comment embeddings in batches
+            start_time = time.time()
+            print("Start comment embeddings in batches")
             batch_size = 128  # Choose batch size based on your available memory
             comment_embeddings = []
             for i in range(0, len(feedback_data), batch_size):
                 batch = feedback_data['summarized_comments'][i:i+batch_size].tolist()
                 comment_embeddings.extend(model.encode(batch))
             feedback_data['comment_embeddings'] = comment_embeddings
+            end_time = time.time()
+            print(f"Batch comment embeddings done. Time taken: {end_time - start_time} seconds.")
 
             # Compute sentiment scores
+            start_time = time.time()
+            print("Computing sentiment scores...")
             feedback_data['sentiment_scores'] = feedback_data['preprocessed_comments'].apply(perform_sentiment_analysis)
-
+            end_time = time.time()
+            print(f"Sentiment scores computed. Time taken: {end_time - start_time} seconds.")
+            
             # Compute semantic similarity and assign categories in batches
+            start_time = time.time()
+            print("Computing semantic similarity and assigning categories...")
             for i in range(0, len(feedback_data), batch_size):
                 batch_embeddings = feedback_data['comment_embeddings'][i:i+batch_size].tolist()
                 for main_category, keywords in categories.items():
@@ -248,7 +270,8 @@ if uploaded_file is not None:
                                 categories_list.append(main_category)
                                 summarized_texts.append(keyword)
                                 similarity_scores.append(similarity_score)
-
+                end_time = time.time()
+                print(f"Computed semantic similarity and assigned categories. Time taken: {end_time - start_time} seconds.")
             # Prepare final data
             for index, row in feedback_data.iterrows():
                 preprocessed_comment = row['preprocessed_comments']
