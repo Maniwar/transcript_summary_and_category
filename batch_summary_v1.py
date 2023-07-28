@@ -90,13 +90,15 @@ def get_summarization_pipeline():
 
 # Function to summarize a list of texts using batching
 @st.cache_resource
-def summarize_text(texts, batch_size=10, max_length=70, min_length=30):
+def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max_length=1024):
     start_time = time.time()
-    print("Start Summarization text...")
+    print("Start Summarizing text...")
     # Get the pre-initialized summarization pipeline
     summarization_pipeline = get_summarization_pipeline()
 
     all_summaries = []
+
+    sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
 
     # Iterate over the texts in batches
     for i in range(0, len(texts), batch_size):
@@ -104,9 +106,15 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30):
         batch_texts = texts.iloc[i:i+batch_size].tolist()  # Convert to list
         try:
             # Compute the summaries for a batch of texts
-            summaries = summarization_pipeline(batch_texts, max_length=max_length, min_length=min_length, do_sample=False)
-            # Extract the summaries from the output and add them to the list of summaries
-            batch_summaries = [summary['summary_text'] for summary in summaries]
+            batch_summaries = []
+            for text in batch_texts:
+                sentences = sent_detector.tokenize(text)
+                chunks = [' '.join(sentences[i:i + model_max_length]) for i in range(0, len(sentences), model_max_length)]
+                chunk_summaries = []
+                for chunk in chunks:
+                    summary = summarization_pipeline([chunk], max_length=max_length, min_length=min_length, do_sample=False)
+                    chunk_summaries.append(summary[0]['summary_text'])
+                batch_summaries.append('. '.join(chunk_summaries))
             all_summaries.extend(batch_summaries)
         except Exception as e:
             # If an error occurred while summarizing the texts, print the exception
