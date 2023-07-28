@@ -90,7 +90,7 @@ def get_summarization_pipeline():
     return summarizer
 
 # Function to summarize a list of texts using batching
-@st.cache_resource
+@st.cache_data
 def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max_length=1024):
     start_time = time.time()
     print("Start Summarizing text...")
@@ -133,11 +133,12 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
                 final_summary = ". ".join(chunk_summaries)
                 batch_summaries.append(final_summary)
 
+            # Extend the all_summaries list with batch_summaries (make sure batch_summaries contains only strings)
             all_summaries.extend(batch_summaries)
         except Exception as e:
             # If an error occurred while summarizing the texts, print the exception
             print(f"Error occurred during summarization: {e}")
-            all_summaries.extend(batch_texts)
+            all_summaries.extend(batch_texts)  # Add original texts instead of summaries
     end_time = time.time()
     print("Time taken to perform summarization:", end_time - start_time)
     return all_summaries
