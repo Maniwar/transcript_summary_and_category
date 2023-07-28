@@ -99,7 +99,7 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_ch
     start_time = time.time()
     print("Start Summarizing text...")
     # Initialize the summarization pipeline
-    summarization_pipeline = pipeline("summarization")
+    summarization_pipeline = get_summarization_pipeline()
 
     # Initialize a list to store the summaries
     all_summaries = []
