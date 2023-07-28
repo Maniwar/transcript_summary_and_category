@@ -79,22 +79,6 @@ def perform_sentiment_analysis(text):
     return compound_score
 
 
- # Function to initialize the summarization pipeline
-@st.cache_resource
-def get_summarization_pipeline():
-    start_time = time.time()
-    print("Start Summarization Pipeline text...")
-    # Initialize the summarization pipeline
-    summarizer = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
-    # Capture end time
-    end_time = time.time()
-    print("Time taken to initialize summarization pipeline:", end_time - start_time)
-    return summarizer
-
-import textwrap
-from transformers import pipeline
-
-# Function to summarize a list of texts using batching
 def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_chunk_len=128, min_word_count=100):
     start_time = time.time()
     print("Start Summarizing text...")
@@ -124,21 +108,13 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_ch
 
         tokens = len(summarization_pipeline.tokenizer(text)["input_ids"])  # simple whitespace tokenization
 
-        # If a single text is too long, split it into multiple parts
-        if tokens > max_tokens:
-            text_parts = textwrap.wrap(text, max_tokens)  # split the text into parts
-            for text_part in text_parts:
-                tokens = len(summarization_pipeline.tokenizer(text_part)["input_ids"])  # compute the number of tokens for each part
-                if current_chunk_tokens + tokens > max_tokens or len(current_chunk) == max_chunk_len:  # check if adding this text part exceeds the token limit
-                    summaries = summarization_pipeline(current_chunk, max_length=max_length, min_length=min_length, do_sample=False)
-                    all_summaries.extend([summary['summary_text'] for summary in summaries])
-                    current_chunk = [text_part]
-                    current_chunk_tokens = tokens
-                else:
-                    current_chunk.append(text_part)
-                    current_chunk_tokens += tokens
+        # If a single text is too long, but small enough to be batched together
+        if tokens > max_tokens and tokens <= max_chunk_len:
+            current_chunk.append(text)
+            current_chunk_tokens += tokens
         else:
             if current_chunk_tokens + tokens > max_tokens or len(current_chunk) == max_chunk_len:  # check if adding this text exceeds the token limit
+                # Process the current chunk as a batch
                 summaries = summarization_pipeline(current_chunk, max_length=max_length, min_length=min_length, do_sample=False)
                 all_summaries.extend([summary['summary_text'] for summary in summaries])
                 current_chunk = [text]
@@ -162,6 +138,7 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_ch
     end_time = time.time()
     print("Time taken to process summarization:", end_time - start_time)
     return all_summaries
+
 
 
 # Function to compute semantic similarity
