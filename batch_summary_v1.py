@@ -107,7 +107,7 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
     # Iterate over the texts in batches
     for i in range(0, len(texts), batch_size):
         # Take the next batch of texts
-        batch_texts = texts.iloc[i:i+batch_size].tolist()  # Convert to list
+        batch_texts = texts.iloc[i:i + batch_size].tolist()  # Convert to list
         try:
             # Compute the summaries for a batch of texts
             batch_summaries = []
@@ -116,28 +116,37 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
                 chunks = []
                 chunk = ""
                 for sentence in sentences:
+                    # Check if the current chunk plus the next sentence exceeds the model's max token limit
                     if len(tokenizer.encode(chunk + sentence, truncation=False)) > model_max_length:
+                        # If it does, add the current chunk to the list and start a new chunk
                         chunks.append(chunk)
                         chunk = sentence
                     else:
+                        # If it doesn't exceed the limit, add the next sentence to the current chunk
                         chunk += " " + sentence
+                # Add the last chunk to the list of chunks
                 chunks.append(chunk)
+
+                # Summarize each chunk separately and concatenate the summaries
                 chunk_summaries = []
                 for chunk in chunks:
-                    if len(tokenizer.encode(chunk, truncation=True)) <= model_max_length:
+                    # Check if the chunk fits within the model's max token limit
+                    if len(tokenizer.encode(chunk, truncation=False)) <= model_max_length:
+                        # If it does, summarize the chunk and add it to the list of summaries
                         summary = summarization_pipeline([chunk], max_length=max_length, min_length=min_length, do_sample=False)
                         chunk_summaries.append(summary[0]['summary_text'])
                     else:
-                        print("The chunk is too large to be processed by the model. It will be splitted into smaller parts.")
-                        part_summaries = []
-                        words = chunk.split()
-                        num_parts = len(tokenizer.encode(chunk, truncation=True)) // model_max_length + 1
-                        words_per_part = len(words) // num_parts
-                        for p in range(num_parts):
-                            part = " ".join(words[p*words_per_part: (p+1)*words_per_part])
-                            part_summary = summarization_pipeline([part], max_length=max_length, min_length=min_length, do_sample=False)
-                            part_summaries.append(part_summary[0]['summary_text'])
-                        chunk_summaries.append(" ".join(part_summaries))
+                        # If it doesn't fit within the limit, further divide the chunk
+                        # into sub-chunks that fit within the limit and summarize each sub-chunk
+                        sub_chunks = textwrap.wrap(chunk, width=(model_max_length - 2))  # Account for [CLS] and [SEP] tokens
+                        sub_chunk_summaries = []
+                        for sub_chunk in sub_chunks:
+                            summary = summarization_pipeline([sub_chunk], max_length=max_length, min_length=min_length, do_sample=False)
+                            sub_chunk_summaries.append(summary[0]['summary_text'])
+                        # Combine the summaries of sub-chunks into a single summary for the original chunk
+                        chunk_summaries.append(' '.join(sub_chunk_summaries))
+
+                # Combine the summaries of all chunks into a single summary for the whole text
                 batch_summaries.append('. '.join(chunk_summaries))
             all_summaries.extend(batch_summaries)
         except Exception as e:
@@ -145,7 +154,7 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
             print(f"Error occurred during summarization: {e}")
             all_summaries.extend(batch_texts)
     end_time = time.time()
-    print("Time taken to perform summarization :", end_time - start_time)
+    print("Time taken to perform summarization:", end_time - start_time)
     return all_summaries
 
 
