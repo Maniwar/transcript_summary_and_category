@@ -91,15 +91,9 @@ def get_summarization_pipeline():
 
 # Function to summarize a list of texts using batching
 @st.cache_data
-def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max_length=1024):
+def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_chunk_len=128):
     start_time = time.time()
     print("Start Summarizing text...")
-    # Get the pre-initialized summarization pipeline
-    summarization_pipeline = get_summarization_pipeline()
-
-# Function to summarize a list of texts using batching
-@st.cache_data
-def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_chunk_len=128):
     # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
 
@@ -116,7 +110,7 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_ch
     # Iterate over the texts
     for idx, text in enumerate(texts):
         tokens = len(summarization_pipeline.tokenizer(text)["input_ids"])  # simple whitespace tokenization
-        
+
         # If a single text is too long, split it into multiple parts
         if tokens > max_tokens:
             text_parts = textwrap.wrap(text, max_tokens)  # split the text into parts
@@ -139,7 +133,7 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_ch
             else:
                 current_chunk.append(text)
                 current_chunk_tokens += tokens
-        
+
         # Print a progress message every max_chunk_len texts
         if (idx + 1) % max_chunk_len == 0 or (idx + 1) == total_texts:
             print(f"Summarized {idx + 1} out of {total_texts} texts.")
@@ -150,8 +144,9 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_ch
         all_summaries.extend([summary['summary_text'] for summary in summaries])
 
     print("Summarization completed.")
+    end_time = time.time()
+    print("Time taken to process summarization:", end_time - start_time)
     return all_summaries
-
 
 
 # Function to compute semantic similarity
