@@ -92,7 +92,7 @@ def get_summarization_pipeline():
 # Function to summarize a list of texts using batching
 @st.cache_resource
 def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max_length=1024):
-   start_time = time.time()
+    start_time = time.time()
     print("Start Summarizing text...")
     # Get the pre-initialized summarization pipeline
     summarization_pipeline = get_summarization_pipeline()
@@ -147,6 +147,7 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
     end_time = time.time()
     print("Time taken to perform summarization :", end_time - start_time)
     return all_summaries
+
 
 
 # Function to compute semantic similarity
