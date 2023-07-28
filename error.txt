@@ -2,7 +2,7 @@ ValueError: Must have equal len keys and value when setting with an iterable
 Traceback:
 File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
     exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 318, in <module>
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 314, in <module>
     trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold)
                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
@@ -17,7 +17,7 @@ File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", 
 File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
     computed_value = self._info.func(*func_args, **func_kwargs)
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 234, in process_feedback_data
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 230, in process_feedback_data
     feedback_data.loc[long_comments, 'summarized_comments'] = summaries
     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 818, in __setitem__
@@ -28,3 +28,172 @@ File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1795, in _se
     self._setitem_with_indexer_split_path(indexer, value, name)
 File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1850, in _setitem_with_indexer_split_path
     raise ValueError(
+
+# Function to summarize the text
+@st.cache_resource
+def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chunk_len=16):
+    start_time = time.time()
+    print("Summarize_text function start text...")
+    # Initialize the summarization pipeline
+    summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
+
+    # Initialize the list to store the summaries
+    all_summaries = []
+
+    total_texts = len(texts)  # total number of texts
+    print(f"Starting summarization of {total_texts} texts...")
+
+    # Iterate over the texts
+    for idx, text in enumerate(texts):
+        tokens = summarization_pipeline.tokenizer.tokenize(text)
+
+        # Check if the text is too long and needs to be split
+        if len(tokens) > max_tokens:
+            current_chunk = []
+            current_chunk_tokens = 0
+
+            for token in tokens:
+                # If the current chunk plus this token would exceed max tokens limit, process the current chunk and start a new one
+                if current_chunk_tokens + len(token) > max_tokens or len(current_chunk) == max_chunk_len:
+                    if current_chunk:
+                        chunk_text = summarization_pipeline.tokenizer.convert_tokens_to_string(current_chunk)
+                        try:
+                            summaries = summarization_pipeline(chunk_text, max_length=max_length, min_length=min_length, do_sample=False)
+                            all_summaries.extend([summary['summary_text'] for summary in summaries])
+                        except Exception as e:
+                            print(f"Error summarizing chunk {idx + 1}: {e}")
+
+                    current_chunk = [token]
+                    current_chunk_tokens = len(token)
+                else:
+                    current_chunk.append(token)
+                    current_chunk_tokens += len(token)
+
+            # Summarize the last chunk if it's not empty
+            if current_chunk:
+                chunk_text = summarization_pipeline.tokenizer.convert_tokens_to_string(current_chunk)
+                try:
+                    summaries = summarization_pipeline(chunk_text, max_length=max_length, min_length=min_length, do_sample=False)
+                    all_summaries.extend([summary['summary_text'] for summary in summaries])
+                except Exception as e:
+                    print(f"Error summarizing the last chunk: {e}")
+        else:
+            # If the text is short enough, summarize it directly
+            try:
+                summaries = summarization_pipeline(text, max_length=max_length, min_length=min_length, do_sample=False)
+                all_summaries.extend([summary['summary_text'] for summary in summaries])
+            except Exception as e:
+                print(f"Error summarizing text {idx + 1}: {e}")
+
+        # Print a progress message every max_chunk_len texts
+        if (idx + 1) % max_chunk_len == 0 or (idx + 1) == total_texts:
+            print(f"Summarized {idx + 1} out of {total_texts} texts.")
+    end_time = time.time()
+    print("Summarization completed.")
+    print(f"Summarization text completed. Time taken: {end_time - start_time} seconds.")
+    return all_summaries
+    if comment_column is not None and date_column is not None and grouping_option is not None and process_button:
+        # Check if the processed DataFrame is already cached
+
+        @st.cache_data
+        def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold):
+            # Compute keyword embeddings
+            keyword_embeddings = compute_keyword_embeddings([keyword for keywords in categories.values() for keyword in keywords])
+
+            # Initialize lists for categorized_comments, sentiments, similarity scores, and summaries
+            categorized_comments = []
+            sentiments = []
+            similarity_scores = []
+            summarized_texts = []
+            categories_list = []
+
+            # Initialize the BERT model once
+            model = initialize_bert_model()
+
+            # Preprocess comments and summarize if necessary
+            start_time = time.time()
+            print("Preprocessing comments and summarizing if necessary...")
+            feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
+            long_comments = feedback_data['preprocessed_comments'].apply(lambda x: len(x.split()) > 100)
+            long_comment_texts = feedback_data.loc[long_comments, 'preprocessed_comments']
+            summaries = summarize_text(long_comment_texts)
+            feedback_data.loc[long_comments, 'summarized_comments'] = summaries
+            feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].where(feedback_data['summarized_comments'].isna(), feedback_data['summarized_comments'])
+            end_time = time.time()
+            print(f"Preprocessed comments and summarized. Time taken: {end_time - start_time} seconds.")
+
+            # Compute comment embeddings in batches
+            start_time = time.time()
+            print("Start comment embeddings in batches")
+            batch_size = 1024  # Choose batch size based on your available memory
+            comment_embeddings = []
+            for i in range(0, len(feedback_data), batch_size):
+                batch = feedback_data['summarized_comments'][i:i+batch_size].tolist()
+                comment_embeddings.extend(model.encode(batch))
+            feedback_data['comment_embeddings'] = comment_embeddings
+            end_time = time.time()
+            print(f"Batch comment embeddings done. Time taken: {end_time - start_time} seconds.")
+
+            # Compute sentiment scores
+            start_time = time.time()
+            print("Computing sentiment scores...")
+            feedback_data['sentiment_scores'] = feedback_data['preprocessed_comments'].apply(perform_sentiment_analysis)
+            end_time = time.time()
+            print(f"Sentiment scores computed. Time taken: {end_time - start_time} seconds.")
+
+            # Compute semantic similarity and assign categories in batches
+            start_time = time.time()
+            print("Computing semantic similarity and assigning categories...")
+            for i in range(0, len(feedback_data), batch_size):
+                batch_embeddings = feedback_data['comment_embeddings'][i:i+batch_size].tolist()
+                for main_category, keywords in categories.items():
+                    for keyword in keywords:
+                        keyword_embedding = keyword_embeddings[keyword]  # Use the precomputed keyword embedding
+                        batch_similarity_scores = cosine_similarity([keyword_embedding], batch_embeddings)[0]
+                        # Update categories and sub-categories based on the highest similarity score
+                        for j, similarity_score in enumerate(batch_similarity_scores):
+                            if i+j < len(categories_list):
+                                if similarity_score > similarity_scores[i+j]:
+                                    categories_list[i+j] = main_category
+                                    summarized_texts[i+j] = keyword
+                                    similarity_scores[i+j] = similarity_score
+                            else:
+                                categories_list.append(main_category)
+                                summarized_texts.append(keyword)
+                                similarity_scores.append(similarity_score)
+            end_time = time.time()
+            print(f"Computed semantic similarity and assigned categories. Time taken: {end_time - start_time} seconds.")
+            # Prepare final data
+            for index, row in feedback_data.iterrows():
+                preprocessed_comment = row['preprocessed_comments']
+                sentiment_score = row['sentiment_scores']
+                category = categories_list[index]
+                sub_category = summarized_texts[index]
+                best_match_score = similarity_scores[index]
+                summarized_text = row['summarized_comments']
+
+                # If in emerging issue mode and the best match score is below the threshold, set category and sub-category to 'No Match'
+                if emerging_issue_mode and best_match_score < similarity_threshold:
+                    category = 'No Match'
+                    sub_category = 'No Match'
+
+                parsed_date = row[date_column].split(' ')[0] if isinstance(row[date_column], str) else None
+                row_extended = row.tolist() + [preprocessed_comment, summarized_text, category, sub_category, sentiment_score, best_match_score, parsed_date]
+                categorized_comments.append(row_extended)
+
+            # Create a new DataFrame with extended columns
+            existing_columns = feedback_data.columns.tolist()
+            additional_columns = [comment_column, 'Summarized Text', 'Category', 'Sub-Category', 'Sentiment', 'Best Match Score', 'Parsed Date']
+            headers = existing_columns + additional_columns
+            trends_data = pd.DataFrame(categorized_comments, columns=headers)
+            trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce').dt.date
+
+            # Rename duplicate column names
+            trends_data = trends_data.loc[:, ~trends_data.columns.duplicated()]
+            duplicate_columns = set([col for col in trends_data.columns if trends_data.columns.tolist().count(col) > 1])
+            for column in duplicate_columns:
+                column_indices = [i for i, col in enumerate(trends_data.columns) if col == column]
+                for i, idx in enumerate(column_indices[1:], start=1):
+                    trends_data.columns.values[idx] = f"{column}_{i}"
+
+            return trends_data
