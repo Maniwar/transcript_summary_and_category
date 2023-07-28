@@ -78,64 +78,58 @@ def perform_sentiment_analysis(text):
 def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chunk_len=16):
     start_time = time.time()
     print("Summarize_text function start text...")
-    # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
-
-    # Initialize the list to store the summaries
     all_summaries = []
-
-    total_texts = len(texts)  # total number of texts
+    total_texts = len(texts)
     print(f"Starting summarization of {total_texts} texts...")
 
-    # Iterate over the texts
     for idx, text in enumerate(texts):
         tokens = summarization_pipeline.tokenizer.tokenize(text)
-
-        # Check if the text is too long and needs to be split
         if len(tokens) > max_tokens:
             current_chunk = []
             current_chunk_tokens = 0
-
+            text_summaries = []
             for token in tokens:
-                # If the current chunk plus this token would exceed max tokens limit, process the current chunk and start a new one
                 if current_chunk_tokens + len(token) > max_tokens or len(current_chunk) == max_chunk_len:
                     if current_chunk:
                         chunk_text = summarization_pipeline.tokenizer.convert_tokens_to_string(current_chunk)
                         try:
                             summaries = summarization_pipeline(chunk_text, max_length=max_length, min_length=min_length, do_sample=False)
-                            all_summaries.extend([summary['summary_text'] for summary in summaries])
+                            text_summaries.extend([summary['summary_text'] for summary in summaries])
                         except Exception as e:
                             print(f"Error summarizing chunk {idx + 1}: {e}")
-
+                            text_summaries.append(chunk_text)
                     current_chunk = [token]
                     current_chunk_tokens = len(token)
                 else:
                     current_chunk.append(token)
                     current_chunk_tokens += len(token)
 
-            # Summarize the last chunk if it's not empty
             if current_chunk:
                 chunk_text = summarization_pipeline.tokenizer.convert_tokens_to_string(current_chunk)
                 try:
                     summaries = summarization_pipeline(chunk_text, max_length=max_length, min_length=min_length, do_sample=False)
-                    all_summaries.extend([summary['summary_text'] for summary in summaries])
+                    text_summaries.extend([summary['summary_text'] for summary in summaries])
                 except Exception as e:
                     print(f"Error summarizing the last chunk: {e}")
+                    text_summaries.append(chunk_text)
+            
+            all_summaries.append(' '.join(text_summaries))
         else:
-            # If the text is short enough, summarize it directly
             try:
                 summaries = summarization_pipeline(text, max_length=max_length, min_length=min_length, do_sample=False)
-                all_summaries.extend([summary['summary_text'] for summary in summaries])
+                all_summaries.append(summaries[0]['summary_text'])
             except Exception as e:
                 print(f"Error summarizing text {idx + 1}: {e}")
+                all_summaries.append(text)
 
-        # Print a progress message every max_chunk_len texts
         if (idx + 1) % max_chunk_len == 0 or (idx + 1) == total_texts:
             print(f"Summarized {idx + 1} out of {total_texts} texts.")
     end_time = time.time()
     print("Summarization completed.")
     print(f"Summarization text completed. Time taken: {end_time - start_time} seconds.")
     return all_summaries
+
 
 
 
