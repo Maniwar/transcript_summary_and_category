@@ -118,8 +118,7 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
 
                 # Split the tokenized text into chunks of appropriate size (limited by model_max_length)
                 chunk_tokens_list = []
-                num_tokens = tokenized_text.input_ids.size(1)
-                for j in range(0, num_tokens, model_max_length):
+                for j in range(0, tokenized_text.input_ids.size(1), model_max_length):
                     chunk_tokens = tokenized_text[:, j:j + model_max_length]
                     chunk_tokens_list.append(chunk_tokens)
 
@@ -127,7 +126,10 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
                 chunk_summaries = []
                 for chunk_tokens in chunk_tokens_list:
                     summary = summarization_pipeline.generate(chunk_tokens, max_length=max_length, min_length=min_length)
-                    chunk_summary = tokenizer.decode(summary[0], skip_special_tokens=True)
+                    if isinstance(summary[0], list):  # Handle cases where summarization pipeline returns a list of summaries (tuples)
+                        chunk_summary = tokenizer.decode(summary[0][0], skip_special_tokens=True)
+                    else:
+                        chunk_summary = tokenizer.decode(summary[0], skip_special_tokens=True)
                     chunk_summaries.append(chunk_summary)
 
                 # Combine the chunk summaries to form the final summary for the text
@@ -139,9 +141,7 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
         except Exception as e:
             # If an error occurred while summarizing the texts, print the exception
             print(f"Error occurred during summarization: {e}")
-            # Append an empty string or None to indicate summarization failure
-            all_summaries.extend([""] * len(batch_texts))
-
+            all_summaries.extend(batch_texts)  # Add original texts instead of summaries
     end_time = time.time()
     print("Time taken to perform summarization:", end_time - start_time)
     return all_summaries
