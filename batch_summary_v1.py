@@ -99,7 +99,7 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
 
 # Function to summarize a list of texts using batching
 @st.cache_data
-def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max_length=1024):
+def summarize_text(texts_df, batch_size=10, max_length=70, min_length=30, model_max_length=1024):
     start_time = time.time()
     print("Start Summarizing text...")
     # Get the pre-initialized summarization pipeline
@@ -111,9 +111,9 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
     all_summaries = []
 
     # Iterate over the texts in batches
-    for i in range(0, len(texts), batch_size):
+    for i in range(0, len(texts_df), batch_size):
         # Take the next batch of texts
-        batch_texts = texts.iloc[i:i + batch_size].tolist()  # Convert to list
+        batch_texts = texts_df.iloc[i:i + batch_size].tolist()  # Convert to list
         try:
             # Compute the summaries for a batch of texts
             batch_summaries = []
@@ -156,6 +156,7 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
     end_time = time.time()
     print("Time taken to perform summarization:", end_time - start_time)
     return all_summaries
+
 
 
 
