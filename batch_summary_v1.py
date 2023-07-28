@@ -27,9 +27,9 @@ def initialize_bert_model():
     #return SentenceTransformer('all-MiniLM-L6-v2')
     #return SentenceTransformer('all-MiniLM-L12-v2')
     #return SentenceTransformer('paraphrase-MiniLM-L6-v2')
-    return SentenceTransformer('paraphrase-MiniLM-L12-v2')
     end_time = time.time()
     print(f"BERT model initialized. Time taken: {end_time - start_time} seconds.")
+    return SentenceTransformer('paraphrase-MiniLM-L12-v2')
     #return SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
     #return SentenceTransformer('stsb-roberta-base')
     #return SentenceTransformer('distilroberta-base-paraphrase-v1')
@@ -66,17 +66,21 @@ def preprocess_text(text):
 # Function to perform sentiment analysis
 @st.cache_data
 def perform_sentiment_analysis(text):
+    start_time = time.time()
+    print("Perform Sentiment Analysis text...")
     analyzer = SentimentIntensityAnalyzer()
     sentiment_scores = analyzer.polarity_scores(text)
     compound_score = sentiment_scores['compound']
+    end_time = time.time()
+    print(f"Sentiment Analysis completed. Time taken: {end_time - start_time} seconds.")
     return compound_score
 
 
  # Function to initialize the summarization pipeline
 @st.cache_resource
 def get_summarization_pipeline():
-    # Capture start time
     start_time = time.time()
+    print("Start Summarization Pipeline text...")
     # Initialize the summarization pipeline
     summarizer = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
     # Capture end time
@@ -87,6 +91,8 @@ def get_summarization_pipeline():
 # Function to summarize a list of texts using batching
 @st.cache_resource
 def summarize_text(texts, batch_size=10, max_length=70, min_length=30):
+    start_time = time.time()
+    print("Start Summarization text...")
     # Get the pre-initialized summarization pipeline
     summarization_pipeline = get_summarization_pipeline()
 
@@ -106,10 +112,9 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30):
             # If an error occurred while summarizing the texts, print the exception
             print(f"Error occurred during summarization: {e}")
             all_summaries.extend(batch_texts)
+    end_time = time.time()
+    print("Time taken to perform summarization :", end_time - start_time)
     return all_summaries
-
-
-
 
 
 # Function to compute semantic similarity
