@@ -1,114 +1,30 @@
-
-batchbscrypt
-
-
-IndexError: index out of range in self
-Starting summarization of 684 texts...
-Token indices sequence length is longer than the specified maximum sequence length for this model (1995 > 1024). Running this sequence through the 
-model will result in indexing errors
-Your max_length is set to 100, but your input_length is only 15. Since this is a summarization task, where outputs shorter than the input are typically wanted, you might consider decreasing max_length manually, e.g. summarizer('...', max_length=7)
-Summarized 128 out of 684 texts.
-Summarized 256 out of 684 texts.
-Summarized 384 out of 684 texts.
-Summarized 512 out of 684 texts.
-Your max_length is set to 100, but your input_length is only 7. Since this is a summarization task, where outputs shorter than the input are typically wanted, you might consider decreasing max_length manually, e.g. summarizer('...', max_length=3)
-Summarized 640 out of 684 texts.
-Summarized 684 out of 684 texts.
-Summarization completed.
-2023-07-26 23:16:59.299 Uncaught app exception
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py", line 87, in get
-    entry_bytes = self._read_from_mem_cache(key)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py", line 137, in _read_from_mem_cache    
-    raise CacheStorageKeyNotFoundError("Key not found in mem cache")
-streamlit.runtime.caching.storage.cache_storage_protocol.CacheStorageKeyNotFoundError: Key not found in mem cache
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_data_api.py", line 634, in read_result
-    pickled_entry = self.storage.get(key)
-                    ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py", line 89, in get
-    entry_bytes = self._persist_storage.get(key)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\local_disk_cache_storage.py", line 155, in get
-    raise CacheStorageKeyNotFoundError(
-streamlit.runtime.caching.storage.cache_storage_protocol.CacheStorageKeyNotFoundError: Local disk cache storage is disabled (persist=None)
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 263, in _get_or_create_cached_value
-    cached_result = cache.read_result(value_key)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_data_api.py", line 636, in read_result
-    raise CacheKeyNotFoundError(str(e)) from e
-streamlit.runtime.caching.cache_errors.CacheKeyNotFoundError: Local disk cache storage is disabled (persist=None)
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py", line 87, in get
-    entry_bytes = self._read_from_mem_cache(key)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py", line 137, in _read_from_mem_cache    
-    raise CacheStorageKeyNotFoundError("Key not found in mem cache")
-streamlit.runtime.caching.storage.cache_storage_protocol.CacheStorageKeyNotFoundError: Key not found in mem cache
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_data_api.py", line 634, in read_result
-    pickled_entry = self.storage.get(key)
-                    ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py", line 89, in get
-    entry_bytes = self._persist_storage.get(key)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\local_disk_cache_storage.py", line 155, in get
-    raise CacheStorageKeyNotFoundError(
-streamlit.runtime.caching.storage.cache_storage_protocol.CacheStorageKeyNotFoundError: Local disk cache storage is disabled (persist=None)
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 311, in _handle_cache_miss
-    cached_result = cache.read_result(value_key)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_data_api.py", line 636, in read_result
-    raise CacheKeyNotFoundError(str(e)) from e
-streamlit.runtime.caching.cache_errors.CacheKeyNotFoundError: Local disk cache storage is disabled (persist=None)
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
+ValueError: Must have equal len keys and value when setting with an iterable
+Traceback:
+File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
     exec(code, module.__dict__)
-  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 286, in <module>       
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 318, in <module>
     trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold)
                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
     return cached_func(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
     return self._get_or_create_cached_value(args, kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
     return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
     computed_value = self._info.func(*func_args, **func_kwargs)
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 214, in process_feedback_data
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 234, in process_feedback_data
     feedback_data.loc[long_comments, 'summarized_comments'] = summaries
     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 818, in __setitem__
+File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 818, in __setitem__
     iloc._setitem_with_indexer(indexer, value, self.name)
-  File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1750, in _setitem_with_indexer
+File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1750, in _setitem_with_indexer
     self._setitem_with_indexer(new_indexer, value, name)
-  File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1795, in _setitem_with_indexer
+File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1795, in _setitem_with_indexer
     self._setitem_with_indexer_split_path(indexer, value, name)
-  File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1850, in _setitem_with_indexer_split_path
+File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1850, in _setitem_with_indexer_split_path
     raise ValueError(
-ValueError: Must have equal len keys and value when setting with an iterable
