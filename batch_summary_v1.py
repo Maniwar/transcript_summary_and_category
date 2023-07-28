@@ -84,13 +84,18 @@ def get_summarization_pipeline():
     print("Time taken to initialize summarization pipeline:", end_time - start_time)
     return summarizer
 
-def summarize_text(texts, summarization_pipeline, batch_size=10, min_length=25, max_length=75):
+# Function to summarize a list of texts using batching
+@st.cache_resource
+def summarize_text(texts, batch_size=10, max_length=70, min_length=30):
+    # Get the pre-initialized summarization pipeline
+    summarization_pipeline = get_summarization_pipeline()
+
     all_summaries = []
 
     # Iterate over the texts in batches
     for i in range(0, len(texts), batch_size):
         # Take the next batch of texts
-        batch_texts = texts[i:i+batch_size].tolist()  # Convert to list
+        batch_texts = texts.iloc[i:i+batch_size].tolist()  # Convert to list
         try:
             # Compute the summaries for a batch of texts
             summaries = summarization_pipeline(batch_texts, max_length=max_length, min_length=min_length, do_sample=False)
@@ -102,6 +107,8 @@ def summarize_text(texts, summarization_pipeline, batch_size=10, min_length=25, 
             print(f"Error occurred during summarization: {e}")
             all_summaries.extend(batch_texts)
     return all_summaries
+
+
 
 
 
