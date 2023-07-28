@@ -1,97 +1,203 @@
-ValueError: Must have equal len keys and value when setting with an iterable
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 314, in <module>
-    trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
-    return cached_func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
-    return self._get_or_create_cached_value(args, kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
-    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
-    computed_value = self._info.func(*func_args, **func_kwargs)
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 230, in process_feedback_data
-    feedback_data.loc[long_comments, 'summarized_comments'] = summaries
-    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 818, in __setitem__
-    iloc._setitem_with_indexer(indexer, value, self.name)
-File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1750, in _setitem_with_indexer
-    self._setitem_with_indexer(new_indexer, value, name)
-File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1795, in _setitem_with_indexer
-    self._setitem_with_indexer_split_path(indexer, value, name)
-File "C:\Python311\Lib\site-packages\pandas\core\indexing.py", line 1850, in _setitem_with_indexer_split_path
-    raise ValueError(
+import pandas as pd
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.sentiment import SentimentIntensityAnalyzer
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+import datetime
+import numpy as np
+import xlsxwriter
+import chardet
+from transformers import pipeline
+import base64
+from io import BytesIO
+import streamlit as st
+import textwrap
+from categories_josh1 import default_categories
+import time
+
+# Set page title and layout
+st.set_page_config(page_title="👨‍💻 Transcript Categorization")
+
+# Initialize BERT model
+@st.cache_resource
+def initialize_bert_model():
+    start_time = time.time()
+    print("Initializing BERT model...")
+    #return SentenceTransformer('all-MiniLM-L6-v2')
+    #return SentenceTransformer('all-MiniLM-L12-v2')
+    #return SentenceTransformer('paraphrase-MiniLM-L6-v2')
+    return SentenceTransformer('paraphrase-MiniLM-L12-v2')
+    end_time = time.time()
+    print(f"BERT model initialized. Time taken: {end_time - start_time} seconds.")
+    #return SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+    #return SentenceTransformer('stsb-roberta-base')
+    #return SentenceTransformer('distilroberta-base-paraphrase-v1')
+
+
+# Create a dictionary to store precomputed embeddings
+@st.cache_resource
+def compute_keyword_embeddings(keywords):
+    start_time = time.time()
+    print("Computing keyword embeddings...")
+    model = initialize_bert_model()
+    keyword_embeddings = {}
+    for keyword in keywords:
+        keyword_embeddings[keyword] = model.encode([keyword])[0]
+    end_time = time.time()
+    print(f"Keyword embeddings computed. Time taken: {end_time - start_time} seconds.")
+    return keyword_embeddings
+
+# Function to preprocess the text
+@st.cache_data
+def preprocess_text(text):
+    start_time = time.time()
+    print("Preprocessing text...")
+    # Convert to string if input is a float
+    if isinstance(text, float):
+        text = str(text)
+    end_time = time.time()
+    print(f"Preprocessing text completed. Time taken: {end_time - start_time} seconds.")
+
+    # Remove unnecessary characters and weird characters
+    text = text.encode('ascii', 'ignore').decode('utf-8')
+
+    # Return the text without removing stop words
+    return text
+
+# Function to perform sentiment analysis
+@st.cache_data
+def perform_sentiment_analysis(text):
+    analyzer = SentimentIntensityAnalyzer()
+    sentiment_scores = analyzer.polarity_scores(text)
+    compound_score = sentiment_scores['compound']
+    return compound_score
+
 
 # Function to summarize the text
 @st.cache_resource
 def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chunk_len=16):
     start_time = time.time()
     print("Summarize_text function start text...")
-    # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
-
-    # Initialize the list to store the summaries
     all_summaries = []
-
-    total_texts = len(texts)  # total number of texts
+    total_texts = len(texts)
     print(f"Starting summarization of {total_texts} texts...")
 
-    # Iterate over the texts
     for idx, text in enumerate(texts):
         tokens = summarization_pipeline.tokenizer.tokenize(text)
-
-        # Check if the text is too long and needs to be split
         if len(tokens) > max_tokens:
             current_chunk = []
             current_chunk_tokens = 0
-
+            text_summaries = []
             for token in tokens:
-                # If the current chunk plus this token would exceed max tokens limit, process the current chunk and start a new one
                 if current_chunk_tokens + len(token) > max_tokens or len(current_chunk) == max_chunk_len:
                     if current_chunk:
                         chunk_text = summarization_pipeline.tokenizer.convert_tokens_to_string(current_chunk)
                         try:
-                            summaries = summarization_pipeline(chunk_text, max_length=max_length, min_length=min_length, do_sample=False)
-                            all_summaries.extend([summary['summary_text'] for summary in summaries])
+                            summaries = summarization_pipeline(chunk_text, max_length=len(current_chunk), min_length=int(0.75*len(current_chunk)), do_sample=False)
+                            text_summaries.extend([summary['summary_text'] for summary in summaries])
                         except Exception as e:
                             print(f"Error summarizing chunk {idx + 1}: {e}")
-
+                            text_summaries.append(chunk_text)
                     current_chunk = [token]
                     current_chunk_tokens = len(token)
                 else:
                     current_chunk.append(token)
                     current_chunk_tokens += len(token)
 
-            # Summarize the last chunk if it's not empty
             if current_chunk:
                 chunk_text = summarization_pipeline.tokenizer.convert_tokens_to_string(current_chunk)
                 try:
-                    summaries = summarization_pipeline(chunk_text, max_length=max_length, min_length=min_length, do_sample=False)
-                    all_summaries.extend([summary['summary_text'] for summary in summaries])
+                    summaries = summarization_pipeline(chunk_text, max_length=len(current_chunk), min_length=int(0.75*len(current_chunk)), do_sample=False)
+                    text_summaries.extend([summary['summary_text'] for summary in summaries])
                 except Exception as e:
                     print(f"Error summarizing the last chunk: {e}")
+                    text_summaries.append(chunk_text)
+
+            all_summaries.append(' '.join(text_summaries))
         else:
-            # If the text is short enough, summarize it directly
             try:
                 summaries = summarization_pipeline(text, max_length=max_length, min_length=min_length, do_sample=False)
-                all_summaries.extend([summary['summary_text'] for summary in summaries])
+                all_summaries.append(summaries[0]['summary_text'])
             except Exception as e:
                 print(f"Error summarizing text {idx + 1}: {e}")
+                all_summaries.append(text)
 
-        # Print a progress message every max_chunk_len texts
         if (idx + 1) % max_chunk_len == 0 or (idx + 1) == total_texts:
             print(f"Summarized {idx + 1} out of {total_texts} texts.")
     end_time = time.time()
     print("Summarization completed.")
     print(f"Summarization text completed. Time taken: {end_time - start_time} seconds.")
     return all_summaries
+
+
+
+
+# Function to compute semantic similarity
+def compute_semantic_similarity(embedding1, embedding2):
+    return cosine_similarity([embedding1], [embedding2])[0][0]
+
+# Streamlit interface
+st.title("👨‍💻 Transcript Categorization")
+
+# Add checkbox for emerging issue mode
+emerging_issue_mode = st.sidebar.checkbox("Emerging Issue Mode")
+
+# Sidebar description for emerging issue mode
+st.sidebar.write("Emerging issue mode allows you to set a minimum similarity score. If the comment doesn't match up to the categories based on the threshold, it will be set to NO MATCH.")
+
+# Add slider for semantic similarity threshold in emerging issue mode
+similarity_threshold = None
+similarity_score = None
+best_match_score = None
+
+if emerging_issue_mode:
+    similarity_threshold = st.sidebar.slider("Semantic Similarity Threshold", min_value=0.0, max_value=1.0, value=0.35)
+
+
+# Edit categories and keywords
+st.sidebar.header("Edit Categories")
+
+categories = {}
+for category, keywords in default_categories.items():
+    category_name = st.sidebar.text_input(f"{category} Category", value=category)
+    category_keywords = st.sidebar.text_area(f"Keywords for {category}", value="\n".join(keywords))
+    categories[category_name] = category_keywords.split("\n")
+
+st.sidebar.subheader("Add or Modify Categories")
+new_category_name = st.sidebar.text_input("New Category Name")
+new_category_keywords = st.sidebar.text_area(f"Keywords for {new_category_name}")
+if new_category_name and new_category_keywords:
+    categories[new_category_name] = new_category_keywords.split("\n")
+
+# File upload
+uploaded_file = st.file_uploader("Upload CSV file", type="csv")
+
+# Select the column containing the comments
+comment_column = None
+date_column = None
+trends_data = None
+
+# Define an empty DataFrame for feedback_data
+feedback_data = pd.DataFrame()
+
+if uploaded_file is not None:
+    # Read customer feedback from uploaded file
+    csv_data = uploaded_file.read()
+
+    # Detect the encoding of the CSV file
+    result = chardet.detect(csv_data)
+    encoding = result['encoding']
+    try:
+        feedback_data = pd.read_csv(BytesIO(csv_data), encoding=encoding)
+    except Exception as e:
+        st.error(f"Error reading the CSV file: {e}")
+    comment_column = st.selectbox("Select the column containing the comments", feedback_data.columns.tolist())
+    date_column = st.selectbox("Select the column containing the dates", feedback_data.columns.tolist())
+    grouping_option = st.radio("Select how to group the dates", ["Date", "Week", "Month", "Quarter"])
+    process_button = st.button("Process Feedback")
+
     if comment_column is not None and date_column is not None and grouping_option is not None and process_button:
         # Check if the processed DataFrame is already cached
 
@@ -197,3 +303,115 @@ def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chu
                     trends_data.columns.values[idx] = f"{column}_{i}"
 
             return trends_data
+
+Preprocessing comments and summarizing if necessary...
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0010004043579101562 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0009818077087402344 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0010018348693847656 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0010025501251220703 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0010085105895996094 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0009851455688476562 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0010025501251220703 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0009903907775878906 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0009913444519042969 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.000990152359008789 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.003001689910888672 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0009911060333251953 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0010008811950683594 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0010004043579101562 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0010039806365966797 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0009996891021728516 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.001005411148071289 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0010046958923339844 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0010001659393310547 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0010061264038085938 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.001001119613647461 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.001009225845336914 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.002012968063354492 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.000982522964477539 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0010111331939697266 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0009906291961669922 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0010013580322265625 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0010013580322265625 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0009629726409912109 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0009942054748535156 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0010006427764892578 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0009980201721191406 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0 seconds.
+Preprocessing text...
+Preprocessing text completed. Time taken: 0.0005743503570556641 seconds.
+Summarize_text function start text...
+Starting summarization of 21 texts...
+Summarized 16 out of 16 texts.
+Summarization completed.
+Summarization text completed. Time taken: 1606.1416811943054 seconds.
+Summarized 16 out of 21 texts.
+Summarized 21 out of 21 texts.
+Summarization completed.
+Summarization text completed. Time taken: 343.9050877094269 seconds.
+Preprocessed comments and summarized. Time taken: 344.4593141078949 seconds.
+Start comment embeddings in batches
+Batch comment embeddings done. Time taken: 6.81313419342041 seconds.
+Computing sentiment scores...
+Sentiment scores computed. Time taken: 1.1020033359527588 seconds.
+Computing semantic similarity and assigning categories...
+Computed semantic similarity and assigned categories. Time taken: 0.33399462699890137 seconds.
+C:\Python311\Lib\site-packages\xlsxwriter\workbook.py:339: UserWarning: Calling close() on already closed file.
+  warn("Calling close() on already closed file.")
