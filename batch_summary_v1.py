@@ -73,62 +73,46 @@ def perform_sentiment_analysis(text):
     compound_score = sentiment_scores['compound']
     return compound_score
 
-
-# Function to summarize the text
+ # Function to initialize the summarization pipeline
 @st.cache_resource
-def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chunk_len=16):
-    start_time = time.time()
-    print("Summarize_text function start text...")
-    summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
+def get_summarization_pipeline():
+    # Capture start time
+    start = datetime.now()
+    
+    # Initialize the summarization pipeline
+    summarizer = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
+    
+    # Capture end time
+    end = datetime.now()
+    
+    print("Time taken to initialize summarization pipeline:", end - start)
+    
+    return summarizer
+    
+# Function to summarize a list of texts using batching
+@st.cache_resource
+def summarize_text(texts, batch_size=10, max_length=70, min_length=30):
+    # Get the pre-initialized summarization pipeline
+    summarization_pipeline = get_summarization_pipeline()
+    
     all_summaries = []
-    total_texts = len(texts)
-    print(f"Starting summarization of {total_texts} texts...")
-
-    for idx, text in enumerate(texts):
-        tokens = summarization_pipeline.tokenizer.tokenize(text)
-        if len(tokens) > max_tokens:
-            current_chunk = []
-            current_chunk_tokens = 0
-            text_summaries = []
-            for token in tokens:
-                if current_chunk_tokens + len(token) > max_tokens or len(current_chunk) == max_chunk_len:
-                    if current_chunk:
-                        chunk_text = summarization_pipeline.tokenizer.convert_tokens_to_string(current_chunk)
-                        try:
-                            summaries = summarization_pipeline(chunk_text, max_length=len(current_chunk), min_length=int(0.75*len(current_chunk)), do_sample=False)
-                            text_summaries.extend([summary['summary_text'] for summary in summaries])
-                        except Exception as e:
-                            print(f"Error summarizing chunk {idx + 1}: {e}")
-                            text_summaries.append(chunk_text)
-                    current_chunk = [token]
-                    current_chunk_tokens = len(token)
-                else:
-                    current_chunk.append(token)
-                    current_chunk_tokens += len(token)
-
-            if current_chunk:
-                chunk_text = summarization_pipeline.tokenizer.convert_tokens_to_string(current_chunk)
-                try:
-                    summaries = summarization_pipeline(chunk_text, max_length=len(current_chunk), min_length=int(0.75*len(current_chunk)), do_sample=False)
-                    text_summaries.extend([summary['summary_text'] for summary in summaries])
-                except Exception as e:
-                    print(f"Error summarizing the last chunk: {e}")
-                    text_summaries.append(chunk_text)
-            
-            all_summaries.append(' '.join(text_summaries))
-        else:
-            try:
-                summaries = summarization_pipeline(text, max_length=max_length, min_length=min_length, do_sample=False)
-                all_summaries.append(summaries[0]['summary_text'])
-            except Exception as e:
-                print(f"Error summarizing text {idx + 1}: {e}")
-                all_summaries.append(text)
-
-        if (idx + 1) % max_chunk_len == 0 or (idx + 1) == total_texts:
-            print(f"Summarized {idx + 1} out of {total_texts} texts.")
-    end_time = time.time()
-    print("Summarization completed.")
-    print(f"Summarization text completed. Time taken: {end_time - start_time} seconds.")
+    for i in range(0, len(texts), batch_size):
+        # Capture start time
+        start = datetime.now()
+        try:
+            # Compute the summaries for a batch of texts
+            summaries = summarization_pipeline(texts[i:i+batch_size], max_length=max_length, min_length=min_length, do_sample=False)
+            # Extract the summaries from the output and add them to the list of summaries
+            batch_summaries = [summary['summary_text'] for summary in summaries]
+            all_summaries.extend(batch_summaries)
+        except Exception as e:
+            # If an error occurred while summarizing the texts, add the original texts to the list of summaries
+            all_summaries.extend(texts[i:i+batch_size])
+        
+        # Capture end time
+        end = datetime.now()
+        print("Time taken to summarize batch:", end - start)
+    
     return all_summaries
 
 
