@@ -9,6 +9,7 @@ import numpy as np
 import xlsxwriter
 import chardet
 from transformers import pipeline
+from transformers import AutoTokenizer
 import base64
 from io import BytesIO
 import streamlit as st
@@ -76,10 +77,7 @@ def perform_sentiment_analysis(text):
     return compound_score
 
 
-from transformers import AutoTokenizer
-import nltk
-nltk.download('punkt')
-
+ # Function to initialize the summarization pipeline
 @st.cache_resource
 def get_summarization_pipeline():
     start_time = time.time()
@@ -91,6 +89,7 @@ def get_summarization_pipeline():
     print("Time taken to initialize summarization pipeline:", end_time - start_time)
     return summarizer
 
+# Function to summarize a list of texts using batching
 @st.cache_resource
 def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max_length=1024):
     start_time = time.time()
@@ -136,7 +135,6 @@ def summarize_text(texts, batch_size=10, max_length=70, min_length=30, model_max
     end_time = time.time()
     print("Time taken to perform summarization :", end_time - start_time)
     return all_summaries
-
 
 
 # Function to compute semantic similarity
