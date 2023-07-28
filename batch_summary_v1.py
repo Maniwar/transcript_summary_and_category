@@ -79,6 +79,20 @@ def perform_sentiment_analysis(text):
     return compound_score
 
 
+ # Function to initialize the summarization pipeline
+@st.cache_resource
+def get_summarization_pipeline():
+    start_time = time.time()
+    print("Start Summarization Pipeline text...")
+    # Initialize the summarization pipeline
+    summarizer = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
+    # Capture end time
+    end_time = time.time()
+    print("Time taken to initialize summarization pipeline:", end_time - start_time)
+    return summarizer
+
+@st.cache_data
+# Function to summarize a list of texts using batching
 def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_chunk_len=128, min_word_count=100):
     start_time = time.time()
     print("Start Summarizing text...")
@@ -138,7 +152,6 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, max_ch
     end_time = time.time()
     print("Time taken to process summarization:", end_time - start_time)
     return all_summaries
-
 
 
 # Function to compute semantic similarity
