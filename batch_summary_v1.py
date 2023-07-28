@@ -28,11 +28,12 @@ def initialize_bert_model():
     #return SentenceTransformer('all-MiniLM-L12-v2')
     #return SentenceTransformer('paraphrase-MiniLM-L6-v2')
     return SentenceTransformer('paraphrase-MiniLM-L12-v2')
+    end_time = time.time()
+    print(f"BERT model initialized. Time taken: {end_time - start_time} seconds.")
     #return SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
     #return SentenceTransformer('stsb-roberta-base')
     #return SentenceTransformer('distilroberta-base-paraphrase-v1')
-    end_time = time.time()
-    print(f"BERT model initialized. Time taken: {end_time - start_time} seconds.")
+
 
 # Create a dictionary to store precomputed embeddings
 @st.cache_resource
@@ -73,7 +74,7 @@ def perform_sentiment_analysis(text):
 
 # Function to summarize the text
 @st.cache_resource
-def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chunk_len=4):
+def summarize_text(texts, max_length=70, min_length=30, max_tokens=1024, max_chunk_len=16):
     start_time = time.time()
     print("Summarize_text function start text...")
     # Initialize the summarization pipeline
