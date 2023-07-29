@@ -61,25 +61,41 @@ def perform_sentiment_analysis(text):
     compound_score = sentiment_scores['compound']
     return compound_score
 
-# Function to summarize the text
 @st.cache_resource
-def summarize_text(text, max_length=65, min_length=30):
- # Initialize the summarization pipeline
-    summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
+# Function to summarize text with batching
+def summarize_text_with_batching(texts, summarization_pipeline, max_tokens=1024):
+    # Initialize a list to store the summaries
+    all_summaries = []
 
-    # Split the text into chunks of approximately 1024 tokens
-    chunk_size = 1024
-    text_chunks = [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
+    # Calculate the total number of batches
+    total_batches = (len(texts) + max_tokens - 1) // max_tokens
 
-    # Summarize each chunk and display progress using tqdm
-    summaries = []
-    for chunk in tqdm.tqdm(text_chunks, desc="Summarizing"):
-        summaries.append(summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False)[0]['summary_text'])
+    # Print the total number of batches and chunks
+    print(f"Total batches: {total_batches}")
+    print(f"Total chunks: {len(texts)}")
 
-    # Join the summaries together
-    full_summary = " ".join(summaries)
-    return full_summary.strip()
+    pbar = tqdm(total=total_batches, desc="Summarizing Texts")
 
+    # Initialize variables for the current batch and its token count
+    current_batch = []
+    current_tokens = 0
+
+    for batch_index in range(total_batches):
+        # Calculate the start and end indices for the current batch
+        start_idx = batch_index * max_tokens
+        end_idx = (batch_index + 1) * max_tokens
+        current_batch = texts[start_idx:end_idx]
+        current_tokens = sum(len(text.split()) for text in current_batch)
+
+        # Summarize the current batch
+        summaries = summarization_pipeline.batch_encode_plus(current_batch, max_length=100, min_length=50, do_sample=False, return_tensors="pt")
+        batch_summaries = summarization_pipeline.generate(summaries.input_ids, num_beams=2, max_length=100, min_length=50, early_stopping=True)
+        all_summaries.extend([summarization_pipeline.decode(summary, skip_special_tokens=True) for summary in batch_summaries])
+
+        pbar.update(1)
+
+    pbar.close()
+    return all_summaries
 
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
@@ -166,10 +182,23 @@ if uploaded_file is not None:
             # Preprocess comments and summarize if necessary
             print("Preprocessing comments and summarizing if necessary...")
             start_time = time.time()
-            feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
-            feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].apply(lambda x: summarize_text_with_progress(x) if len(x.split()) > 80 else x)
+            feedback_data['preprocessed_comments'] = preprocess_text_with_progress(feedback_data[comment_column])
             end_time = time.time()
             print(f"Preprocessing comments and summarizing done. Time taken: {end_time - start_time} seconds.")
+        
+            # Process and summarize long comments in batches
+            print("Summarizing long comments in batches...")
+            start_time = time.time()
+            summarization_pipeline = get_summarization_pipeline()
+            long_comments = feedback_data['preprocessed_comments'].apply(lambda x: len(x.split()) > 100)
+            long_comment_texts = feedback_data.loc[long_comments, 'preprocessed_comments'].tolist()
+            all_summaries = summarize_text_with_batching(long_comment_texts, summarization_pipeline)
+            feedback_data.loc[long_comments, 'summarized_comments'] = all_summaries
+            end_time = time.time()
+            print(f"Summarizing long comments done. Time taken: {end_time - start_time} seconds.")
+        
+            # Fill in missing summarized comments with the original preprocessed comments
+            feedback_data['summarized_comments'] = feedback_data['summarized_comments'].fillna(feedback_data['preprocessed_comments'])
     
             # Initialize the BERT model once
             model = initialize_bert_model()
@@ -246,7 +275,8 @@ if uploaded_file is not None:
                 column_indices = [i for i, col in enumerate(trends_data.columns) if col == column]
                 for i, idx in enumerate(column_indices[1:], start=1):
                     trends_data.columns.values[idx] = f"{column}_{i}"
-
+            total_time = time.time() - start_time
+            print(f"Total processing time: {total_time} seconds.")
             return trends_data
 
 
