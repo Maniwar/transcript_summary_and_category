@@ -53,6 +53,31 @@ def preprocess_text(text):
     # Return the text without removing stop words
     return text
 
+# Function to preprocess the text with progress bar
+def preprocess_text_with_progress(texts):
+    # Initialize an empty list to store the preprocessed texts
+    preprocessed_texts = []
+
+    # Calculate the total number of batches
+    total_batches = len(texts)
+
+    # Initialize a tqdm progress bar
+    with tqdm(total=total_batches, desc="Preprocessing Texts", unit="batch") as pbar:
+        for text in texts:
+            # Simulate some processing time
+            time.sleep(0.1)
+
+            # Preprocess the text
+            preprocessed_text = preprocess_text(text)
+
+            # Append the preprocessed text to the list
+            preprocessed_texts.append(preprocessed_text)
+
+            # Update the progress bar
+            pbar.update(1)
+
+    return preprocessed_texts
+
 # Function to perform sentiment analysis
 @st.cache_data
 def perform_sentiment_analysis(text):
@@ -67,35 +92,61 @@ def summarize_text_with_batching(texts, summarization_pipeline, max_tokens=1024)
     # Initialize a list to store the summaries
     all_summaries = []
 
-    # Calculate the total number of batches
-    total_batches = (len(texts) + max_tokens - 1) // max_tokens
+    # Calculate the total number of chunks
+    total_chunks = sum(len(summarization_pipeline.encode(text).input_ids) // max_tokens + 1 for text in texts)
 
-    # Print the total number of batches and chunks
-    print(f"Total batches: {total_batches}")
-    print(f"Total chunks: {len(texts)}")
+    # Print the total number of chunks
+    print(f"Total chunks: {total_chunks}")
 
-    pbar = tqdm(total=total_batches, desc="Summarizing Texts")
+    pbar = tqdm(total=total_chunks, desc="Summarizing Texts")
 
-    # Initialize variables for the current batch and its token count
-    current_batch = []
+    # Initialize a variable to keep track of the current token count
     current_tokens = 0
 
-    for batch_index in range(total_batches):
-        # Calculate the start and end indices for the current batch
-        start_idx = batch_index * max_tokens
-        end_idx = (batch_index + 1) * max_tokens
-        current_batch = texts[start_idx:end_idx]
-        current_tokens = sum(len(text.split()) for text in current_batch)
+    # Initialize a list to store the current chunk
+    current_chunk = []
 
-        # Summarize the current batch
-        summaries = summarization_pipeline.batch_encode_plus(current_batch, max_length=100, min_length=50, do_sample=False, return_tensors="pt")
-        batch_summaries = summarization_pipeline.generate(summaries.input_ids, num_beams=2, max_length=100, min_length=50, early_stopping=True)
-        all_summaries.extend([summarization_pipeline.decode(summary, skip_special_tokens=True) for summary in batch_summaries])
+    for text in texts:
+        # Tokenize the text
+        input_ids = summarization_pipeline.encode(text).input_ids
+        tokens = summarization_pipeline.tokenizer.convert_ids_to_tokens(input_ids)
 
-        pbar.update(1)
+        # Iterate through the tokens
+        for token in tokens:
+            # Calculate the number of tokens in the current chunk
+            current_tokens += 1
+
+            # Add the token to the current chunk
+            current_chunk.append(token)
+
+            # If the current chunk has reached the maximum token limit, summarize it
+            if current_tokens >= max_tokens:
+                # Summarize the current chunk
+                summary = summarization_pipeline.decode(summarization_pipeline.tokenizer.convert_tokens_to_ids(current_chunk))
+                all_summaries.append(summary)
+
+                # Reset the current chunk and token count
+                current_chunk = []
+                current_tokens = 0
+
+                # Update the progress bar
+                pbar.update(1)
+
+        # If there are remaining tokens in the current chunk, summarize it
+        if current_chunk:
+            summary = summarization_pipeline.decode(summarization_pipeline.tokenizer.convert_tokens_to_ids(current_chunk))
+            all_summaries.append(summary)
+
+            # Reset the current chunk and token count
+            current_chunk = []
+            current_tokens = 0
+
+            # Update the progress bar
+            pbar.update(1)
 
     pbar.close()
     return all_summaries
+
 
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
@@ -279,10 +330,9 @@ if uploaded_file is not None:
             print(f"Total processing time: {total_time} seconds.")
             return trends_data
 
-
-
-        # Process feedback data and cache the result
         trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold)
+
+
 
         # Display trends and insights
         if trends_data is not None:
