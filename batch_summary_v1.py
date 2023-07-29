@@ -67,20 +67,26 @@ def perform_sentiment_analysis(text):
 
 # Function to tokenize the text into chunks of approximately 1024 tokens each
 @st.cache_resource
-def tokenize_text_into_chunks(text, max_tokens=1024):
-    # Tokenize the text
-    tokens = tokenizer(text)["input_ids"]
-
-    # Divide the tokens into chunks
+def tokenize_and_chunk_text(texts, max_tokens=1024):
+    """
+    Tokenizes a list of texts and divides them into chunks such that the total 
+    number of tokens in each chunk is close to max_tokens. Returns the chunks 
+    and their corresponding token counts.
+    """
     chunks = []
     chunk = []
-    for token in tokens:
-        if len(chunk) + 1 > max_tokens:
-            chunks.append(chunk)
-            chunk = []
-        chunk.append(token)
+    num_tokens = 0
+    for text in texts:
+        tokens = tokenizer(text)['input_ids']  # using the tokenizer here
+        if num_tokens + len(tokens) > max_tokens:
+            if chunk:
+                chunks.append((chunk, num_tokens))
+                chunk = []
+                num_tokens = 0
+        chunk.append(text)
+        num_tokens += len(tokens)
     if chunk:
-        chunks.append(chunk)
+        chunks.append((chunk, num_tokens))
     return chunks
 
 # Function to summarize the text
