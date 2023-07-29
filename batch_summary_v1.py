@@ -77,6 +77,7 @@ def get_summarization_pipeline():
     print("Time taken to initialize summarization pipeline:", end_time - start_time)
     return pipeline("summarization", model=model_name, tokenizer=tokenizer)
 
+@st.cache_data
 # Function to split the long text into chunks while respecting the maximum token limit
 def chunk_and_stitch(text, summarization_pipeline, max_tokens=1024):
     # Split the text into sentences
@@ -93,6 +94,7 @@ def chunk_and_stitch(text, summarization_pipeline, max_tokens=1024):
         chunks.append(current_chunk)
     return chunks
 
+@st.cache_data
 # Function to summarize a list of texts
 def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_word_count=80, max_characters=8000):
     start_time = time.time()
@@ -108,12 +110,12 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_wo
 
     # Initialize progress bar
     pbar = tqdm(total=total_texts)
-
+    @st.cache_data
     # Function to process a list of texts as a single chunk
     def process_chunk(chunk):
         summaries = summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False)
         all_summaries.extend([summary['summary_text'] for summary in summaries])
-
+    @st.cache_data
     # Function to compute the token count of a text
     def get_token_count(text):
         return len(summarization_pipeline.tokenizer(text)["input_ids"])
@@ -172,6 +174,7 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_wo
     print("Time taken to process summarization:", end_time - start_time)
     return all_summaries
 
+@st.cache_data
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
     return cosine_similarity([embedding1], [embedding2])[0][0]
@@ -258,30 +261,30 @@ if uploaded_file is not None:
             # Preprocess comments and summarize if necessary
             start_time = time.time()
             print("Preprocessing comments and summarizing if necessary...")
-            
+
             feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
-            
+
             # Identify long comments
             long_comments = feedback_data['preprocessed_comments'].apply(lambda x: len(x.split()) > 100)
-            
+
             # Extract all long comments into a list
             long_comment_texts = feedback_data.loc[long_comments, 'preprocessed_comments'].tolist()
-            
+
             # Summarize the list of long comments in one go
             summaries = summarize_text(long_comment_texts)
-            
+
             # Create a new DataFrame from the long comments and their summaries
             long_comments_summaries = pd.DataFrame({
                 'preprocessed_comments': long_comment_texts,
                 'summarized_comments': summaries
             })
-            
+
             # Merge the summarized comments back into the original DataFrame
             feedback_data = pd.merge(feedback_data, long_comments_summaries, on='preprocessed_comments', how='left')
-            
+
             # Fill in missing summarized comments with the original preprocessed comments
             feedback_data['summarized_comments'] = feedback_data['summarized_comments'].fillna(feedback_data['preprocessed_comments'])
-            
+
             end_time = time.time()
             print(f"Preprocessed comments and summarized. Time taken: {end_time - start_time} seconds.")
 
