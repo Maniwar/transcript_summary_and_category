@@ -118,7 +118,7 @@ def chunk_and_stitch(text, max_tokens_per_sentence, tokenizer):
 
 # Function to preprocess the comments and perform summarization if necessary
 @st.cache_data
-def summarize_text(comments, max_tokens_per_sentence=512, max_length=100, min_length=50, max_tokens=1024, min_word_count=80):
+def summarize_text(comments, max_tokens_per_sentence=512, max_length=75, min_length=30, max_tokens=1024, min_word_count=80):
     start_time = time.time()
     print("Preprocessing comments and summarizing if necessary...")
     # Preprocess the comments
