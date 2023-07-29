@@ -8,7 +8,7 @@ import datetime
 import numpy as np
 import xlsxwriter
 import chardet
-from transformers import pipeline
+from transformers import pipeline, AutoTokenizer
 import base64
 from io import BytesIO
 import streamlit as st
@@ -101,6 +101,31 @@ def summarize_text(text, max_length=100, min_length=50):
 
     return full_summary.strip(), total_chunks
 
+# Initialize tokenizer for the specific model
+tokenizer = AutoTokenizer.from_pretrained('knkarthick/MEETING_SUMMARY')
+
+def tokenize_and_chunk_text(texts, max_tokens=1024):
+    """
+    Tokenizes a list of texts and divides them into chunks such that the total 
+    number of tokens in each chunk is close to max_tokens. Returns the chunks 
+    and their corresponding token counts.
+    """
+    chunks = []
+    chunk = []
+    num_tokens = 0
+    for text in texts:
+        tokens = tokenizer.tokenize(text)
+        if num_tokens + len(tokens) > max_tokens:
+            if chunk:
+                chunks.append((chunk, num_tokens))
+                chunk = []
+                num_tokens = 0
+        chunk.append(text)
+        num_tokens += len(tokens)
+    if chunk:
+        chunks.append((chunk, num_tokens))
+    return chunks
+
 
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
@@ -170,7 +195,7 @@ if uploaded_file is not None:
         # Check if the processed DataFrame is already cached
 
         @st.cache_data
-        def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold, batch_size):
+        def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold):
             # Start timing
             start_time = time.time()
         
@@ -190,41 +215,37 @@ if uploaded_file is not None:
         
             # Preprocess comments and summarize if necessary
             feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
-            total_batches = (len(feedback_data) + batch_size - 1) // batch_size  # Calculate the number of batches that will be processed
-            for i in range(0, len(feedback_data), batch_size):
-                batch = feedback_data['preprocessed_comments'][i:i+batch_size].tolist()
-                summarized_comments, chunks = zip(*[summarize_text(x) if len(x.split()) > 100 else (x, 1) for x in batch])
-                feedback_data.loc[i:i+batch_size-1, 'summarized_comments'] = summarized_comments
-                progress_status.text(f"Processing batch: {i//batch_size+1}/{total_batches} (Text chunks: {sum(chunks)})")
-
+            feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].apply(lambda x: summarize_text(x) if len(x.split()) > 100 else x)
+        
+            # Compute comment embeddings in chunks based on token count
+            comment_texts = feedback_data['summarized_comments'].tolist()
+            chunks = tokenize_and_chunk_text(comment_texts)
             comment_embeddings = []
-            for i in range(0, len(feedback_data), batch_size):
-                batch = feedback_data['summarized_comments'][i:i+batch_size].tolist()
-                comment_embeddings.extend(model.encode(batch))
+            for chunk, _ in chunks:
+                comment_embeddings.extend(model.encode(chunk))
             feedback_data['comment_embeddings'] = comment_embeddings
-
+        
             # Compute sentiment scores
             feedback_data['sentiment_scores'] = feedback_data['preprocessed_comments'].apply(perform_sentiment_analysis)
-
-            # Compute semantic similarity and assign categories in batches
-            for i in range(0, len(feedback_data), batch_size):
-                batch_embeddings = feedback_data['comment_embeddings'][i:i+batch_size].tolist()
+        
+            # Compute semantic similarity and assign categories in chunks
+            for chunk, _ in chunks:
+                batch_embeddings = model.encode(chunk)
                 for main_category, keywords in categories.items():
                     for keyword in keywords:
                         keyword_embedding = keyword_embeddings[keyword]  # Use the precomputed keyword embedding
                         batch_similarity_scores = cosine_similarity([keyword_embedding], batch_embeddings)[0]
                         # Update categories and sub-categories based on the highest similarity score
                         for j, similarity_score in enumerate(batch_similarity_scores):
-                            if i+j < len(categories_list):
-                                if similarity_score > similarity_scores[i+j]:
-                                    categories_list[i+j] = main_category
-                                    summarized_texts[i+j] = keyword
-                                    similarity_scores[i+j] = similarity_score
+                            if j < len(categories_list):
+                                if similarity_score > similarity_scores[j]:
+                                    categories_list[j] = main_category
+                                    summarized_texts[j] = keyword
+                                    similarity_scores[j] = similarity_score
                             else:
                                 categories_list.append(main_category)
                                 summarized_texts.append(keyword)
                                 similarity_scores.append(similarity_score)
-
             # Prepare final data
             for index, row in feedback_data.iterrows():
                 preprocessed_comment = row['preprocessed_comments']
