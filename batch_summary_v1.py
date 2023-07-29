@@ -1,85 +1,3 @@
-IndexError: index out of range in self
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 370, in <module>
-    trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
-    return cached_func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
-    return self._get_or_create_cached_value(args, kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
-    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
-    computed_value = self._info.func(*func_args, **func_kwargs)
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 274, in process_feedback_data
-    summaries = summarize_text(long_comment_texts)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
-    return cached_func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
-    return self._get_or_create_cached_value(args, kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
-    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
-    computed_value = self._info.func(*func_args, **func_kwargs)
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 158, in summarize_text
-    summaries = summarization_pipeline(chunked_text, max_length=max_length, min_length=min_length, do_sample=False)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\pipelines\text2text_generation.py", line 265, in __call__
-    return super().__call__(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\pipelines\text2text_generation.py", line 165, in __call__
-    result = super().__call__(*args, **kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\pipelines\base.py", line 1120, in __call__
-    return self.run_single(inputs, preprocess_params, forward_params, postprocess_params)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\pipelines\base.py", line 1127, in run_single
-    model_outputs = self.forward(model_inputs, **forward_params)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\pipelines\base.py", line 1026, in forward
-    model_outputs = self._forward(model_inputs, **forward_params)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\pipelines\text2text_generation.py", line 187, in _forward
-    output_ids = self.model.generate(**model_inputs, **generate_kwargs)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\torch\utils\_contextlib.py", line 115, in decorate_context
-    return func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\generation\utils.py", line 1329, in generate
-    model_kwargs = self._prepare_encoder_decoder_kwargs_for_generation(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\generation\utils.py", line 642, in _prepare_encoder_decoder_kwargs_for_generation
-    model_kwargs["encoder_outputs"]: ModelOutput = encoder(**encoder_kwargs)
-                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\torch\nn\modules\module.py", line 1501, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\models\bart\modeling_bart.py", line 813, in forward
-    embed_pos = self.embed_positions(input)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\torch\nn\modules\module.py", line 1501, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\transformers\models\bart\modeling_bart.py", line 140, in forward
-    return super().forward(positions + self.offset)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\torch\nn\modules\sparse.py", line 162, in forward
-    return F.embedding(
-           ^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\torch\nn\functional.py", line 2210, in embedding
-    return torch.embedding(weight, input, padding_idx, scale_grad_by_freq, sparse)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 import pandas as pd
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
@@ -160,44 +78,6 @@ def get_summarization_pipeline():
     print("Time taken to initialize summarization pipeline:", end_time - start_time)
     return pipeline("summarization", model=model_name, tokenizer=tokenizer)
 
-# Function to compute the token count of a text
-def get_token_count(text, tokenizer):
-    return len(tokenizer(text)["input_ids"])
-
-# Function to chunk the text and stitch it back together
-def chunk_and_stitch(text, max_tokens_per_sentence, tokenizer):
-    # Tokenize the text into sentences using NLTK's sent_tokenize
-    sentences = nltk.sent_tokenize(text)
-
-    # Initialize variables to keep track of the current chunk and its token count
-    current_chunk = []
-    current_chunk_tokens = 0
-    chunks = []
-
-    for sentence in sentences:
-        tokens = get_token_count(sentence, tokenizer)
-
-        # Check if adding this sentence exceeds the token limit
-        if current_chunk_tokens + tokens > max_tokens_per_sentence:
-            if current_chunk_tokens == 0:
-                # The sentence itself is too long, truncate it and add to chunks
-                truncated_sentence = textwrap.shorten(sentence, width=max_tokens_per_sentence, placeholder="")
-                chunks.append(truncated_sentence)
-            else:
-                # Process the current chunk if it's not empty
-                chunks.append(" ".join(current_chunk))
-            current_chunk = []
-            current_chunk_tokens = 0
-
-        current_chunk.append(sentence)
-        current_chunk_tokens += tokens
-
-    # Process any remaining sentences in the last chunk
-    if current_chunk:
-        chunks.append(" ".join(current_chunk))
-
-    return " ".join(chunks)
-
 # Function to preprocess the comments and perform summarization if necessary
 @st.cache_data
 def summarize_text(comments, max_tokens_per_sentence=512, max_length=75, min_length=30, max_tokens=1024, min_word_count=80):
@@ -218,15 +98,7 @@ def summarize_text(comments, max_tokens_per_sentence=512, max_length=75, min_len
     # Initialize progress bar
     pbar = tqdm(total=total_texts)
 
-    # Determine the maximum batch size to utilize the model's capacity effectively
-    max_batch_size = max_tokens // max_length
-
-    # Determine the maximum chunk size to efficiently use the batch size
-    max_chunk_size = max_batch_size // total_texts
-
     # Iterate over the texts
-    current_chunk = []
-    current_chunk_tokens = 0
     for idx, text in enumerate(preprocessed_comments):
         # Skip summarizing the text if the word count is below the threshold
         if len(text.split()) <= min_word_count:
@@ -234,14 +106,44 @@ def summarize_text(comments, max_tokens_per_sentence=512, max_length=75, min_len
             pbar.update(1)
             continue
 
-        # Check if the text exceeds the model's token limit
-        if get_token_count(text, summarization_pipeline.tokenizer) > max_tokens:
-            chunked_text = chunk_and_stitch(text, max_tokens_per_sentence=max_tokens_per_sentence, tokenizer=summarization_pipeline.tokenizer)
-            summaries = summarization_pipeline(chunked_text, max_length=max_length, min_length=min_length, do_sample=False)
-            all_summaries.extend([summary['summary_text'] for summary in summaries])
-        else:
-            summaries = summarization_pipeline(text, max_length=max_length, min_length=min_length, do_sample=False)
-            all_summaries.extend([summary['summary_text'] for summary in summaries])
+        # Determine the maximum batch size to utilize the model's capacity effectively
+        max_batch_size = max_tokens // max_length
+        batch_size = min(max_batch_size, total_texts)
+
+        # Split the text into chunks to fit the batch size and maximum token limit
+        chunks = chunk_and_stitch(text, max_tokens_per_sentence, tokenizer=summarization_pipeline.tokenizer)
+        num_chunks = len(chunks)
+
+        # Initialize variables to keep track of the current batch and its token count
+        current_batch = []
+        current_batch_tokens = 0
+
+        for chunk_idx, chunk in enumerate(chunks):
+            chunk_tokens = get_token_count(chunk, summarization_pipeline.tokenizer)
+
+            # Check if adding this chunk exceeds the batch's token limit
+            if current_batch_tokens + chunk_tokens > max_tokens:
+                # Process the current batch
+                summaries = summarization_pipeline(current_batch, max_length=max_length, min_length=min_length, do_sample=False)
+                all_summaries.extend([summary['summary_text'] for summary in summaries])
+
+                # Reset the current batch and its token count
+                current_batch = []
+                current_batch_tokens = 0
+
+            # Add the chunk to the current batch
+            current_batch.append(chunk)
+            current_batch_tokens += chunk_tokens
+
+            # Check if we've reached the last chunk or the batch is full
+            if chunk_idx == num_chunks - 1 or len(current_batch) == batch_size:
+                # Process the current batch
+                summaries = summarization_pipeline(current_batch, max_length=max_length, min_length=min_length, do_sample=False)
+                all_summaries.extend([summary['summary_text'] for summary in summaries])
+
+                # Reset the current batch and its token count
+                current_batch = []
+                current_batch_tokens = 0
 
         pbar.update(1)
 
