@@ -102,6 +102,7 @@ def summarize_text(text, max_length=100, min_length=50):
     return full_summary.strip(), total_chunks
 
 
+
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
     return cosine_similarity([embedding1], [embedding2])[0][0]
