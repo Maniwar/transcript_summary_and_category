@@ -155,6 +155,10 @@ def tokenize_and_chunk_text(texts, max_tokens=1024):
 def summarize_text(text, max_length=100, min_length=50):
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
     chunks = tokenize_and_chunk_text([text])
+    if not chunks:  # If chunks is empty, add a new chunk with tokens
+        chunks.append(tokens)
+    else:
+        chunks[-1].extend(tokens)
     summaries = []
     total_chunks = len(chunks)
     for i, chunk in enumerate(chunks, start=1):
