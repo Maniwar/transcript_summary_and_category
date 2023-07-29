@@ -1,5 +1,6 @@
 import pandas as pd
 import nltk
+from nltk.tokenize import word_tokenize
 from nltk.sentiment import SentimentIntensityAnalyzer
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -7,117 +8,74 @@ import datetime
 import numpy as np
 import xlsxwriter
 import chardet
-from transformers import pipeline, AutoTokenizer
+from transformers import pipeline
 import base64
 from io import BytesIO
 import streamlit as st
 import textwrap
 from categories_josh1 import default_categories
-import time
-from tqdm import tqdm
+
+# Set page title and layout
+st.set_page_config(page_title="👨‍💻 Transcript Categorization")
 
 # Initialize BERT model
 @st.cache_resource
 def initialize_bert_model():
-    start_time = time.time()
-    print("Initializing BERT model...")
+    #return SentenceTransformer('all-MiniLM-L6-v2')
+    #return SentenceTransformer('all-MiniLM-L12-v2')
+    #return SentenceTransformer('paraphrase-MiniLM-L6-v2')
     return SentenceTransformer('paraphrase-MiniLM-L12-v2')
-    end_time = time.time()
-    print(f"BERT model initialized. Time taken: {end_time - start_time} seconds.")
+    #return SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+    #return SentenceTransformer('stsb-roberta-base')
+    #return SentenceTransformer('distilroberta-base-paraphrase-v1')
 
 # Create a dictionary to store precomputed embeddings
 @st.cache_resource
 def compute_keyword_embeddings(keywords):
-    start_time = time.time()
-    print("Computing keyword embeddings...")
     model = initialize_bert_model()
     keyword_embeddings = {}
     for keyword in keywords:
         keyword_embeddings[keyword] = model.encode([keyword])[0]
-    end_time = time.time()
-    print(f"Keyword embeddings computed. Time taken: {end_time - start_time} seconds.")
     return keyword_embeddings
 
 # Function to preprocess the text
 @st.cache_data
 def preprocess_text(text):
-    start_time = time.time()
-    print("Preprocessing text...")
     # Convert to string if input is a float
     if isinstance(text, float):
         text = str(text)
-    end_time = time.time()
-    print(f"Preprocessing text completed. Time taken: {end_time - start_time} seconds.")
+
     # Remove unnecessary characters and weird characters
     text = text.encode('ascii', 'ignore').decode('utf-8')
+
     # Return the text without removing stop words
     return text
 
 # Function to perform sentiment analysis
 @st.cache_data
 def perform_sentiment_analysis(text):
-    start_time = time.time()
-    print("Perform Sentiment Analysis text...")
     analyzer = SentimentIntensityAnalyzer()
     sentiment_scores = analyzer.polarity_scores(text)
     compound_score = sentiment_scores['compound']
-    end_time = time.time()
-    print(f"Sentiment Analysis completed. Time taken: {end_time - start_time} seconds.")
     return compound_score
 
+# Function to summarize the text
 @st.cache_resource
-def get_summarization_pipeline():
-    start_time = time.time()
-    print("Start Summarization Pipeline text...")
+def summarize_text(text, max_length=65, min_length=30):
     # Initialize the summarization pipeline
-    model_name = "knkarthick/MEETING_SUMMARY"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    # Capture end time
-    end_time = time.time()
-    print("Time taken to initialize summarization pipeline:", end_time - start_time)
-    return pipeline("summarization", model=model_name, tokenizer=tokenizer)
+    summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
+
+    # Split the text into chunks of approximately 1024 words
+    text_chunks = textwrap.wrap(text, width=1024)
+
+    # Summarize all chunks at once
+    summaries = summarization_pipeline(text_chunks, max_length=max_length, min_length=min_length, do_sample=False)
+
+    # Join the summaries together
+    full_summary = " ".join([summary['summary_text'] for summary in summaries])
+    return full_summary.strip()
 
 
-# Function to summarize text with batching
-def summarize_text_with_batching(texts, summarization_pipeline, max_tokens=1024):
-    # Initialize a list to store the summaries
-    all_summaries = []
-
-    # Initialize variables for the current batch and its token count
-    current_batch = []
-    current_tokens = 0
-
-    for text in texts:
-        # Tokenize the text
-        tokenized_text = summarization_pipeline.tokenizer(text)
-        input_ids = tokenized_text["input_ids"]
-        num_tokens = len(input_ids)
-
-        # Check if adding this text to the current batch exceeds the maximum token limit
-        if current_tokens + num_tokens > max_tokens:
-            # Summarize the current batch
-            summaries = summarization_pipeline.batch_encode_plus(current_batch, max_length=100, min_length=50, do_sample=False, return_tensors="pt")
-            batch_summaries = summarization_pipeline.generate(summaries.input_ids, num_beams=2, max_length=100, min_length=50, early_stopping=True)
-            all_summaries.extend([summarization_pipeline.decode(summary, skip_special_tokens=True) for summary in batch_summaries])
-
-            # Reset the current batch and its token count
-            current_batch = []
-            current_tokens = 0
-
-        # Add the current text to the batch
-        current_batch.append(text)
-        current_tokens += num_tokens
-
-    # Summarize the last batch (if any)
-    if current_batch:
-        summaries = summarization_pipeline.batch_encode_plus(current_batch, max_length=100, min_length=50, do_sample=False, return_tensors="pt")
-        batch_summaries = summarization_pipeline.generate(summaries.input_ids, num_beams=2, max_length=100, min_length=50, early_stopping=True)
-        all_summaries.extend([summarization_pipeline.decode(summary, skip_special_tokens=True) for summary in batch_summaries])
-
-    return all_summaries
-
-
-@st.cache_data
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
     return cosine_similarity([embedding1], [embedding2])[0][0]
@@ -177,9 +135,6 @@ if uploaded_file is not None:
         feedback_data = pd.read_csv(BytesIO(csv_data), encoding=encoding)
     except Exception as e:
         st.error(f"Error reading the CSV file: {e}")
-         # Preprocess comments before calling process_feedback_data
-    feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
-
     comment_column = st.selectbox("Select the column containing the comments", feedback_data.columns.tolist())
     date_column = st.selectbox("Select the column containing the dates", feedback_data.columns.tolist())
     grouping_option = st.radio("Select how to group the dates", ["Date", "Week", "Month", "Quarter"])
@@ -203,54 +158,22 @@ if uploaded_file is not None:
             # Initialize the BERT model once
             model = initialize_bert_model()
 
-
-
             # Preprocess comments and summarize if necessary
-            start_time = time.time()
-            print("Preprocessing comments and summarizing if necessary...")
-            
-            # Identify long comments
-            long_comments = feedback_data['preprocessed_comments'].apply(lambda x: len(x.split()) > 100)
-            
-            # Process and summarize long comments in batches
-            if long_comments.any():
-                # Initialize the summarization pipeline
-                summarization_pipeline = get_summarization_pipeline()
-                
-                long_comment_texts = feedback_data.loc[long_comments, 'preprocessed_comments'].tolist()
-                all_summaries = summarize_text_with_batching(long_comment_texts, summarization_pipeline)
-                feedback_data.loc[long_comments, 'summarized_comments'] = all_summaries
-            
-            # Fill in missing summarized comments with the original preprocessed comments
-            feedback_data['summarized_comments'] = feedback_data['summarized_comments'].fillna(feedback_data['preprocessed_comments'])
-            
-            end_time = time.time()
-            print(f"Preprocessed comments and summarized. Time taken: {end_time - start_time} seconds.")
-
-
+            feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
+            feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].apply(lambda x: summarize_text(x) if len(x.split()) > 80 else x)
 
             # Compute comment embeddings in batches
-            start_time = time.time()
-            print("Start comment embeddings in batches")
-            batch_size = 1024  # Choose batch size based on your available memory
+            batch_size = 512  # Choose batch size based on your available memory
             comment_embeddings = []
             for i in range(0, len(feedback_data), batch_size):
                 batch = feedback_data['summarized_comments'][i:i+batch_size].tolist()
                 comment_embeddings.extend(model.encode(batch))
             feedback_data['comment_embeddings'] = comment_embeddings
-            end_time = time.time()
-            print(f"Batch comment embeddings done. Time taken: {end_time - start_time} seconds.")
 
             # Compute sentiment scores
-            start_time = time.time()
-            print("Computing sentiment scores...")
             feedback_data['sentiment_scores'] = feedback_data['preprocessed_comments'].apply(perform_sentiment_analysis)
-            end_time = time.time()
-            print(f"Sentiment scores computed. Time taken: {end_time - start_time} seconds.")
 
             # Compute semantic similarity and assign categories in batches
-            start_time = time.time()
-            print("Computing semantic similarity and assigning categories...")
             for i in range(0, len(feedback_data), batch_size):
                 batch_embeddings = feedback_data['comment_embeddings'][i:i+batch_size].tolist()
                 for main_category, keywords in categories.items():
@@ -268,8 +191,7 @@ if uploaded_file is not None:
                                 categories_list.append(main_category)
                                 summarized_texts.append(keyword)
                                 similarity_scores.append(similarity_score)
-            end_time = time.time()
-            print(f"Computed semantic similarity and assigned categories. Time taken: {end_time - start_time} seconds.")
+
             # Prepare final data
             for index, row in feedback_data.iterrows():
                 preprocessed_comment = row['preprocessed_comments']
