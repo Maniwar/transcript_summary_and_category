@@ -16,12 +16,13 @@ import textwrap
 from categories_josh1 import default_categories
 import time
 
-# Initialize progress bar
-progress = st.sidebar.progress(0)
-progress_status = st.sidebar.empty()
 
 # Set page title and layout
 st.set_page_config(page_title="👨‍💻 Transcript Categorization")
+
+# Initialize progress bar
+progress = st.sidebar.progress(0)
+progress_status = st.sidebar.empty()
 
 # Initialize BERT model
 @st.cache_resource
