@@ -77,6 +77,7 @@ def get_summarization_pipeline():
     
 @st.cache_resource
 # Function to summarize text with batching
+# Function to summarize text with batching
 def summarize_text_with_batching(texts, summarization_pipeline, max_tokens=1024):
     # Initialize a list to store the summaries
     all_summaries = []
@@ -135,6 +136,7 @@ def summarize_text_with_batching(texts, summarization_pipeline, max_tokens=1024)
 
     pbar.close()
     return all_summaries
+
 
 
 
