@@ -8,7 +8,7 @@ import datetime
 import numpy as np
 import xlsxwriter
 import chardet
-from transformers import pipeline
+from transformers import pipeline, AutoModelForSeq2SeqLM
 import base64
 from io import BytesIO
 import streamlit as st
@@ -71,14 +71,13 @@ def perform_sentiment_analysis(text):
 
 @st.cache_resource
 def get_summarization_pipeline():
-    # Initialize the summarization pipeline with your custom model
-    return pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
+    model_name = "knkarthick/MEETING_SUMMARY"
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+    return model
     
 @st.cache_resource
 # Function to summarize text with batching
 def summarize_text_with_batching(texts, summarization_pipeline, max_tokens=1024):
-    # Initialize the custom summarization pipeline
-    summarization_pipeline = get_summarization_pipeline()
     # Initialize a list to store the summaries
     all_summaries = []
 
@@ -136,6 +135,7 @@ def summarize_text_with_batching(texts, summarization_pipeline, max_tokens=1024)
 
     pbar.close()
     return all_summaries
+
 
 
 # Function to compute semantic similarity
