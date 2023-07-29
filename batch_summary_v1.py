@@ -177,6 +177,9 @@ if uploaded_file is not None:
         feedback_data = pd.read_csv(BytesIO(csv_data), encoding=encoding)
     except Exception as e:
         st.error(f"Error reading the CSV file: {e}")
+         # Preprocess comments before calling process_feedback_data
+    feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
+
     comment_column = st.selectbox("Select the column containing the comments", feedback_data.columns.tolist())
     date_column = st.selectbox("Select the column containing the dates", feedback_data.columns.tolist())
     grouping_option = st.radio("Select how to group the dates", ["Date", "Week", "Month", "Quarter"])
