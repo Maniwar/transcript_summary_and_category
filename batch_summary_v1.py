@@ -65,34 +65,42 @@ def perform_sentiment_analysis(text):
     compound_score = sentiment_scores['compound']
     return compound_score
 
+# Function to tokenize the text into chunks of approximately 1024 tokens each
+@st.cache_resource
+def tokenize_text_into_chunks(text, max_tokens=1024):
+    # Tokenize the text
+    tokens = tokenizer(text)["input_ids"]
+
+    # Divide the tokens into chunks
+    chunks = []
+    chunk = []
+    for token in tokens:
+        if len(chunk) + 1 > max_tokens:
+            chunks.append(chunk)
+            chunk = []
+        chunk.append(token)
+    if chunk:
+        chunks.append(chunk)
+    return chunks
+
 # Function to summarize the text
 @st.cache_resource
 def summarize_text(text, max_length=100, min_length=50):
     # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
 
-    # Tokenize the text
-    tokens = text.split()  # Note: this is a very naive tokenization
-    chunks = []
-
-    # Define the sliding window size
-    window_size = 5  # This is arbitrary and will have to be adjusted based on your specific requirements
-
-    # Slide the window over the tokens
-    for i in range(0, len(tokens), window_size):
-        chunk = " ".join(tokens[i:i+window_size])
-        if len(chunk) < 1024:
-            chunks.append(chunk)
-        else:
-            # If the chunk is too long, we have to split it further
-            sub_chunks = textwrap.wrap(chunk, width=1024)
-            chunks.extend(sub_chunks)
+    # Tokenize the text into chunks of approximately 1024 tokens each
+    chunks = tokenize_text_into_chunks(text)
 
     # Summarize all chunks
     summaries = []
     total_chunks = len(chunks)
     for i, chunk in enumerate(chunks, start=1):
-        summaries.append(summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False))
+        # Convert the tokens back into text
+        chunk_text = tokenizer.decode(chunk)
+
+        # Summarize the chunk
+        summaries.append(summarization_pipeline(chunk_text, max_length=max_length, min_length=min_length, do_sample=False))
         progress.progress(i / total_chunks)
         progress_status.text(f"Summarizing text: {i}/{total_chunks}")
 
@@ -101,30 +109,6 @@ def summarize_text(text, max_length=100, min_length=50):
 
     return full_summary.strip(), total_chunks
 
-# Initialize tokenizer for the specific model
-tokenizer = AutoTokenizer.from_pretrained('knkarthick/MEETING_SUMMARY')
-
-def tokenize_and_chunk_text(texts, max_tokens=1024):
-    """
-    Tokenizes a list of texts and divides them into chunks such that the total 
-    number of tokens in each chunk is close to max_tokens. Returns the chunks 
-    and their corresponding token counts.
-    """
-    chunks = []
-    chunk = []
-    num_tokens = 0
-    for text in texts:
-        tokens = tokenizer.tokenize(text)
-        if num_tokens + len(tokens) > max_tokens:
-            if chunk:
-                chunks.append((chunk, num_tokens))
-                chunk = []
-                num_tokens = 0
-        chunk.append(text)
-        num_tokens += len(tokens)
-    if chunk:
-        chunks.append((chunk, num_tokens))
-    return chunks
 
 
 # Function to compute semantic similarity
