@@ -96,11 +96,13 @@ def summarize_text(text, max_length=100, min_length=50):
     for i, chunk in enumerate(chunks, start=1):
         chunk_text = tokenizer.decode(chunk[0], skip_special_tokens=True)
         summaries.append(summarization_pipeline(chunk_text, max_length=max_length, min_length=min_length, do_sample=False))
-        progress.progress(i / total_chunks)
-        progress_status.text(f"Summarizing text: {i}/{total_chunks}")
+        # Update the progress bar with the overall progress of all texts being processed
+        total_progress = i / total_chunks
+        overall_progress = current_text / total_texts + total_progress / total_texts
+        progress.progress(overall_progress)
+        progress_status.text(f"Summarizing text: {current_text}/{total_texts}, Chunk: {i}/{total_chunks}")
     full_summary = " ".join([summary[0]['summary_text'] for summary in summaries])
-    return full_summary.strip(), total_chunks
-
+    return full_summary.strip()
 
 
 # Function to compute semantic similarity
@@ -260,8 +262,8 @@ if uploaded_file is not None:
         
             progress_status.text(f"Processing complete. Total time: {end_time - start_time} seconds.")
 
-            return trends_data
-
+            return trends_data, total_texts
+            progress_status.text(f"Total Texts to be Processed: {sum(total_texts)}")
 
 
         # Process feedback data and cache the result
