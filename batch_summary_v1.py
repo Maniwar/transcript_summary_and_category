@@ -65,6 +65,10 @@ def perform_sentiment_analysis(text):
     compound_score = sentiment_scores['compound']
     return compound_score
 
+# Load the tokenizer corresponding to the model
+st.cache_resource
+tokenizer = AutoTokenizer.from_pretrained('knkarthick/MEETING_SUMMARY')
+
 # Function to tokenize the text into chunks of approximately 1024 tokens each
 @st.cache_resource
 def tokenize_and_chunk_text(texts, max_tokens=1024):
