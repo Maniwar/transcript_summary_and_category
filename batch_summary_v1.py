@@ -78,6 +78,7 @@ def get_summarization_pipeline():
     print("Time taken to initialize summarization pipeline:", end_time - start_time)
     return pipeline("summarization", model=model_name, tokenizer=tokenizer)
 
+# Function to initialize the summarization pipeline
 @st.cache_resource
 def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_word_count=80):
     start_time = time.time()
@@ -177,6 +178,8 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_wo
     end_time = time.time()
     print("Time taken to process summarization:", end_time - start_time)
     return all_summaries
+
+
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
     return cosine_similarity([embedding1], [embedding2])[0][0]
