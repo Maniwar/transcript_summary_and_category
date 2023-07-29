@@ -1,3 +1,60 @@
+TypeError: argument 'ids': 'list' object cannot be interpreted as an integer
+Traceback:
+File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
+    exec(code, module.__dict__)
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 286, in <module>
+    trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
+    return cached_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
+    return self._get_or_create_cached_value(args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
+    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
+    computed_value = self._info.func(*func_args, **func_kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 212, in process_feedback_data
+    feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].apply(lambda x: summarize_text(x) if len(x.split()) > 100 else x)
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\pandas\core\series.py", line 4771, in apply
+    return SeriesApply(self, func, convert_dtype, args, kwargs).apply()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\pandas\core\apply.py", line 1105, in apply
+    return self.apply_standard()
+           ^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\pandas\core\apply.py", line 1156, in apply_standard
+    mapped = lib.map_infer(
+             ^^^^^^^^^^^^^^
+File "pandas\_libs\lib.pyx", line 2918, in pandas._libs.lib.map_infer
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 212, in <lambda>
+    feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].apply(lambda x: summarize_text(x) if len(x.split()) > 100 else x)
+                                                                                                  ^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
+    return cached_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
+    return self._get_or_create_cached_value(args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
+    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
+    computed_value = self._info.func(*func_args, **func_kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 110, in summarize_text
+    chunk_text = tokenizer.decode(chunk)
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\transformers\tokenization_utils_base.py", line 3509, in decode
+    return self._decode(
+           ^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\transformers\tokenization_utils_fast.py", line 546, in _decode
+    text = self._tokenizer.decode(token_ids, skip_special_tokens=skip_special_tokens)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 import pandas as pd
 import nltk
 from nltk.tokenize import word_tokenize
@@ -100,7 +157,7 @@ def summarize_text(text, max_length=100, min_length=50):
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
 
     # Tokenize the text into chunks of approximately 1024 tokens each
-    chunks = tokenize_text_into_chunks(text)
+    chunks = tokenize_and_chunk_text(text)
 
     # Summarize all chunks
     summaries = []
