@@ -293,7 +293,7 @@ if uploaded_file is not None:
             long_comment_texts = feedback_data.loc[long_comments, 'preprocessed_comments'].tolist()
             
             # Summarize the list of long comments in one go
-            summaries = summarize_text(long_comment_texts)
+            summaries = preprocess_and_summarize_comments(long_comment_texts)
             
             # Create a new DataFrame from the long comments and their summaries
             long_comments_summaries = pd.DataFrame({
