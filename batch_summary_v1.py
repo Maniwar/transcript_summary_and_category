@@ -1,5 +1,151 @@
-import
+import pandas as pd
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+import datetime
+import numpy as np
+import xlsxwriter
+import chardet
+from transformers import pipeline, AutoTokenizer
+import base64
+from io import BytesIO
+import streamlit as st
+import textwrap
+from categories_josh1 import default_categories
+import time
+from tqdm import tqdm
 
+# Initialize BERT model
+@st.cache_resource
+def initialize_bert_model():
+    start_time = time.time()
+    print("Initializing BERT model...")
+    model = SentenceTransformer('paraphrase-MiniLM-L12-v2')
+    end_time = time.time()
+    print(f"BERT model initialized. Time taken: {end_time - start_time} seconds.")
+    return model
+
+# Create a dictionary to store precomputed embeddings
+@st.cache_resource
+def compute_keyword_embeddings(keywords):
+    start_time = time.time()
+    print("Computing keyword embeddings...")
+    model = initialize_bert_model()
+    keyword_embeddings = {}
+    for keyword in keywords:
+        keyword_embeddings[keyword] = model.encode([keyword])[0]
+    end_time = time.time()
+    print(f"Keyword embeddings computed. Time taken: {end_time - start_time} seconds.")
+    return keyword_embeddings
+
+# Function to preprocess the text
+@st.cache_data
+def preprocess_text(text):
+    start_time = time.time()
+    print("Preprocessing text...")
+    # Convert to string if input is a float
+    if isinstance(text, float):
+        text = str(text)
+    # Remove unnecessary characters and weird characters
+    text = text.encode('ascii', 'ignore').decode('utf-8')
+    # Return the text without removing stop words
+    end_time = time.time()
+    print(f"Preprocessing text completed. Time taken: {end_time - start_time} seconds.")
+    return text
+
+# Function to perform sentiment analysis
+@st.cache_data
+def perform_sentiment_analysis(text):
+    start_time = time.time()
+    print("Perform Sentiment Analysis text...")
+    analyzer = SentimentIntensityAnalyzer()
+    sentiment_scores = analyzer.polarity_scores(text)
+    compound_score = sentiment_scores['compound']
+    end_time = time.time()
+    print(f"Sentiment Analysis completed. Time taken: {end_time - start_time} seconds.")
+    return compound_score
+
+# Function to initialize the summarization pipeline and dynamically set max tokens per sentence
+@st.cache_resource
+def get_dynamic_summarization_pipeline(max_length=100, max_tokens=1024):
+    start_time = time.time()
+    print("Start Dynamic Summarization Pipeline text...")
+    # Initialize the summarization pipeline
+    model_name = "knkarthick/MEETING_SUMMARY"
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+    # Set the maximum length for the tokenizer
+    tokenizer.model_max_length = max_length
+
+    # Calculate the dynamic maximum tokens per sentence
+    max_tokens_per_sentence = max_tokens // max_length
+
+    # Capture end time
+    end_time = time.time()
+    print("Time taken to initialize dynamic summarization pipeline:", end_time - start_time)
+
+    return pipeline("summarization", model=model_name, tokenizer=tokenizer, max_length=max_length, max_tokens=max_tokens_per_sentence)
+
+# Function to preprocess and chunk the text
+def preprocess_and_chunk_text(text, max_tokens, tokenizer):
+    # Preprocess the text (remove unnecessary characters, etc.)
+    start_time = time.time()
+    print("Preprocessing and Chunking text...")
+    text = preprocess_text(text)
+
+    # Determine the maximum number of tokens for each chunk
+    max_tokens_per_sentence = max_tokens // tokenizer.model_max_length
+
+    # Chunk and stitch the text
+    chunked_text = chunk_and_stitch(text, max_tokens_per_sentence, tokenizer)
+
+    end_time = time.time()
+    print(f"Preprocessing and Chunking text completed. Time taken: {end_time - start_time} seconds.")
+
+    return chunked_text
+
+# Function to initialize the summarization pipeline and dynamically set max tokens per sentence
+@st.cache_resource
+def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_word_count=80):
+    start_time = time.time()
+    print("Start Summarizing text...")
+    # Initialize the summarization pipeline
+    summarization_pipeline = get_dynamic_summarization_pipeline(max_length, max_tokens)
+
+    # Initialize a list to store the summaries
+    all_summaries = []
+
+    total_texts = len(texts)  # total number of texts
+    print(f"Starting summarization of {total_texts} texts...")
+
+    # Initialize progress bar
+    pbar = tqdm(total=total_texts)
+
+    # Iterate over the texts
+    for idx, text in enumerate(texts):
+        # Skip summarizing the text if the word count is below the threshold
+        if len(text.split()) <= min_word_count:
+            all_summaries.append(text)
+            pbar.update(1)
+            continue
+
+        # Preprocess and chunk the text
+        chunked_text = preprocess_and_chunk_text(text, max_tokens, summarization_pipeline.tokenizer)
+
+        # Generate the summary for the chunked text
+        summary = summarization_pipeline(chunked_text, max_length=max_length, min_length=min_length, do_sample=False)[0]['summary_text']
+        all_summaries.append(summary)
+
+        pbar.update(1)
+
+    # Close the progress bar
+    pbar.close()
+
+    print("Summarization completed.")
+    end_time = time.time()
+    print("Time taken to process summarization:", end_time - start_time)
+    return all_summaries
 
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
