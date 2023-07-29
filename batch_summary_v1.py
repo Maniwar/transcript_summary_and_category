@@ -79,11 +79,11 @@ def get_summarization_pipeline():
     return pipeline("summarization", model=model_name, tokenizer=tokenizer)
 
 # Function to compute the token count of a text
-def get_token_count(text, tokenizer):
-    return len(tokenizer(text)["input_ids"])
+def get_token_count(summarization_pipeline, text):
+    return len(summarization_pipeline.tokenizer(text)["input_ids"])
 
 # Function to chunk the text and stitch it back together
-def chunk_and_stitch(text, max_tokens_per_sentence, tokenizer):
+def chunk_and_stitch(summarization_pipeline, text, max_tokens):
     # Tokenize the text into sentences using NLTK's sent_tokenize
     sentences = nltk.sent_tokenize(text)
 
@@ -93,13 +93,13 @@ def chunk_and_stitch(text, max_tokens_per_sentence, tokenizer):
     chunks = []
 
     for sentence in sentences:
-        tokens = get_token_count(sentence, tokenizer)
+        tokens = get_token_count(summarization_pipeline, sentence)
 
         # Check if adding this sentence exceeds the token limit
-        if current_chunk_tokens + tokens > max_tokens_per_sentence:
+        if current_chunk_tokens + tokens > max_tokens:
             if current_chunk_tokens == 0:
                 # The sentence itself is too long, truncate it and add to chunks
-                truncated_sentence = textwrap.shorten(sentence, width=max_tokens_per_sentence, placeholder="")
+                truncated_sentence = textwrap.shorten(sentence, width=max_tokens, placeholder="")
                 chunks.append(truncated_sentence)
             else:
                 # Process the current chunk if it's not empty
@@ -116,52 +116,76 @@ def chunk_and_stitch(text, max_tokens_per_sentence, tokenizer):
 
     return " ".join(chunks)
 
-# Function to preprocess the comments and perform summarization if necessary
-@st.cache_data
-def preprocess_and_summarize_comments(comments, max_tokens_per_sentence=512, max_length=100, min_length=50, max_tokens=1024, min_word_count=80):
+# Function to preprocess the comments and summarize if necessary
+def preprocess_and_summarize_comments(
+    comments, 
+    keyword_embeddings, 
+    summarization_pipeline, 
+    max_length=100, 
+    min_length=50, 
+    max_tokens=1024, 
+    min_word_count=80
+):
     start_time = time.time()
     print("Preprocessing comments and summarizing if necessary...")
-    # Preprocess the comments
-    preprocessed_comments = [preprocess_text(comment) for comment in comments]
 
-    # Initialize the summarization pipeline
-    summarization_pipeline = get_summarization_pipeline()
+    # Preprocess the comments
+    comments = [preprocess_text(comment) for comment in comments]
+
+    # Perform sentiment analysis
+    sentiments = [perform_sentiment_analysis(comment) for comment in comments]
+
+    # Get the comments with positive sentiment
+    positive_comments = [comment for comment, sentiment in zip(comments, sentiments) if sentiment >= 0.2]
+
+    # If there are no positive comments, return an empty list
+    if not positive_comments:
+        return []
 
     # Initialize a list to store the summaries
     all_summaries = []
 
-    total_texts = len(comments)  # total number of texts
-    print(f"Starting summarization of {total_texts} texts...")
+    total_comments = len(positive_comments)  # total number of comments
+    print(f"Starting summarization of {total_comments} comments...")
 
     # Initialize progress bar
-    pbar = tqdm(total=total_texts)
+    pbar = tqdm(total=total_comments)
 
     # Determine the maximum batch size to utilize the model's capacity effectively
     max_batch_size = max_tokens // max_length
 
     # Determine the maximum chunk size to efficiently use the batch size
-    max_chunk_size = max_batch_size // total_texts
+    max_chunk_size = max_batch_size // total_comments
 
-    # Iterate over the texts
+    # Iterate over the comments
     current_chunk = []
     current_chunk_tokens = 0
-    for idx, text in enumerate(preprocessed_comments):
-        # Skip summarizing the text if the word count is below the threshold
-        if len(text.split()) <= min_word_count:
-            all_summaries.append(text)
+    for idx, comment in enumerate(positive_comments):
+        # Skip summarizing the comment if the word count is below the threshold
+        if len(comment.split()) <= min_word_count:
+            all_summaries.append(comment)
             pbar.update(1)
             continue
 
-        # Check if the text exceeds the model's token limit
-        if get_token_count(text, summarization_pipeline.tokenizer) > max_tokens:
-            chunked_text = chunk_and_stitch(text, max_tokens_per_sentence=max_tokens_per_sentence, tokenizer=summarization_pipeline.tokenizer)
-            summaries = summarization_pipeline(chunked_text, max_length=max_length, min_length=min_length, do_sample=False)
+        # Check if adding this comment to the current chunk exceeds the chunk size
+        if current_chunk_tokens + get_token_count(summarization_pipeline, comment) > max_chunk_size:
+            # Process the current chunk
+            summaries = summarization_pipeline(" ".join(current_chunk), max_length=max_length, min_length=min_length, do_sample=False)
             all_summaries.extend([summary['summary_text'] for summary in summaries])
-        else:
-            summaries = summarization_pipeline(text, max_length=max_length, min_length=min_length, do_sample=False)
-            all_summaries.extend([summary['summary_text'] for summary in summaries])
+            current_chunk = []
+            current_chunk_tokens = 0
+
+        # Chunk and stitch the comment
+        chunked_comment = chunk_and_stitch(summarization_pipeline, comment, max_tokens)
+        current_chunk.append(chunked_comment)
+        current_chunk_tokens += get_token_count(summarization_pipeline, chunked_comment)
 
         pbar.update(1)
+
+    # Process the last chunk
+    if current_chunk:
+        summaries = summarization_pipeline(" ".join(current_chunk), max_length=max_length, min_length=min_length, do_sample=False)
+        all_summaries.extend([summary['summary_text'] for summary in summaries])
 
     # Close the progress bar
     pbar.close()
@@ -170,8 +194,6 @@ def preprocess_and_summarize_comments(comments, max_tokens_per_sentence=512, max
     end_time = time.time()
     print("Time taken to process summarization:", end_time - start_time)
     return all_summaries
-
-# ... (rest of the code remains unchanged)
 
 
 
