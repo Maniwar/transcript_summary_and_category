@@ -206,13 +206,14 @@ if uploaded_file is not None:
             start_time = time.time()
             print("Preprocessing comments and summarizing if necessary...")
             
-            feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
-            
             # Identify long comments
             long_comments = feedback_data['preprocessed_comments'].apply(lambda x: len(x.split()) > 100)
             
             # Process and summarize long comments in batches
             if long_comments.any():
+                # Initialize the summarization pipeline
+                summarization_pipeline = get_summarization_pipeline()
+                
                 long_comment_texts = feedback_data.loc[long_comments, 'preprocessed_comments'].tolist()
                 all_summaries = summarize_text_with_batching(long_comment_texts, summarization_pipeline)
                 feedback_data.loc[long_comments, 'summarized_comments'] = all_summaries
@@ -222,6 +223,7 @@ if uploaded_file is not None:
             
             end_time = time.time()
             print(f"Preprocessed comments and summarized. Time taken: {end_time - start_time} seconds.")
+
 
 
             # Compute comment embeddings in batches
