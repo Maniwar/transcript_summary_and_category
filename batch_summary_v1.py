@@ -179,7 +179,6 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=512, min_wor
     print("Time taken to process summarization:", end_time - start_time)
     return all_summaries
 
-
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
     return cosine_similarity([embedding1], [embedding2])[0][0]
