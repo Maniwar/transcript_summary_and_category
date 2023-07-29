@@ -154,6 +154,8 @@ def summarize_text(comments, max_tokens_per_sentence=512, max_length=75, min_len
     pbar = tqdm(total=total_texts)
 
     # Iterate over the texts
+    current_batch = []
+    current_batch_tokens = 0
     for idx, text in enumerate(preprocessed_comments):
         # Skip summarizing the text if the word count is below the threshold
         if len(text.split()) <= min_word_count:
@@ -161,19 +163,13 @@ def summarize_text(comments, max_tokens_per_sentence=512, max_length=75, min_len
             pbar.update(1)
             continue
 
-        # Determine the maximum batch size to utilize the model's capacity effectively
-        max_batch_size = max_tokens // max_length
-        batch_size = min(max_batch_size, total_texts)
+        # Check if the text exceeds the model's token limit
+        if get_token_count(text, summarization_pipeline.tokenizer) > max_tokens:
+            chunks = chunk_and_stitch(text, max_tokens_per_sentence=max_tokens_per_sentence, tokenizer=summarization_pipeline.tokenizer)
+        else:
+            chunks = [text]
 
-        # Split the text into chunks to fit the batch size and maximum token limit
-        chunks = chunk_and_stitch(text, max_tokens_per_sentence, tokenizer=summarization_pipeline.tokenizer)
-        num_chunks = len(chunks)
-
-        # Initialize variables to keep track of the current batch and its token count
-        current_batch = []
-        current_batch_tokens = 0
-
-        for chunk_idx, chunk in enumerate(chunks):
+        for chunk in chunks:
             chunk_tokens = get_token_count(chunk, summarization_pipeline.tokenizer)
 
             # Check if adding this chunk exceeds the batch's token limit
@@ -190,17 +186,12 @@ def summarize_text(comments, max_tokens_per_sentence=512, max_length=75, min_len
             current_batch.append(chunk)
             current_batch_tokens += chunk_tokens
 
-            # Check if we've reached the last chunk or the batch is full
-            if chunk_idx == num_chunks - 1 or len(current_batch) == batch_size:
-                # Process the current batch
-                summaries = summarization_pipeline(current_batch, max_length=max_length, min_length=min_length, do_sample=False)
-                all_summaries.extend([summary['summary_text'] for summary in summaries])
-
-                # Reset the current batch and its token count
-                current_batch = []
-                current_batch_tokens = 0
-
         pbar.update(1)
+
+    # Process any remaining texts in the last batch
+    if current_batch:
+        summaries = summarization_pipeline(current_batch, max_length=max_length, min_length=min_length, do_sample=False)
+        all_summaries.extend([summary['summary_text'] for summary in summaries])
 
     # Close the progress bar
     pbar.close()
@@ -209,6 +200,7 @@ def summarize_text(comments, max_tokens_per_sentence=512, max_length=75, min_len
     end_time = time.time()
     print("Time taken to process summarization:", end_time - start_time)
     return all_summaries
+
 
 
 
