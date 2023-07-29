@@ -1,8 +1,8 @@
 import pandas as pd
 import nltk
 from nltk.tokenize import word_tokenize
-from nltk.sentiment import SentimentIntensityAnalyzer
 from nltk import sent_tokenize
+from nltk.sentiment import SentimentIntensityAnalyzer
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import datetime
@@ -82,6 +82,18 @@ def perform_sentiment_analysis(text):
 
  # Function to initialize the summarization pipeline
 @st.cache_resource
+def get_summarization_pipeline():
+    start_time = time.time()
+    print("Start Summarization Pipeline text...")
+    # Initialize the summarization pipeline
+    summarizer = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
+    # Capture end time
+    end_time = time.time()
+    print("Time taken to initialize summarization pipeline:", end_time - start_time)
+    return summarizer
+
+ # Function to initialize the summarization pipeline
+@st.cache_resource
 def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_word_count=80):
     start_time = time.time()
     print("Start Summarizing text...")
@@ -141,7 +153,6 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_wo
     end_time = time.time()
     print("Time taken to process summarization:", end_time - start_time)
     return all_summaries
-
 
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
