@@ -1,5 +1,70 @@
+import pandas as pd
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+import datetime
+import numpy as np
+import xlsxwriter
+import chardet
+from transformers import pipeline, AutoTokenizer
+import base64
+from io import BytesIO
+import streamlit as st
+import textwrap
+from categories_josh1 import default_categories
+import time
+from tqdm import tqdm
 
-# Function to initialize the summarization pipeline
+# Initialize BERT model
+@st.cache_resource
+def initialize_bert_model():
+    start_time = time.time()
+    print("Initializing BERT model...")
+    return SentenceTransformer('paraphrase-MiniLM-L12-v2')
+    end_time = time.time()
+    print(f"BERT model initialized. Time taken: {end_time - start_time} seconds.")
+
+# Create a dictionary to store precomputed embeddings
+@st.cache_resource
+def compute_keyword_embeddings(keywords):
+    start_time = time.time()
+    print("Computing keyword embeddings...")
+    model = initialize_bert_model()
+    keyword_embeddings = {}
+    for keyword in keywords:
+        keyword_embeddings[keyword] = model.encode([keyword])[0]
+    end_time = time.time()
+    print(f"Keyword embeddings computed. Time taken: {end_time - start_time} seconds.")
+    return keyword_embeddings
+
+# Function to preprocess the text
+@st.cache_data
+def preprocess_text(text):
+    start_time = time.time()
+    print("Preprocessing text...")
+    # Convert to string if input is a float
+    if isinstance(text, float):
+        text = str(text)
+    end_time = time.time()
+    print(f"Preprocessing text completed. Time taken: {end_time - start_time} seconds.")
+    # Remove unnecessary characters and weird characters
+    text = text.encode('ascii', 'ignore').decode('utf-8')
+    # Return the text without removing stop words
+    return text
+
+# Function to perform sentiment analysis
+@st.cache_data
+def perform_sentiment_analysis(text):
+    start_time = time.time()
+    print("Perform Sentiment Analysis text...")
+    analyzer = SentimentIntensityAnalyzer()
+    sentiment_scores = analyzer.polarity_scores(text)
+    compound_score = sentiment_scores['compound']
+    end_time = time.time()
+    print(f"Sentiment Analysis completed. Time taken: {end_time - start_time} seconds.")
+    return compound_score
+
 @st.cache_resource
 def get_summarization_pipeline():
     start_time = time.time()
@@ -106,7 +171,7 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_wo
     end_time = time.time()
     print("Time taken to process summarization:", end_time - start_time)
     return all_summaries
-    
+
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
     return cosine_similarity([embedding1], [embedding2])[0][0]
