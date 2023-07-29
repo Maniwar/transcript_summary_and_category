@@ -87,7 +87,9 @@ def chunk_and_stitch(text, summarization_pipeline, max_tokens=1024):
     for sentence in sentences:
         # Check if adding this sentence to the current chunk exceeds the maximum token limit
         if len(summarization_pipeline.tokenizer(current_chunk + sentence)["input_ids"]) > max_tokens:
-            chunks.append(current_chunk)
+            # If the sentence itself is too long, split it into smaller chunks
+            sentence_chunks = [sentence[i:i + max_tokens] for i in range(0, len(sentence), max_tokens)]
+            chunks.extend(sentence_chunks)
             current_chunk = ""
         current_chunk += sentence + ". "
     if current_chunk:
