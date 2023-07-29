@@ -14,6 +14,11 @@ from io import BytesIO
 import streamlit as st
 import textwrap
 from categories_josh1 import default_categories
+import time
+
+# Initialize progress bar
+progress = st.sidebar.progress(0)
+progress_status = st.sidebar.empty()
 
 # Set page title and layout
 st.set_page_config(page_title="👨‍💻 Transcript Categorization")
@@ -65,16 +70,35 @@ def summarize_text(text, max_length=100, min_length=50):
     # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
 
-    # Split the text into chunks of approximately 1024 words
-    text_chunks = textwrap.wrap(text, width=2000)
+    # Tokenize the text
+    tokens = text.split()  # Note: this is a very naive tokenization
+    chunks = []
 
-    # Summarize all chunks at once
-    summaries = summarization_pipeline(text_chunks, max_length=max_length, min_length=min_length, do_sample=False)
+    # Define the sliding window size
+    window_size = 5  # This is arbitrary and will have to be adjusted based on your specific requirements
+
+    # Slide the window over the tokens
+    for i in range(0, len(tokens), window_size):
+        chunk = " ".join(tokens[i:i+window_size])
+        if len(chunk) < 1024:
+            chunks.append(chunk)
+        else:
+            # If the chunk is too long, we have to split it further
+            sub_chunks = textwrap.wrap(chunk, width=1024)
+            chunks.extend(sub_chunks)
+
+    # Summarize all chunks
+    summaries = []
+    total_chunks = len(chunks)
+    for i, chunk in enumerate(chunks, start=1):
+        summaries.append(summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False))
+        progress.progress(i / total_chunks)
+        progress_status.text(f"Summarizing text: {i}/{total_chunks}")
 
     # Join the summaries together
     full_summary = " ".join([summary['summary_text'] for summary in summaries])
 
-    return full_summary.strip()
+    return full_summary.strip(), total_chunks
 
 
 # Function to compute semantic similarity
@@ -146,7 +170,11 @@ if uploaded_file is not None:
 
         @st.cache_data
         def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold):
+            # Start timing
+            start_time = time.time()
+
             # Compute keyword embeddings
+            progress_status.text("Computing keyword embeddings...")
             keyword_embeddings = compute_keyword_embeddings([keyword for keywords in categories.values() for keyword in keywords])
 
             # Initialize lists for categorized_comments, sentiments, similarity scores, and summaries
@@ -161,10 +189,14 @@ if uploaded_file is not None:
 
             # Preprocess comments and summarize if necessary
             feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
-            feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].apply(lambda x: summarize_text(x) if len(x.split()) > 100 else x)
-
+            total_batches = (len(feedback_data) + batch_size - 1) // batch_size  # Calculate the number of batches that will be processed
+            for i in range(0, len(feedback_data), batch_size):
+                batch = feedback_data['preprocessed_comments'][i:i+batch_size].tolist()
+                summarized_comments, chunks = zip(*[summarize_text(x) if len(x.split()) > 100 else (x, 1) for x in batch])
+                feedback_data.loc[i:i+batch_size-1, 'summarized_comments'] = summarized_comments
+                progress_status.text(f"Processing batch: {i//batch_size+1}/{total_batches} (Text chunks: {sum(chunks)})")
             # Compute comment embeddings in batches
-            batch_size = 64  # Choose batch size based on your available memory
+            batch_size = 1024  # Choose batch size based on your available memory
             comment_embeddings = []
             for i in range(0, len(feedback_data), batch_size):
                 batch = feedback_data['summarized_comments'][i:i+batch_size].tolist()
@@ -225,6 +257,11 @@ if uploaded_file is not None:
                 column_indices = [i for i, col in enumerate(trends_data.columns) if col == column]
                 for i, idx in enumerate(column_indices[1:], start=1):
                     trends_data.columns.values[idx] = f"{column}_{i}"
+
+            # End timing
+            end_time = time.time()
+        
+            progress_status.text(f"Processing complete. Total time: {end_time - start_time} seconds.")
 
             return trends_data
 
