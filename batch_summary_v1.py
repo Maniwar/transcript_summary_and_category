@@ -104,33 +104,31 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=512, min_wor
     def get_token_count(text):
         return len(summarization_pipeline.tokenizer(text)["input_ids"])
 
-    # Function to chunk the text and stitch it back together
-    def chunk_and_stitch(text, max_tokens):
+    # Function to chunk the text and stitch it back together based on character limit
+    def chunk_and_stitch_long_string(text, max_characters):
         # Tokenize the text into sentences using NLTK's sent_tokenize
         sentences = nltk.sent_tokenize(text)
 
-        # Initialize variables to keep track of the current chunk and its token count
+        # Initialize variables to keep track of the current chunk and its character count
         current_chunk = []
-        current_chunk_tokens = 0
+        current_chunk_characters = 0
         chunks = []
 
         for sentence in sentences:
-            tokens = get_token_count(sentence)
-
-            # Check if adding this sentence exceeds the token limit
-            if current_chunk_tokens + tokens > max_tokens:
-                if current_chunk_tokens == 0:
+            # Check if adding this sentence exceeds the character limit
+            if current_chunk_characters + len(sentence) > max_characters:
+                if current_chunk_characters == 0:
                     # The sentence itself is too long, truncate it and add to chunks
-                    truncated_sentence = textwrap.shorten(sentence, width=max_tokens, placeholder="")
+                    truncated_sentence = textwrap.shorten(sentence, width=max_characters, placeholder="")
                     chunks.append(truncated_sentence)
                 else:
                     # Process the current chunk if it's not empty
                     chunks.append(" ".join(current_chunk))
                 current_chunk = []
-                current_chunk_tokens = 0
+                current_chunk_characters = 0
 
             current_chunk.append(sentence)
-            current_chunk_tokens += tokens
+            current_chunk_characters += len(sentence)
 
         # Process any remaining sentences in the last chunk
         if current_chunk:
@@ -148,23 +146,30 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=512, min_wor
     current_chunk = []
     current_chunk_tokens = 0
     for idx, text in enumerate(texts):
-        # Skip summarizing the text if the word count is below the threshold
-        if len(text.split()) <= min_word_count:
-            all_summaries.append(text)
-            pbar.update(1)
-            continue
+        # Check if the text is too long
+        if len(text) > max_characters:
+            # Chunk and stitch the long text based on character limit
+            chunked_text = chunk_and_stitch_long_string(text, max_characters)
+            all_summaries.append(chunked_text)
+        else:
+            # Continue with token-based approach for texts that are not too long
+            # Skip summarizing the text if the word count is below the threshold
+            if len(text.split()) <= min_word_count:
+                all_summaries.append(text)
+                pbar.update(1)
+                continue
 
-        # Check if adding this text to the current chunk exceeds the chunk size
-        if current_chunk_tokens + get_token_count(text) > max_chunk_size:
-            # Process the current chunk
-            process_chunk(current_chunk)
-            current_chunk = []
-            current_chunk_tokens = 0
+            # Check if adding this text to the current chunk exceeds the chunk size
+            if current_chunk_tokens + get_token_count(text) > max_chunk_size:
+                # Process the current chunk
+                process_chunk(current_chunk)
+                current_chunk = []
+                current_chunk_tokens = 0
 
-        # Chunk and stitch the text
-        chunked_text = chunk_and_stitch(text, max_tokens)
-        current_chunk.append(chunked_text)
-        current_chunk_tokens += get_token_count(chunked_text)
+            # Chunk and stitch the text
+            chunked_text = chunk_and_stitch(text, max_tokens)
+            current_chunk.append(chunked_text)
+            current_chunk_tokens += get_token_count(chunked_text)
 
         pbar.update(1)
 
