@@ -40,43 +40,26 @@ def compute_keyword_embeddings(keywords):
         keyword_embeddings[keyword] = model.encode([keyword])[0]
     return keyword_embeddings
 
-# Function to preprocess the text
-@st.cache_data
-def preprocess_text(text):
-    # Convert to string if input is a float
-    if isinstance(text, float):
-        text = str(text)
-
-    # Remove unnecessary characters and weird characters
-    text = text.encode('ascii', 'ignore').decode('utf-8')
-
-    # Return the text without removing stop words
-    return text
-
-# Function to preprocess the text with progress bar
+# Function to preprocess text with progress
 def preprocess_text_with_progress(texts):
-    # Initialize an empty list to store the preprocessed texts
-    preprocessed_texts = []
-
     # Calculate the total number of batches
     total_batches = len(texts)
-
-    # Initialize a tqdm progress bar
     with tqdm(total=total_batches, desc="Preprocessing Texts", unit="batch") as pbar:
+        preprocessed_texts = []
         for text in texts:
-            # Simulate some processing time
-            time.sleep(0.1)
+            # Convert to string if input is a float
+            if isinstance(text, float):
+                text = str(text)
 
-            # Preprocess the text
-            preprocessed_text = preprocess_text(text)
+            # Remove unnecessary characters and weird characters
+            text = text.encode('ascii', 'ignore').decode('utf-8')
 
             # Append the preprocessed text to the list
-            preprocessed_texts.append(preprocessed_text)
+            preprocessed_texts.append(text)
 
-            # Update the progress bar
             pbar.update(1)
-
     return preprocessed_texts
+
 
 # Function to perform sentiment analysis
 @st.cache_data
