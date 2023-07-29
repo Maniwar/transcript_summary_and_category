@@ -14,6 +14,8 @@ from io import BytesIO
 import streamlit as st
 import textwrap
 from categories_josh1 import default_categories
+import tqdm
+import time
 
 # Set page title and layout
 st.set_page_config(page_title="👨‍💻 Transcript Categorization")
@@ -62,17 +64,20 @@ def perform_sentiment_analysis(text):
 # Function to summarize the text
 @st.cache_resource
 def summarize_text(text, max_length=65, min_length=30):
-    # Initialize the summarization pipeline
+ # Initialize the summarization pipeline
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
 
-    # Split the text into chunks of approximately 1024 words
-    text_chunks = textwrap.wrap(text, width=1024)
+    # Split the text into chunks of approximately 1024 tokens
+    chunk_size = 1024
+    text_chunks = [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
 
-    # Summarize all chunks at once
-    summaries = summarization_pipeline(text_chunks, max_length=max_length, min_length=min_length, do_sample=False)
+    # Summarize each chunk and display progress using tqdm
+    summaries = []
+    for chunk in tqdm.tqdm(text_chunks, desc="Summarizing"):
+        summaries.append(summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False)[0]['summary_text'])
 
     # Join the summaries together
-    full_summary = " ".join([summary['summary_text'] for summary in summaries])
+    full_summary = " ".join(summaries)
     return full_summary.strip()
 
 
@@ -159,22 +164,36 @@ if uploaded_file is not None:
             model = initialize_bert_model()
 
             # Preprocess comments and summarize if necessary
+            print("Preprocessing comments and summarizing if necessary...")
+            start_time = time.time()
             feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
-            feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].apply(lambda x: summarize_text(x) if len(x.split()) > 80 else x)
-
+            feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].apply(lambda x: summarize_text_with_progress(x) if len(x.split()) > 80 else x)
+            end_time = time.time()
+            print(f"Preprocessing comments and summarizing done. Time taken: {end_time - start_time} seconds.")
+    
+            # Initialize the BERT model once
+            model = initialize_bert_model()
+    
             # Compute comment embeddings in batches
             batch_size = 512  # Choose batch size based on your available memory
             comment_embeddings = []
-            for i in range(0, len(feedback_data), batch_size):
+            start_time = time.time()
+            for i in tqdm.tqdm(range(0, len(feedback_data), batch_size), desc="Computing embeddings"):
                 batch = feedback_data['summarized_comments'][i:i+batch_size].tolist()
                 comment_embeddings.extend(model.encode(batch))
-            feedback_data['comment_embeddings'] = comment_embeddings
-
+            end_time = time.time()
+            print(f"Computing embeddings done. Time taken: {end_time - start_time} seconds.")
+            
             # Compute sentiment scores
+            print("Computing sentiment scores...")
+            start_time = time.time()
             feedback_data['sentiment_scores'] = feedback_data['preprocessed_comments'].apply(perform_sentiment_analysis)
-
+            end_time = time.time()
+            print(f"Computing sentiment scores done. Time taken: {end_time - start_time} seconds.")
+    
             # Compute semantic similarity and assign categories in batches
-            for i in range(0, len(feedback_data), batch_size):
+            start_time = time.time()
+            for i in tqdm.tqdm(range(0, len(feedback_data), batch_size), desc="Computing similarity"):
                 batch_embeddings = feedback_data['comment_embeddings'][i:i+batch_size].tolist()
                 for main_category, keywords in categories.items():
                     for keyword in keywords:
@@ -191,6 +210,9 @@ if uploaded_file is not None:
                                 categories_list.append(main_category)
                                 summarized_texts.append(keyword)
                                 similarity_scores.append(similarity_score)
+            end_time = time.time()
+            print(f"Computing similarity and assigning categories done. Time taken: {end_time - start_time} seconds.")
+
 
             # Prepare final data
             for index, row in feedback_data.iterrows():
