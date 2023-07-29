@@ -1,69 +1,3 @@
-import pandas as pd
-import nltk
-from nltk.sentiment import SentimentIntensityAnalyzer
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
-import datetime
-import numpy as np
-import xlsxwriter
-import chardet
-from transformers import pipeline, AutoTokenizer
-import base64
-from io import BytesIO
-import streamlit as st
-import textwrap
-from categories_josh1 import default_categories
-import time
-from tqdm import tqdm
-
-# Initialize BERT model
-@st.cache_resource
-def initialize_bert_model():
-    start_time = time.time()
-    print("Initializing BERT model...")
-    return SentenceTransformer('paraphrase-MiniLM-L12-v2')
-    end_time = time.time()
-    print(f"BERT model initialized. Time taken: {end_time - start_time} seconds.")
-
-# Create a dictionary to store precomputed embeddings
-@st.cache_resource
-def compute_keyword_embeddings(keywords):
-    start_time = time.time()
-    print("Computing keyword embeddings...")
-    model = initialize_bert_model()
-    keyword_embeddings = {}
-    for keyword in keywords:
-        keyword_embeddings[keyword] = model.encode([keyword])[0]
-    end_time = time.time()
-    print(f"Keyword embeddings computed. Time taken: {end_time - start_time} seconds.")
-    return keyword_embeddings
-
-# Function to preprocess the text
-@st.cache_data
-def preprocess_text(text):
-    start_time = time.time()
-    print("Preprocessing text...")
-    # Convert to string if input is a float
-    if isinstance(text, float):
-        text = str(text)
-    end_time = time.time()
-    print(f"Preprocessing text completed. Time taken: {end_time - start_time} seconds.")
-    # Remove unnecessary characters and weird characters
-    text = text.encode('ascii', 'ignore').decode('utf-8')
-    # Return the text without removing stop words
-    return text
-
-# Function to perform sentiment analysis
-@st.cache_data
-def perform_sentiment_analysis(text):
-    start_time = time.time()
-    print("Perform Sentiment Analysis text...")
-    analyzer = SentimentIntensityAnalyzer()
-    sentiment_scores = analyzer.polarity_scores(text)
-    compound_score = sentiment_scores['compound']
-    end_time = time.time()
-    print(f"Sentiment Analysis completed. Time taken: {end_time - start_time} seconds.")
-    return compound_score
 
 # Function to initialize the summarization pipeline
 @st.cache_resource
@@ -78,47 +12,24 @@ def get_summarization_pipeline():
     print("Time taken to initialize summarization pipeline:", end_time - start_time)
     return pipeline("summarization", model=model_name, tokenizer=tokenizer)
 
-# Function to compute the token count of a text
-def get_token_count(text, summarization_pipeline):
-    return len(summarization_pipeline.tokenizer(text)["input_ids"])
-
-# Function to chunk the text and stitch it back together
-def chunk_and_stitch(text, summarization_pipeline, max_tokens):
-    # Tokenize the text into sentences using NLTK's sent_tokenize
-    sentences = nltk.sent_tokenize(text)
-
-    # Initialize variables to keep track of the current chunk and its token count
-    current_chunk = []
-    current_chunk_tokens = 0
+# Function to split the long text into chunks while respecting the maximum token limit
+def chunk_and_stitch(text, summarization_pipeline, max_tokens=1024):
+    # Split the text into sentences
+    sentences = text.split(". ")
+    current_chunk = ""
     chunks = []
-
     for sentence in sentences:
-        tokens = get_token_count(sentence, summarization_pipeline)
-
-        # Check if adding this sentence exceeds the token limit
-        if current_chunk_tokens + tokens > max_tokens:
-            if current_chunk_tokens == 0:
-                # The sentence itself is too long, truncate it and add to chunks
-                truncated_sentence = textwrap.shorten(sentence, width=max_tokens, placeholder="")
-                chunks.append(truncated_sentence)
-            else:
-                # Process the current chunk if it's not empty
-                chunks.append(" ".join(current_chunk))
-            current_chunk = []
-            current_chunk_tokens = 0
-
-        current_chunk.append(sentence)
-        current_chunk_tokens += tokens
-
-    # Process any remaining sentences in the last chunk
+        # Check if adding this sentence to the current chunk exceeds the maximum token limit
+        if len(summarization_pipeline.tokenizer(current_chunk + sentence)["input_ids"]) > max_tokens:
+            chunks.append(current_chunk)
+            current_chunk = ""
+        current_chunk += sentence + ". "
     if current_chunk:
-        chunks.append(" ".join(current_chunk))
+        chunks.append(current_chunk)
+    return chunks
 
-    return " ".join(chunks)
-
-# Function to initialize the summarization pipeline
-@st.cache_resource
-def summarize_text(texts, max_length=100, min_length=50, max_tokens=512, min_word_count=80, max_characters=8000):
+# Function to summarize a list of texts
+def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_word_count=80, max_characters=8000):
     start_time = time.time()
     print("Start Summarizing text...")
     # Initialize the summarization pipeline
@@ -161,9 +72,17 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=512, min_wor
         # Detect and handle long texts
         if len(text) > max_characters:
             # Chunk the text into smaller parts
-            chunked_text = chunk_and_stitch(text, summarization_pipeline, max_tokens)
-            current_chunk.append(chunked_text)
-            current_chunk_tokens += get_token_count(chunked_text)
+            chunks = chunk_and_stitch(text, summarization_pipeline, max_tokens)
+            for chunk in chunks:
+                current_chunk.append(chunk)
+                current_chunk_tokens += get_token_count(chunk)
+
+                # Check if adding this chunk to the current chunk exceeds the chunk size
+                if current_chunk_tokens > max_chunk_size:
+                    # Process the current chunk
+                    process_chunk(current_chunk)
+                    current_chunk = []
+                    current_chunk_tokens = 0
         else:
             current_chunk.append(text)
             current_chunk_tokens += get_token_count(text)
