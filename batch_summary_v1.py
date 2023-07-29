@@ -78,12 +78,6 @@ def get_summarization_pipeline():
     print("Time taken to initialize summarization pipeline:", end_time - start_time)
     return pipeline("summarization", model=model_name, tokenizer=tokenizer)
 
-# Function to process a list of texts as a single chunk
-@st.cache_data
-def process_chunk(chunk):
-    summaries = summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False)
-    all_summaries.extend([summary['summary_text'] for summary in summaries])
-
 # Function to initialize the summarization pipeline
 @st.cache_resource
 def summarize_text(texts, max_length=100, min_length=50, max_tokens_per_sentence_frac=0.9, max_chunk_len_frac=0.8, min_word_count=80):
@@ -100,6 +94,11 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens_per_sentence
 
     # Initialize progress bar
     pbar = tqdm(total=total_texts)
+
+    # Function to process a list of texts as a single chunk
+    def process_chunk(chunk, max_length, min_length):
+        summaries = summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False)
+        all_summaries.extend([summary['summary_text'] for summary in summaries])
 
     # Function to compute the average token count per sentence
     def avg_token_count_per_sentence(text):
@@ -140,7 +139,7 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens_per_sentence
 
             # Check if adding this sentence exceeds the token limit
             if current_chunk_tokens + tokens > max_tokens_per_sentence or len(current_chunk) >= max_chunk_len:
-                process_chunk(current_chunk)
+                process_chunk(current_chunk, max_length, min_length)
                 current_chunk = []
                 current_chunk_tokens = 0
 
@@ -149,7 +148,7 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens_per_sentence
 
         # Process any remaining sentences in the last chunk
         if current_chunk:
-            process_chunk(current_chunk)
+            process_chunk(current_chunk, max_length, min_length)
 
         pbar.update(1)
 
