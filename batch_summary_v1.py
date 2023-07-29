@@ -8,7 +8,7 @@ import datetime
 import numpy as np
 import xlsxwriter
 import chardet
-from transformers import pipeline, AutoTokenizer
+from transformers import pipeline, AutoTokenizer,TFAutoModelForSeq2SeqLM
 import base64
 from io import BytesIO
 import streamlit as st
@@ -66,8 +66,19 @@ def perform_sentiment_analysis(text):
     compound_score = sentiment_scores['compound']
     return compound_score
 
-# Load the tokenizer corresponding to the model
+# Initialize the model and tokenizer
+model = TFAutoModelForSeq2SeqLM.from_pretrained('knkarthick/MEETING_SUMMARY')
 tokenizer = AutoTokenizer.from_pretrained('knkarthick/MEETING_SUMMARY')
+
+def batch_summarize(texts, max_tokens_per_batch=1024):
+    summaries = []
+    for i in range(0, len(texts), max_tokens_per_batch):
+        batch = texts[i:i+max_tokens_per_batch]
+        encodings = tokenizer(batch, return_tensors='tf', truncation=True, padding=True, max_length=1024)
+        summary_ids = model.generate(encodings['input_ids'], num_beams=4, max_length=100, early_stopping=True)
+        summaries.extend([tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=False) for g in summary_ids])
+    return summaries
+
 
 # Function to tokenize the text into chunks of approximately 1024 tokens each
 @st.cache_resource
@@ -87,22 +98,11 @@ def tokenize_and_chunk_text(texts, max_tokens=1024):
 
 # Function to summarize the text
 @st.cache_resource
-def summarize_text(text, max_length=100, min_length=50):
-    summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
-    tokens = tokenizer(text, return_tensors="pt", max_length=1024, truncation=True, padding="max_length")
-    chunks = torch.split(tokens.input_ids, 1024)
-    summaries = []
-    total_chunks = len(chunks)
-    for i, chunk in enumerate(chunks, start=1):
-        chunk_text = tokenizer.decode(chunk[0], skip_special_tokens=True)
-        summaries.append(summarization_pipeline(chunk_text, max_length=max_length, min_length=min_length, do_sample=False))
-        # Update the progress bar with the overall progress of all texts being processed
-        total_progress = i / total_chunks
-        overall_progress = current_text / total_texts + total_progress / total_texts
-        progress.progress(overall_progress)
-        progress_status.text(f"Summarizing text: {current_text}/{total_texts}, Chunk: {i}/{total_chunks}")
-    full_summary = " ".join([summary[0]['summary_text'] for summary in summaries])
-    return full_summary.strip()
+def summarize_text(texts):
+    tokenized_texts = tokenizer(texts, return_tensors='pt', truncation=True, padding=True, max_length=1024)['input_ids']
+    chunks = torch.split(tokenized_texts, 1024)
+    summaries = batch_summarize([tokenizer.decode(chunk[0], skip_special_tokens=True) for chunk in chunks])
+    return " ".join(summaries).strip()
 
 
 # Function to compute semantic similarity
