@@ -169,24 +169,24 @@ if uploaded_file is not None:
         # Check if the processed DataFrame is already cached
 
         @st.cache_data
-        def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold):
+        def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold, batch_size):
             # Start timing
             start_time = time.time()
-
+        
             # Compute keyword embeddings
             progress_status.text("Computing keyword embeddings...")
             keyword_embeddings = compute_keyword_embeddings([keyword for keywords in categories.values() for keyword in keywords])
-
+        
             # Initialize lists for categorized_comments, sentiments, similarity scores, and summaries
             categorized_comments = []
             sentiments = []
             similarity_scores = []
             summarized_texts = []
             categories_list = []
-
+        
             # Initialize the BERT model once
             model = initialize_bert_model()
-
+        
             # Preprocess comments and summarize if necessary
             feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
             total_batches = (len(feedback_data) + batch_size - 1) // batch_size  # Calculate the number of batches that will be processed
@@ -195,8 +195,7 @@ if uploaded_file is not None:
                 summarized_comments, chunks = zip(*[summarize_text(x) if len(x.split()) > 100 else (x, 1) for x in batch])
                 feedback_data.loc[i:i+batch_size-1, 'summarized_comments'] = summarized_comments
                 progress_status.text(f"Processing batch: {i//batch_size+1}/{total_batches} (Text chunks: {sum(chunks)})")
-            # Compute comment embeddings in batches
-            batch_size = 1024  # Choose batch size based on your available memory
+
             comment_embeddings = []
             for i in range(0, len(feedback_data), batch_size):
                 batch = feedback_data['summarized_comments'][i:i+batch_size].tolist()
