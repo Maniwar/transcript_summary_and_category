@@ -1,215 +1,25 @@
-Computing keyword embeddings...
-Initializing BERT model...
-Keyword embeddings computed. Time taken: 5.7450501918792725 seconds.
-Preprocessing comments and summarizing if necessary...
-Preprocessing text...
-Preprocessing text completed. Time taken: 0.0 seconds.
-Preprocessing text...
-Preprocessing text completed. Time taken: 0.0 seconds.
-Preprocessing text...
-Preprocessing text completed. Time taken: 0.0 seconds.
-Preprocessing text...
-Preprocessing text completed. Time taken: 0.00098419189453125 seconds.
-Preprocessing text...
-Preprocessing text completed. Time taken: 0.0 seconds.
-Preprocessing text...
-Preprocessing text completed. Time taken: 0.0 seconds.
-Preprocessing text...
-Preprocessing text completed. Time taken: 0.000982046127319336 seconds.
-Preprocessing text...
-Preprocessing text completed. Time taken: 0.0 seconds.
-Preprocessing text...
-Preprocessing text completed. Time taken: 0.0 seconds.
-Preprocessing text...
-Preprocessing text completed. Time taken: 0.0 seconds.
-Preprocessing text...
-Preprocessing text completed. Time taken: 0.0 seconds.
-Preprocessing text...
-Preprocessing text completed. Time taken: 0.0 seconds.
-Preprocessing text...
-Preprocessing text completed. Time taken: 0.0010232925415039062 seconds.
-Preprocessing text...
-Preprocessing text completed. Time taken: 0.0 seconds.
-Preprocessing text...
-Preprocessing text completed. Time taken: 0.0 seconds.
-Preprocessing text...
-Preprocessing text completed. Time taken: 0.0 seconds.
-Start Summarizing text...
-Start Summarization Pipeline text...
-Time taken to initialize summarization pipeline: 0.678098201751709
-Starting summarization of 16 texts...
-  6%|██████████▉                                                                                                                                                                    | 1/16 [00:10<02:43, 10.92s/it]Token indices sequence length is longer than the specified maximum sequence length for this model (1995 > 1024). Running this sequence through the model will result in indexing errors
-2023-07-28 18:42:16.539 Uncaught app exception
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py", line 87, in get
-    entry_bytes = self._read_from_mem_cache(key)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py", line 137, in _read_from_mem_cache
-    raise CacheStorageKeyNotFoundError("Key not found in mem cache")
-streamlit.runtime.caching.storage.cache_storage_protocol.CacheStorageKeyNotFoundError: Key not found in mem cache
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_data_api.py", line 634, in read_result
-    pickled_entry = self.storage.get(key)
-                    ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py", line 89, in get
-    entry_bytes = self._persist_storage.get(key)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\local_disk_cache_storage.py", line 155, in get
-    raise CacheStorageKeyNotFoundError(
-streamlit.runtime.caching.storage.cache_storage_protocol.CacheStorageKeyNotFoundError: Local disk cache storage is disabled (persist=None)
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 263, in _get_or_create_cached_value
-    cached_result = cache.read_result(value_key)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_data_api.py", line 636, in read_result
-    raise CacheKeyNotFoundError(str(e)) from e
-streamlit.runtime.caching.cache_errors.CacheKeyNotFoundError: Local disk cache storage is disabled (persist=None)
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py", line 87, in get
-    entry_bytes = self._read_from_mem_cache(key)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py", line 137, in _read_from_mem_cache
-    raise CacheStorageKeyNotFoundError("Key not found in mem cache")
-streamlit.runtime.caching.storage.cache_storage_protocol.CacheStorageKeyNotFoundError: Key not found in mem cache
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_data_api.py", line 634, in read_result
-    pickled_entry = self.storage.get(key)
-                    ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py", line 89, in get
-    entry_bytes = self._persist_storage.get(key)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\local_disk_cache_storage.py", line 155, in get
-    raise CacheStorageKeyNotFoundError(
-streamlit.runtime.caching.storage.cache_storage_protocol.CacheStorageKeyNotFoundError: Local disk cache storage is disabled (persist=None)
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 311, in _handle_cache_miss
-    cached_result = cache.read_result(value_key)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_data_api.py", line 636, in read_result
-    raise CacheKeyNotFoundError(str(e)) from e
-streamlit.runtime.caching.cache_errors.CacheKeyNotFoundError: Local disk cache storage is disabled (persist=None)
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 263, in _get_or_create_cached_value
-    cached_result = cache.read_result(value_key)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_resource_api.py", line 500, in read_result
-    raise CacheKeyNotFoundError()
-streamlit.runtime.caching.cache_errors.CacheKeyNotFoundError
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 311, in _handle_cache_miss
-    cached_result = cache.read_result(value_key)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_resource_api.py", line 500, in read_result
-    raise CacheKeyNotFoundError()
-streamlit.runtime.caching.cache_errors.CacheKeyNotFoundError
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
+TypeError: 'module' object is not callable
+Traceback:
+File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
     exec(code, module.__dict__)
-  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 383, in <module>
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 333, in <module>
     trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold)
                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
     return cached_func(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
     return self._get_or_create_cached_value(args, kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
     return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
     computed_value = self._info.func(*func_args, **func_kwargs)
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 287, in process_feedback_data
-    summaries = summarize_text(long_comment_texts)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
-    return cached_func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
-    return self._get_or_create_cached_value(args, kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
-    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
-    computed_value = self._info.func(*func_args, **func_kwargs)
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 174, in summarize_text
-    process_chunk(current_chunk)
-  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 138, in process_chunk
-    summaries = summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\transformers\pipelines\text2text_generation.py", line 265, in __call__
-    return super().__call__(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\transformers\pipelines\text2text_generation.py", line 165, in __call__
-    result = super().__call__(*args, **kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\transformers\pipelines\base.py", line 1101, in __call__
-    outputs = list(final_iterator)
-              ^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\transformers\pipelines\pt_utils.py", line 124, in __next__
-    item = next(self.iterator)
-           ^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\transformers\pipelines\pt_utils.py", line 125, in __next__
-    processed = self.infer(item, **self.params)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\transformers\pipelines\base.py", line 1026, in forward
-    model_outputs = self._forward(model_inputs, **forward_params)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\transformers\pipelines\text2text_generation.py", line 187, in _forward
-    output_ids = self.model.generate(**model_inputs, **generate_kwargs)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\torch\utils\_contextlib.py", line 115, in decorate_context
-    return func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\transformers\generation\utils.py", line 1329, in generate
-    model_kwargs = self._prepare_encoder_decoder_kwargs_for_generation(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\transformers\generation\utils.py", line 642, in _prepare_encoder_decoder_kwargs_for_generation
-    model_kwargs["encoder_outputs"]: ModelOutput = encoder(**encoder_kwargs)
-                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\torch\nn\modules\module.py", line 1501, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\transformers\models\bart\modeling_bart.py", line 813, in forward
-    embed_pos = self.embed_positions(input)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\torch\nn\modules\module.py", line 1501, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\transformers\models\bart\modeling_bart.py", line 140, in forward
-    return super().forward(positions + self.offset)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\torch\nn\modules\sparse.py", line 162, in forward
-    return F.embedding(
-           ^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\torch\nn\functional.py", line 2210, in embedding
-    return torch.embedding(weight, input, padding_idx, scale_grad_by_freq, sparse)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-IndexError: index out of range in self
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 236, in process_feedback_data
+    feedback_data['preprocessed_comments'] = preprocess_text_with_progress(feedback_data[comment_column])
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 65, in preprocess_text_with_progress
+    with tqdm(total=total_batches, desc="Preprocessing Texts", unit="batch") as pbar:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
