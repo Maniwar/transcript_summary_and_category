@@ -21,10 +21,9 @@ from tqdm import tqdm
 def initialize_bert_model():
     start_time = time.time()
     print("Initializing BERT model...")
-    model = SentenceTransformer('paraphrase-MiniLM-L12-v2')
+    return SentenceTransformer('paraphrase-MiniLM-L12-v2')
     end_time = time.time()
     print(f"BERT model initialized. Time taken: {end_time - start_time} seconds.")
-    return model
 
 # Create a dictionary to store precomputed embeddings
 @st.cache_resource
@@ -117,31 +116,21 @@ def chunk_and_stitch(text, max_tokens_per_sentence, tokenizer):
 
     return " ".join(chunks)
 
-# Function to initialize the summarization pipeline
-@st.cache_resource
-def get_summarization_pipeline():
+# Function to preprocess the comments and perform summarization if necessary
+@st.cache_data
+def preprocess_and_summarize_comments(comments, max_tokens_per_sentence=512, max_length=100, min_length=50, max_tokens=1024, min_word_count=80):
     start_time = time.time()
-    print("Start Summarization Pipeline text...")
-    # Initialize the summarization pipeline
-    model_name = "knkarthick/MEETING_SUMMARY"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    # Capture end time
-    end_time = time.time()
-    print("Time taken to initialize summarization pipeline:", end_time - start_time)
-    return pipeline("summarization", model=model_name, tokenizer=tokenizer)
+    print("Preprocessing comments and summarizing if necessary...")
+    # Preprocess the comments
+    preprocessed_comments = [preprocess_text(comment) for comment in comments]
 
-# Function to initialize the summarization pipeline
-@st.cache_resource
-def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_word_count=80):
-    start_time = time.time()
-    print("Start Summarizing text...")
     # Initialize the summarization pipeline
     summarization_pipeline = get_summarization_pipeline()
 
     # Initialize a list to store the summaries
     all_summaries = []
 
-    total_texts = len(texts)  # total number of texts
+    total_texts = len(comments)  # total number of texts
     print(f"Starting summarization of {total_texts} texts...")
 
     # Initialize progress bar
@@ -156,31 +145,23 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_wo
     # Iterate over the texts
     current_chunk = []
     current_chunk_tokens = 0
-    for idx, text in enumerate(texts):
+    for idx, text in enumerate(preprocessed_comments):
         # Skip summarizing the text if the word count is below the threshold
         if len(text.split()) <= min_word_count:
             all_summaries.append(text)
             pbar.update(1)
             continue
 
-        # Check if adding this text to the current chunk exceeds the chunk size
-        if current_chunk_tokens + get_token_count(text, summarization_pipeline.tokenizer) > max_chunk_size:
-            # Process the current chunk
-            summaries = summarization_pipeline(" ".join(current_chunk), max_length=max_length, min_length=min_length, do_sample=False)
+        # Check if the text exceeds the model's token limit
+        if get_token_count(text, summarization_pipeline.tokenizer) > max_tokens:
+            chunked_text = chunk_and_stitch(text, max_tokens_per_sentence=max_tokens_per_sentence, tokenizer=summarization_pipeline.tokenizer)
+            summaries = summarization_pipeline(chunked_text, max_length=max_length, min_length=min_length, do_sample=False)
             all_summaries.extend([summary['summary_text'] for summary in summaries])
-            current_chunk = []
-            current_chunk_tokens = 0
-
-        # Chunk and stitch the text
-        chunked_text = chunk_and_stitch(text, max_tokens_per_sentence=max_tokens, tokenizer=summarization_pipeline.tokenizer)
-        current_chunk.append(chunked_text)
-        current_chunk_tokens += get_token_count(chunked_text, summarization_pipeline.tokenizer)
+        else:
+            summaries = summarization_pipeline(text, max_length=max_length, min_length=min_length, do_sample=False)
+            all_summaries.extend([summary['summary_text'] for summary in summaries])
 
         pbar.update(1)
-
-    # Process the last chunk
-    summaries = summarization_pipeline(" ".join(current_chunk), max_length=max_length, min_length=min_length, do_sample=False)
-    all_summaries.extend([summary['summary_text'] for summary in summaries])
 
     # Close the progress bar
     pbar.close()
@@ -189,6 +170,10 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_wo
     end_time = time.time()
     print("Time taken to process summarization:", end_time - start_time)
     return all_summaries
+
+# ... (rest of the code remains unchanged)
+
+
 
 # Function to compute semantic similarity
 def compute_semantic_similarity(embedding1, embedding2):
