@@ -78,6 +78,54 @@ def get_summarization_pipeline():
     print("Time taken to initialize summarization pipeline:", end_time - start_time)
     return pipeline("summarization", model=model_name, tokenizer=tokenizer)
 
+def chunk_and_stitch(text, max_tokens_per_sentence, tokenizer):
+    sentences = nltk.sent_tokenize(text)
+    current_chunk = []
+    current_chunk_tokens = 0
+    chunks = []
+
+    for sentence in sentences:
+        tokens = get_token_count(sentence, tokenizer)
+
+        # Adjust the chunk size based on the model's maximum token limit
+        max_tokens_per_chunk = min(max_tokens_per_sentence, tokens)
+
+        # Define a minimum chunk size to avoid very short inputs
+        min_tokens_per_chunk = max_tokens_per_chunk // 2
+
+        if tokens > max_tokens_per_chunk:
+            # Sentence is too long, recursively chunk it
+            sentence_chunks = chunk_long_sentence(sentence, max_tokens_per_chunk, min_tokens_per_chunk, tokenizer)
+            chunks.extend(sentence_chunks)
+        else:
+            if current_chunk_tokens + tokens > max_tokens_per_chunk:
+                chunks.append(" ".join(current_chunk))
+                current_chunk = []
+                current_chunk_tokens = 0
+
+            current_chunk.append(sentence)
+            current_chunk_tokens += tokens
+
+    if current_chunk:
+        chunks.append(" ".join(current_chunk))
+
+    return chunks
+
+def chunk_long_sentence(sentence, max_tokens_per_chunk, min_tokens_per_chunk, tokenizer):
+    words = textwrap.wrap(sentence, max_tokens_per_chunk)
+    chunks = []
+
+    for word in words:
+        tokens = get_token_count(word, tokenizer)
+
+        if tokens > max_tokens_per_chunk:
+            # Word is still too long, recursively chunk it
+            word_chunks = chunk_long_sentence(word, max_tokens_per_chunk, min_tokens_per_chunk, tokenizer)
+            chunks.extend(word_chunks)
+        elif tokens >= min_tokens_per_chunk:
+            chunks.append(word)
+
+    return chunks
 # Function to preprocess the comments and perform summarization if necessary
 @st.cache_data
 def summarize_text(comments, max_tokens_per_sentence=512, max_length=75, min_length=30, max_tokens=1024, min_word_count=80):
