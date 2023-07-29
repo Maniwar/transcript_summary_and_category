@@ -16,25 +16,14 @@ from categories_josh1 import default_categories
 import time
 from tqdm import tqdm
 
-
-# Set page title and layout
-st.set_page_config(page_title="👨‍💻 Transcript Categorization")
-
 # Initialize BERT model
 @st.cache_resource
 def initialize_bert_model():
     start_time = time.time()
     print("Initializing BERT model...")
-    #return SentenceTransformer('all-MiniLM-L6-v2')
-    #return SentenceTransformer('all-MiniLM-L12-v2')
-    #return SentenceTransformer('paraphrase-MiniLM-L6-v2')
+    return SentenceTransformer('paraphrase-MiniLM-L12-v2')
     end_time = time.time()
     print(f"BERT model initialized. Time taken: {end_time - start_time} seconds.")
-    return SentenceTransformer('paraphrase-MiniLM-L12-v2')
-    #return SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-    #return SentenceTransformer('stsb-roberta-base')
-    #return SentenceTransformer('distilroberta-base-paraphrase-v1')
-
 
 # Create a dictionary to store precomputed embeddings
 @st.cache_resource
@@ -76,8 +65,7 @@ def perform_sentiment_analysis(text):
     print(f"Sentiment Analysis completed. Time taken: {end_time - start_time} seconds.")
     return compound_score
 
-
- # Function to initialize the summarization pipeline
+# Function to initialize the summarization pipeline
 @st.cache_resource
 def get_summarization_pipeline():
     start_time = time.time()
@@ -90,45 +78,17 @@ def get_summarization_pipeline():
     print("Time taken to initialize summarization pipeline:", end_time - start_time)
     return pipeline("summarization", model=model_name, tokenizer=tokenizer)
 
-# Function to preprocess the text and split long sentences
-def preprocess_and_split_text(text, max_tokens_per_sentence=50):
-    # Convert to string if input is a float
-    if isinstance(text, float):
-        text = str(text)
-
-    # Use NLTK's sent_tokenize to split the text into sentences
-    sentences = nltk.sent_tokenize(text)
-
-    # Initialize a list to store the preprocessed and split sentences
-    processed_sentences = []
-
-    for sentence in sentences:
-        # Tokenize the sentence and check if it exceeds the maximum token limit
-        tokens = len(get_summarization_pipeline().tokenizer(sentence)["input_ids"])
-        if tokens > max_tokens_per_sentence:
-            # If the sentence is too long, split it into smaller chunks
-            words = sentence.split()
-            current_chunk = []
-            current_chunk_tokens = 0
-            for word in words:
-                tokens = len(get_summarization_pipeline().tokenizer(word)["input_ids"])
-                if current_chunk_tokens + tokens > max_tokens_per_sentence:
-                    processed_sentences.append(" ".join(current_chunk))
-                    current_chunk = []
-                    current_chunk_tokens = 0
-                current_chunk.append(word)
-                current_chunk_tokens += tokens
-            if current_chunk:
-                processed_sentences.append(" ".join(current_chunk))
-        else:
-            # If the sentence is within the limit, keep it as it is
-            processed_sentences.append(sentence)
-
-    return processed_sentences
-
+# Function to process a list of texts as a single chunk
 @st.cache_data
-# Updated function to summarize text with preprocessed and split sentences
-def summarize_text(texts, max_length=100, min_length=50, max_tokens_per_sentence=50, max_tokens=2048, min_word_count=80):
+def process_chunk(chunk):
+    summaries = summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False)
+    all_summaries.extend([summary['summary_text'] for summary in summaries])
+
+# Function to initialize the summarization pipeline
+@st.cache_resource
+def summarize_text(texts, max_length=100, min_length=50, max_tokens_per_sentence_frac=0.9, max_chunk_len_frac=0.8, min_word_count=80):
+    start_time = time.time()
+    print("Start Summarizing text...")
     # Initialize the summarization pipeline
     summarization_pipeline = get_summarization_pipeline()
 
@@ -141,10 +101,16 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens_per_sentence
     # Initialize progress bar
     pbar = tqdm(total=total_texts)
 
-    # Function to process a single text chunk
-    def process_chunk(chunk):
-        summaries = summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False)
-        all_summaries.extend([summary['summary_text'] for summary in summaries])
+    # Function to compute the average token count per sentence
+    def avg_token_count_per_sentence(text):
+        sentences = nltk.sent_tokenize(text)
+        token_counts = [len(summarization_pipeline.tokenizer(sentence)["input_ids"]) for sentence in sentences]
+        return sum(token_counts) / max(len(token_counts), 1)
+
+    # Function to check if a sentence exceeds the token limit
+    def exceeds_token_limit(sentence, max_tokens):
+        tokens = len(summarization_pipeline.tokenizer(sentence)["input_ids"])
+        return tokens > max_tokens
 
     # Iterate over the texts
     for idx, text in enumerate(texts):
@@ -154,17 +120,26 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens_per_sentence
             pbar.update(1)
             continue
 
-        # Preprocess the text and split long sentences
-        processed_sentences = preprocess_and_split_text(text, max_tokens_per_sentence)
+        # Tokenize the text into sentences using NLTK's sent_tokenize
+        sentences = nltk.sent_tokenize(text)
+
+        # Calculate the average token count per sentence
+        avg_token_count = avg_token_count_per_sentence(text)
+
+        # Set the max_tokens_per_sentence based on the average token count
+        max_tokens_per_sentence = int(avg_token_count * max_tokens_per_sentence_frac)
+
+        # Set the max_chunk_len based on the average token count
+        max_chunk_len = int(avg_token_count * max_chunk_len_frac)
 
         current_chunk = []
         current_chunk_tokens = 0
 
-        for sentence in processed_sentences:
+        for sentence in sentences:
             tokens = len(summarization_pipeline.tokenizer(sentence)["input_ids"])
 
             # Check if adding this sentence exceeds the token limit
-            if current_chunk_tokens + tokens > max_tokens or len(current_chunk) >= 16:
+            if current_chunk_tokens + tokens > max_tokens_per_sentence or len(current_chunk) >= max_chunk_len:
                 process_chunk(current_chunk)
                 current_chunk = []
                 current_chunk_tokens = 0
@@ -182,6 +157,8 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens_per_sentence
     pbar.close()
 
     print("Summarization completed.")
+    end_time = time.time()
+    print("Time taken to process summarization:", end_time - start_time)
     return all_summaries
 
 # Function to compute semantic similarity
