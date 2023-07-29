@@ -77,31 +77,11 @@ def get_summarization_pipeline():
     print("Time taken to initialize summarization pipeline:", end_time - start_time)
     return pipeline("summarization", model=model_name, tokenizer=tokenizer)
 
-@st.cache_data
-# Function to split the long text into chunks while respecting the maximum token limit
-def chunk_and_stitch(text, summarization_pipeline, max_tokens=1024):
-    # Split the text into sentences
-    sentences = text.split(". ")
-    current_chunk = ""
-    chunks = []
-    for sentence in sentences:
-        # Check if adding this sentence to the current chunk exceeds the maximum token limit
-        if len(summarization_pipeline.tokenizer(current_chunk + sentence)["input_ids"]) > max_tokens:
-            chunks.append(current_chunk)
-            current_chunk = ""
-        current_chunk += sentence + ". "
-    if current_chunk:
-        chunks.append(current_chunk)
-    return chunks
 
-@st.cache_data
-# Function to summarize a list of texts
-def summarize_text(texts, max_length=70, min_length=50, max_tokens=1024, min_word_count=60, max_characters=8000):
-    start_time = time.time()
-    print("Start Summarizing text...")
-    # Initialize the summarization pipeline
-    summarization_pipeline = get_summarization_pipeline()
 
+# Function to summarize a list of texts with batching
+@st.cache_data
+def summarize_text_with_batching(texts, summarization_pipeline, max_tokens=1024, max_length=100, min_length=50):
     # Initialize a list to store the summaries
     all_summaries = []
 
@@ -110,25 +90,15 @@ def summarize_text(texts, max_length=70, min_length=50, max_tokens=1024, min_wor
 
     # Initialize progress bar
     pbar = tqdm(total=total_texts)
-    @st.cache_data
-    # Function to process a list of texts as a single chunk
-    def process_chunk(chunk):
-        summaries = summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False)
+
+    # Function to process a chunk of texts as a single batch
+    def process_batch(text_batch):
+        summaries = summarization_pipeline(text_batch, max_length=max_length, min_length=min_length, do_sample=False)
         all_summaries.extend([summary['summary_text'] for summary in summaries])
-    @st.cache_data
-    # Function to compute the token count of a text
-    def get_token_count(text):
-        return len(summarization_pipeline.tokenizer(text)["input_ids"])
-
-    # Determine the maximum batch size to utilize the model's capacity effectively
-    max_batch_size = max_tokens // max_length
-
-    # Determine the maximum chunk size to efficiently use the batch size
-    max_chunk_size = max_batch_size // total_texts
 
     # Iterate over the texts
-    current_chunk = []
-    current_chunk_tokens = 0
+    current_batch = []
+    current_batch_tokens = 0
     for idx, text in enumerate(texts):
         # Skip summarizing the text if the word count is below the threshold
         if len(text.split()) <= min_word_count:
@@ -139,39 +109,37 @@ def summarize_text(texts, max_length=70, min_length=50, max_tokens=1024, min_wor
         # Detect and handle long texts
         if len(text) > max_characters:
             # Chunk the text into smaller parts
-            chunks = chunk_and_stitch(text, summarization_pipeline, max_tokens)
+            chunks = chunk_and_stitch(text, max_tokens)
             for chunk in chunks:
-                current_chunk.append(chunk)
-                current_chunk_tokens += get_token_count(chunk)
+                current_batch.append(chunk)
+                current_batch_tokens += len(summarization_pipeline.tokenizer(chunk)["input_ids"])
 
-                # Check if adding this chunk to the current chunk exceeds the chunk size
-                if current_chunk_tokens > max_chunk_size:
-                    # Process the current chunk
-                    process_chunk(current_chunk)
-                    current_chunk = []
-                    current_chunk_tokens = 0
+                # Check if adding this chunk to the current batch exceeds the batch size
+                if current_batch_tokens > max_tokens:
+                    # Process the current batch
+                    process_batch(current_batch)
+                    current_batch = []
+                    current_batch_tokens = 0
         else:
-            current_chunk.append(text)
-            current_chunk_tokens += get_token_count(text)
+            current_batch.append(text)
+            current_batch_tokens += len(summarization_pipeline.tokenizer(text)["input_ids"])
 
-        # Check if adding this text to the current chunk exceeds the chunk size
-        if current_chunk_tokens > max_chunk_size:
-            # Process the current chunk
-            process_chunk(current_chunk)
-            current_chunk = []
-            current_chunk_tokens = 0
+        # Check if adding this text to the current batch exceeds the batch size
+        if current_batch_tokens > max_tokens:
+            # Process the current batch
+            process_batch(current_batch)
+            current_batch = []
+            current_batch_tokens = 0
 
         pbar.update(1)
 
-    # Process the last chunk
-    process_chunk(current_chunk)
+    # Process the last batch
+    process_batch(current_batch)
 
     # Close the progress bar
     pbar.close()
 
     print("Summarization completed.")
-    end_time = time.time()
-    print("Time taken to process summarization:", end_time - start_time)
     return all_summaries
 
 @st.cache_data
@@ -263,30 +231,35 @@ if uploaded_file is not None:
             print("Preprocessing comments and summarizing if necessary...")
 
             feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
-
+            
             # Identify long comments
             long_comments = feedback_data['preprocessed_comments'].apply(lambda x: len(x.split()) > 100)
-
-            # Extract all long comments into a list
-            long_comment_texts = feedback_data.loc[long_comments, 'preprocessed_comments'].tolist()
-
-            # Summarize the list of long comments in one go
-            summaries = summarize_text(long_comment_texts)
-
-            # Create a new DataFrame from the long comments and their summaries
+            
+            # Initialize an empty list to store the summaries
+            all_summaries = []
+            
+            # Process long comments in batches and summarize them
+            batch_size = 50
+            for i in range(0, len(feedback_data), batch_size):
+                batch_texts = feedback_data.loc[long_comments, 'preprocessed_comments'][i:i+batch_size].tolist()
+                batch_summaries = summarize_text_with_batching(batch_texts, summarization_pipeline)
+                all_summaries.extend(batch_summaries)
+            
+            # Create a new DataFrame with the long comments and their summaries
             long_comments_summaries = pd.DataFrame({
-                'preprocessed_comments': long_comment_texts,
-                'summarized_comments': summaries
+                'preprocessed_comments': feedback_data.loc[long_comments, 'preprocessed_comments'].tolist(),
+                'summarized_comments': all_summaries
             })
-
+            
             # Merge the summarized comments back into the original DataFrame
             feedback_data = pd.merge(feedback_data, long_comments_summaries, on='preprocessed_comments', how='left')
-
+            
             # Fill in missing summarized comments with the original preprocessed comments
             feedback_data['summarized_comments'] = feedback_data['summarized_comments'].fillna(feedback_data['preprocessed_comments'])
-
+            
             end_time = time.time()
             print(f"Preprocessed comments and summarized. Time taken: {end_time - start_time} seconds.")
+
 
             # Compute comment embeddings in batches
             start_time = time.time()
