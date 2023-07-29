@@ -1,29 +1,3 @@
-
-TypeError: 'module' object is not callable
-Traceback:
-File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
-    exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 316, in <module>
-    trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
-    return cached_func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
-    return self._get_or_create_cached_value(args, kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
-    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
-    computed_value = self._info.func(*func_args, **func_kwargs)
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 219, in process_feedback_data
-    feedback_data['preprocessed_comments'] = preprocess_text_with_progress(feedback_data[comment_column])
-                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_summary_transcript_v1broken.py", line 47, in preprocess_text_with_progress
-    with tqdm(total=total_batches, desc="Preprocessing Texts", unit="batch") as pbar:
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 import pandas as pd
 import nltk
 from nltk.tokenize import word_tokenize
@@ -40,7 +14,7 @@ from io import BytesIO
 import streamlit as st
 import textwrap
 from categories_josh1 import default_categories
-import tqdm
+from tqdm import tqdm
 import time
 
 # Set page title and layout
@@ -96,8 +70,15 @@ def perform_sentiment_analysis(text):
     return compound_score
 
 @st.cache_resource
+def get_summarization_pipeline():
+    # Initialize the summarization pipeline with your custom model
+    return pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
+    
+@st.cache_resource
 # Function to summarize text with batching
 def summarize_text_with_batching(texts, summarization_pipeline, max_tokens=1024):
+    # Initialize the custom summarization pipeline
+    summarization_pipeline = get_summarization_pipeline()
     # Initialize a list to store the summaries
     all_summaries = []
 
