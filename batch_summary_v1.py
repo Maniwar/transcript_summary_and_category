@@ -77,62 +77,41 @@ def get_summarization_pipeline():
     
 @st.cache_resource
 # Function to summarize text with batching
-# Function to summarize text with batching
 def summarize_text_with_batching(texts, summarization_pipeline, max_tokens=1024):
-    # Initialize a list to store the summaries
     all_summaries = []
-
-    # Calculate the total number of chunks
-    total_chunks = sum(len(summarization_pipeline.encode(text).input_ids) // max_tokens + 1 for text in texts)
-
-    # Print the total number of chunks
-    print(f"Total chunks: {total_chunks}")
-
-    pbar = tqdm(total=total_chunks, desc="Summarizing Texts")
-
-    # Initialize a variable to keep track of the current token count
-    current_tokens = 0
-
-    # Initialize a list to store the current chunk
-    current_chunk = []
+    pbar = tqdm(total=len(texts), desc="Summarizing Texts")
 
     for text in texts:
-        # Tokenize the text
-        input_ids = summarization_pipeline.encode(text).input_ids
-        tokens = summarization_pipeline.tokenizer.convert_ids_to_tokens(input_ids)
+        input_ids = summarization_pipeline.tokenizer.encode(text, add_special_tokens=True)
+        total_tokens = len(input_ids)
 
-        # Iterate through the tokens
-        for token in tokens:
-            # Calculate the number of tokens in the current chunk
-            current_tokens += 1
+        # Check if the text length exceeds the maximum token limit
+        if total_tokens > max_tokens:
+            # Initialize a list to store the summaries for this long text
+            summaries_for_long_text = []
 
-            # Add the token to the current chunk
-            current_chunk.append(token)
+            # Slide the window over the long text
+            start_index = 0
+            while start_index < total_tokens:
+                end_index = min(start_index + max_tokens, total_tokens)
+                input_ids_segment = input_ids[start_index:end_index]
 
-            # If the current chunk has reached the maximum token limit, summarize it
-            if current_tokens >= max_tokens:
-                # Summarize the current chunk
-                summary = summarization_pipeline.decode(summarization_pipeline.tokenizer.convert_tokens_to_ids(current_chunk))
-                all_summaries.append(summary)
+                # Generate a summary for the current segment
+                summary = summarization_pipeline.decode(input_ids_segment, skip_special_tokens=True)
+                summaries_for_long_text.append(summary)
 
-                # Reset the current chunk and token count
-                current_chunk = []
-                current_tokens = 0
+                # Move the window
+                start_index += max_tokens // 2  # Slide the window by half of max_tokens
 
-                # Update the progress bar
-                pbar.update(1)
-
-        # If there are remaining tokens in the current chunk, summarize it
-        if current_chunk:
-            summary = summarization_pipeline.decode(summarization_pipeline.tokenizer.convert_tokens_to_ids(current_chunk))
+            # Combine the summaries for all segments into a single summary for the long text
+            full_summary_for_long_text = " ".join(summaries_for_long_text)
+            all_summaries.append(full_summary_for_long_text)
+        else:
+            # For short texts, directly summarize them
+            summary = summarization_pipeline.decode(input_ids, skip_special_tokens=True)
             all_summaries.append(summary)
 
-            # Reset the current chunk and token count
-            current_chunk = []
-            current_tokens = 0
-
-            # Update the progress bar
-            pbar.update(1)
+        pbar.update(1)
 
     pbar.close()
     return all_summaries
