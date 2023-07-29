@@ -78,6 +78,12 @@ def get_summarization_pipeline():
     print("Time taken to initialize summarization pipeline:", end_time - start_time)
     return pipeline("summarization", model=model_name, tokenizer=tokenizer)
 
+import textwrap
+
+# Function to compute the token count of a text
+def get_token_count(text, tokenizer):
+    return len(tokenizer.encode(text))
+
 def chunk_and_stitch(text, max_tokens_per_sentence, tokenizer):
     sentences = nltk.sent_tokenize(text)
     current_chunk = []
@@ -126,6 +132,7 @@ def chunk_long_sentence(sentence, max_tokens_per_chunk, min_tokens_per_chunk, to
             chunks.append(word)
 
     return chunks
+
 # Function to preprocess the comments and perform summarization if necessary
 @st.cache_data
 def summarize_text(comments, max_tokens_per_sentence=512, max_length=75, min_length=30, max_tokens=1024, min_word_count=80):
