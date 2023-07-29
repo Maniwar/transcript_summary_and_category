@@ -154,19 +154,16 @@ def tokenize_and_chunk_text(texts, max_tokens=1024):
 @st.cache_resource
 def summarize_text(text, max_length=100, min_length=50):
     summarization_pipeline = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
-    chunks = tokenize_and_chunk_text([text])
-    if not chunks:  # If chunks is empty, add a new chunk with tokens
-        chunks.append(tokens)
-    else:
-        chunks[-1].extend(tokens)
+    tokens = tokenizer(text, return_tensors="pt", max_length=1024, truncation=True, padding="max_length")
+    chunks = torch.split(tokens.input_ids, 1024)
     summaries = []
     total_chunks = len(chunks)
     for i, chunk in enumerate(chunks, start=1):
-        chunk_text = tokenizer.decode(chunk)
+        chunk_text = tokenizer.decode(chunk[0], skip_special_tokens=True)
         summaries.append(summarization_pipeline(chunk_text, max_length=max_length, min_length=min_length, do_sample=False))
         progress.progress(i / total_chunks)
         progress_status.text(f"Summarizing text: {i}/{total_chunks}")
-    full_summary = " ".join([summary['summary_text'] for summary in summaries])
+    full_summary = " ".join([summary[0]['summary_text'] for summary in summaries])
     return full_summary.strip(), total_chunks
 
 
