@@ -106,7 +106,7 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_wo
 
     # Initialize progress bar
     pbar = tqdm(total=total_texts)
-
+    @st.cache_data
     # Function to process a list of texts as a single chunk
     def process_chunk(chunk):
         summaries = summarization_pipeline(chunk, max_length=max_length, min_length=min_length, do_sample=False)
