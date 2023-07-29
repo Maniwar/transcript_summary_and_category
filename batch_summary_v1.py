@@ -1,7 +1,5 @@
 import pandas as pd
 import nltk
-from nltk.tokenize import word_tokenize
-from nltk import sent_tokenize
 from nltk.sentiment import SentimentIntensityAnalyzer
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -9,8 +7,7 @@ import datetime
 import numpy as np
 import xlsxwriter
 import chardet
-from transformers import pipeline
-from transformers import AutoTokenizer
+from transformers import pipeline, AutoTokenizer
 import base64
 from io import BytesIO
 import streamlit as st
@@ -86,11 +83,12 @@ def get_summarization_pipeline():
     start_time = time.time()
     print("Start Summarization Pipeline text...")
     # Initialize the summarization pipeline
-    summarizer = pipeline("summarization", model="knkarthick/MEETING_SUMMARY")
+    model_name = "knkarthick/MEETING_SUMMARY"
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
     # Capture end time
     end_time = time.time()
     print("Time taken to initialize summarization pipeline:", end_time - start_time)
-    return summarizer
+    return pipeline("summarization", model=model_name, tokenizer=tokenizer)
 
  # Function to initialize the summarization pipeline
 @st.cache_resource
@@ -122,14 +120,13 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_wo
             pbar.update(1)
             continue
 
-        # Tokenize the text into sentences
-        sentences = sent_tokenize(text)
-
+        # Tokenize the text into sentences using NLTK's sent_tokenize
+        sentences = nltk.sent_tokenize(text)
         current_chunk = []
         current_chunk_tokens = 0
 
         for sentence in sentences:
-            tokens = len(summarization_pipeline.tokenizer(sentence)["input_ids"])  # simple whitespace tokenization
+            tokens = len(summarization_pipeline.tokenizer(sentence)["input_ids"])
 
             # Check if adding this sentence exceeds the token limit
             if current_chunk_tokens + tokens > max_tokens or len(current_chunk) >= 16:
