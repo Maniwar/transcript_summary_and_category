@@ -53,8 +53,7 @@ File "C:\Python311\Lib\site-packages\transformers\tokenization_utils_base.py", l
            ^^^^^^^^^^^^^
 File "C:\Python311\Lib\site-packages\transformers\tokenization_utils_fast.py", line 546, in _decode
     text = self._tokenizer.decode(token_ids, skip_special_tokens=skip_special_tokens)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 import pandas as pd
 import nltk
 from nltk.tokenize import word_tokenize
@@ -144,7 +143,7 @@ def tokenize_and_chunk_text(texts, max_tokens=1024):
                 chunks.append((chunk, num_tokens))
                 chunk = []
                 num_tokens = 0
-        chunk.append(text)
+        chunk.append(tokens)
         num_tokens += len(tokens)
     if chunk:
         chunks.append((chunk, num_tokens))
