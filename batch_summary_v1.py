@@ -7,7 +7,7 @@ import datetime
 import numpy as np
 import xlsxwriter
 import chardet
-from transformers import pipeline, AutoTokenizer
+from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
 import base64
 from io import BytesIO
 import streamlit as st
@@ -15,6 +15,11 @@ import textwrap
 from categories_josh1 import default_categories
 import time
 from tqdm import tqdm
+import torch
+
+print("Torch version:",torch.__version__)
+
+print("Is CUDA enabled?",torch.cuda.is_available())
 
 # Initialize BERT model
 @st.cache_resource
@@ -135,7 +140,7 @@ def chunk_long_sentence(sentence, max_tokens_per_chunk, min_tokens_per_chunk, to
 
 # Function to preprocess the comments and perform summarization if necessary
 @st.cache_data
-def summarize_text(comments, max_tokens_per_sentence=512, max_length=75, min_length=30, max_tokens=1024, min_word_count=80):
+def summarize_text(comments, max_tokens_per_sentence=512, max_length=75, min_length=30, max_tokens=1024, min_word_count=70):
     start_time = time.time()
     print("Preprocessing comments and summarizing if necessary...")
     # Preprocess the comments
@@ -200,10 +205,6 @@ def summarize_text(comments, max_tokens_per_sentence=512, max_length=75, min_len
     end_time = time.time()
     print("Time taken to process summarization:", end_time - start_time)
     return all_summaries
-
-
-
-
 
 
 # Function to compute semantic similarity
@@ -292,30 +293,30 @@ if uploaded_file is not None:
             # Preprocess comments and summarize if necessary
             start_time = time.time()
             print("Preprocessing comments and summarizing if necessary...")
-            
+
             feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
-            
+
             # Identify long comments
             long_comments = feedback_data['preprocessed_comments'].apply(lambda x: len(x.split()) > 100)
-            
+
             # Extract all long comments into a list
             long_comment_texts = feedback_data.loc[long_comments, 'preprocessed_comments'].tolist()
-            
+
             # Summarize the list of long comments in one go
             summaries = summarize_text(long_comment_texts)
-            
+
             # Create a new DataFrame from the long comments and their summaries
             long_comments_summaries = pd.DataFrame({
                 'preprocessed_comments': long_comment_texts,
                 'summarized_comments': summaries
             })
-            
+
             # Merge the summarized comments back into the original DataFrame
             feedback_data = pd.merge(feedback_data, long_comments_summaries, on='preprocessed_comments', how='left')
-            
+
             # Fill in missing summarized comments with the original preprocessed comments
             feedback_data['summarized_comments'] = feedback_data['summarized_comments'].fillna(feedback_data['preprocessed_comments'])
-            
+
             end_time = time.time()
             print(f"Preprocessed comments and summarized. Time taken: {end_time - start_time} seconds.")
 
