@@ -47,11 +47,11 @@ def preprocess_text(text):
     # Convert to string if input is a float
     if isinstance(text, float):
         text = str(text)
+    end_time = time.time()
+    print(f"Preprocessing text completed. Time taken: {end_time - start_time} seconds.")
     # Remove unnecessary characters and weird characters
     text = text.encode('ascii', 'ignore').decode('utf-8')
     # Return the text without removing stop words
-    end_time = time.time()
-    print(f"Preprocessing text completed. Time taken: {end_time - start_time} seconds.")
     return text
 
 # Function to perform sentiment analysis
@@ -66,52 +66,77 @@ def perform_sentiment_analysis(text):
     print(f"Sentiment Analysis completed. Time taken: {end_time - start_time} seconds.")
     return compound_score
 
-# Function to initialize the summarization pipeline and dynamically set max tokens per sentence
+# Function to initialize the summarization pipeline
 @st.cache_resource
-def get_dynamic_summarization_pipeline(max_length=100, max_tokens=1024):
+def get_summarization_pipeline():
     start_time = time.time()
-    print("Start Dynamic Summarization Pipeline text...")
+    print("Start Summarization Pipeline text...")
     # Initialize the summarization pipeline
     model_name = "knkarthick/MEETING_SUMMARY"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-    # Set the maximum length for the tokenizer
-    tokenizer.model_max_length = max_length
-
-    # Calculate the dynamic maximum tokens per sentence
-    max_tokens_per_sentence = max_tokens // max_length
-
     # Capture end time
     end_time = time.time()
-    print("Time taken to initialize dynamic summarization pipeline:", end_time - start_time)
+    print("Time taken to initialize summarization pipeline:", end_time - start_time)
+    return pipeline("summarization", model=model_name, tokenizer=tokenizer)
 
-    return pipeline("summarization", model=model_name, tokenizer=tokenizer, max_length=max_length, max_tokens=max_tokens_per_sentence)
+# Function to compute the token count of a text
+def get_token_count(text, tokenizer):
+    return len(tokenizer(text)["input_ids"])
 
-# Function to preprocess and chunk the text
-def preprocess_and_chunk_text(text, max_tokens, tokenizer):
-    # Preprocess the text (remove unnecessary characters, etc.)
+# Function to chunk the text and stitch it back together
+def chunk_and_stitch(text, max_tokens_per_sentence, tokenizer):
+    # Tokenize the text into sentences using NLTK's sent_tokenize
+    sentences = nltk.sent_tokenize(text)
+
+    # Initialize variables to keep track of the current chunk and its token count
+    current_chunk = []
+    current_chunk_tokens = 0
+    chunks = []
+
+    for sentence in sentences:
+        tokens = get_token_count(sentence, tokenizer)
+
+        # Check if adding this sentence exceeds the token limit
+        if current_chunk_tokens + tokens > max_tokens_per_sentence:
+            if current_chunk_tokens == 0:
+                # The sentence itself is too long, truncate it and add to chunks
+                truncated_sentence = textwrap.shorten(sentence, width=max_tokens_per_sentence, placeholder="")
+                chunks.append(truncated_sentence)
+            else:
+                # Process the current chunk if it's not empty
+                chunks.append(" ".join(current_chunk))
+            current_chunk = []
+            current_chunk_tokens = 0
+
+        current_chunk.append(sentence)
+        current_chunk_tokens += tokens
+
+    # Process any remaining sentences in the last chunk
+    if current_chunk:
+        chunks.append(" ".join(current_chunk))
+
+    return " ".join(chunks)
+
+# Function to initialize the summarization pipeline
+@st.cache_resource
+def get_summarization_pipeline():
     start_time = time.time()
-    print("Preprocessing and Chunking text...")
-    text = preprocess_text(text)
-
-    # Determine the maximum number of tokens for each chunk
-    max_tokens_per_sentence = max_tokens // tokenizer.model_max_length
-
-    # Chunk and stitch the text
-    chunked_text = chunk_and_stitch(text, max_tokens_per_sentence, tokenizer)
-
+    print("Start Summarization Pipeline text...")
+    # Initialize the summarization pipeline
+    model_name = "knkarthick/MEETING_SUMMARY"
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    # Capture end time
     end_time = time.time()
-    print(f"Preprocessing and Chunking text completed. Time taken: {end_time - start_time} seconds.")
+    print("Time taken to initialize summarization pipeline:", end_time - start_time)
+    return pipeline("summarization", model=model_name, tokenizer=tokenizer)
 
-    return chunked_text
-
-# Function to initialize the summarization pipeline and dynamically set max tokens per sentence
+# Function to initialize the summarization pipeline
 @st.cache_resource
 def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_word_count=80):
     start_time = time.time()
     print("Start Summarizing text...")
     # Initialize the summarization pipeline
-    summarization_pipeline = get_dynamic_summarization_pipeline(max_length, max_tokens)
+    summarization_pipeline = get_summarization_pipeline()
 
     # Initialize a list to store the summaries
     all_summaries = []
@@ -122,7 +147,15 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_wo
     # Initialize progress bar
     pbar = tqdm(total=total_texts)
 
+    # Determine the maximum batch size to utilize the model's capacity effectively
+    max_batch_size = max_tokens // max_length
+
+    # Determine the maximum chunk size to efficiently use the batch size
+    max_chunk_size = max_batch_size // total_texts
+
     # Iterate over the texts
+    current_chunk = []
+    current_chunk_tokens = 0
     for idx, text in enumerate(texts):
         # Skip summarizing the text if the word count is below the threshold
         if len(text.split()) <= min_word_count:
@@ -130,14 +163,24 @@ def summarize_text(texts, max_length=100, min_length=50, max_tokens=1024, min_wo
             pbar.update(1)
             continue
 
-        # Preprocess and chunk the text
-        chunked_text = preprocess_and_chunk_text(text, max_tokens, summarization_pipeline.tokenizer)
+        # Check if adding this text to the current chunk exceeds the chunk size
+        if current_chunk_tokens + get_token_count(text, summarization_pipeline.tokenizer) > max_chunk_size:
+            # Process the current chunk
+            summaries = summarization_pipeline(" ".join(current_chunk), max_length=max_length, min_length=min_length, do_sample=False)
+            all_summaries.extend([summary['summary_text'] for summary in summaries])
+            current_chunk = []
+            current_chunk_tokens = 0
 
-        # Generate the summary for the chunked text
-        summary = summarization_pipeline(chunked_text, max_length=max_length, min_length=min_length, do_sample=False)[0]['summary_text']
-        all_summaries.append(summary)
+        # Chunk and stitch the text
+        chunked_text = chunk_and_stitch(text, max_tokens_per_sentence=max_tokens, tokenizer=summarization_pipeline.tokenizer)
+        current_chunk.append(chunked_text)
+        current_chunk_tokens += get_token_count(chunked_text, summarization_pipeline.tokenizer)
 
         pbar.update(1)
+
+    # Process the last chunk
+    summaries = summarization_pipeline(" ".join(current_chunk), max_length=max_length, min_length=min_length, do_sample=False)
+    all_summaries.extend([summary['summary_text'] for summary in summaries])
 
     # Close the progress bar
     pbar.close()
