@@ -21,6 +21,9 @@ import textwrap
 from categories_josh1 import default_categories
 import time
 from tqdm import tqdm
+import re
+import string
+import unicodedata
 
 
 # Initialize BERT model
@@ -46,6 +49,7 @@ def compute_keyword_embeddings(keywords):
     print(f"Keyword embeddings computed. Time taken: {end_time - start_time} seconds.")
     return keyword_embeddings
 
+
 # Function to preprocess the text
 @st.cache_data
 def preprocess_text(text):
@@ -56,10 +60,19 @@ def preprocess_text(text):
         text = str(text)
     end_time = time.time()
     print(f"Preprocessing text completed. Time taken: {end_time - start_time} seconds.")
-    # Remove unnecessary characters and weird characters
+    # Remove emojis and special characters
     text = text.encode('ascii', 'ignore').decode('utf-8')
-    # Return the text without removing stop words
+    text = re.sub(r'[^\w\s]', '', text)
+    # Remove HTML tags
+    text = re.sub(r'<.*?>', '', text)
+    # Remove page breaks
+    text = text.replace('\n', ' ').replace('\r', '')
+    # Remove non-breaking spaces
+    text = text.replace('&nbsp;', ' ')
+    # Remove multiple spaces
+    text = re.sub(r'\s+', ' ', text).strip()
     return text
+
 
 # Function to perform sentiment analysis
 @st.cache_data
