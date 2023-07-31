@@ -215,6 +215,8 @@ def compute_semantic_similarity(comment_embedding, keyword_embedding):
     return cosine_similarity([comment_embedding], [keyword_embedding])[0][0]
 
 
+# Set the default layout mode to "wide"
+st.set_page_config(layout="wide")
 
 # Streamlit interface
 st.title("👨‍💻 Transcript Categorization")
@@ -293,7 +295,9 @@ if uploaded_file is not None:
         st.error(f"Error reading the CSV file: {e}")
     comment_column = st.selectbox("Select the column containing the comments", feedback_data.columns.tolist())
     date_column = st.selectbox("Select the column containing the dates", feedback_data.columns.tolist())
-    grouping_option = st.radio("Select how to group the dates", ["Date", "Week", "Month", "Quarter"])
+
+    # Grouping Options
+    grouping_option = st.radio("Select how to group the dates", ["Date", "Week", "Month", "Quarter", "Hour"])
     process_button = st.button("Process Feedback")
 
     if comment_column is not None and date_column is not None and grouping_option is not None and process_button:
@@ -408,12 +412,15 @@ if uploaded_file is not None:
                     keyphrase = 'No Match'
 
                 parsed_date = row[date_column].split(' ')[0] if isinstance(row[date_column], str) else None
-                row_extended = row.tolist() + [preprocessed_comment, summarized_text, category, sub_category, keyphrase, sentiment_score, best_match_score, parsed_date]
+                # Extract the 'hour' from 'Parsed Date'
+                hour = pd.to_datetime(row[date_column]).hour
+
+                row_extended = row.tolist() + [preprocessed_comment, summarized_text, category, sub_category, keyphrase, sentiment_score, best_match_score, parsed_date, hour]
                 categorized_comments.append(row_extended)
 
             # Create a new DataFrame with extended columns
             existing_columns = feedback_data.columns.tolist()
-            additional_columns = [comment_column, 'Summarized Text', 'Category', 'Sub-Category', 'Keyphrase', 'Sentiment', 'Best Match Score', 'Parsed Date']
+            additional_columns = [comment_column, 'Summarized Text', 'Category', 'Sub-Category', 'Keyphrase', 'Sentiment', 'Best Match Score', 'Parsed Date', 'Hour']
             headers = existing_columns + additional_columns
             trends_data = pd.DataFrame(categorized_comments, columns=headers)
 
@@ -432,10 +439,6 @@ if uploaded_file is not None:
         trends_data = process_feedback_data(feedback_data, comment_column, date_column, default_categories, similarity_threshold)
 
 
-
-
-
-
         # Display trends and insights
         if trends_data is not None:
             st.title("Feedback Trends and Insights")
@@ -446,6 +449,7 @@ if uploaded_file is not None:
 
             # Convert 'Parsed Date' into datetime format if it's not
             trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce')
+            # Extract hour from 'Parsed Date'
 
             # Create pivot table with counts for Category, Sub-Category, and Parsed Date
             if grouping_option == 'Date':
@@ -482,7 +486,20 @@ if uploaded_file is not None:
                     aggfunc='count',
                     fill_value=0
                 )
-
+            elif grouping_option == 'Hour':
+                # Ensure the date column is in datetime format
+                feedback_data[date_column] = pd.to_datetime(feedback_data[date_column])
+                # Extract 'Hour' from 'Parsed Date' and add it to the DataFrame
+                trends_data['Hour'] = feedback_data[date_column].dt.hour
+                pivot = trends_data.pivot_table(
+                    index=['Category', 'Sub-Category'],
+                    columns='Hour',  # Use the 'Hour' column for pivot table
+                    values='Sentiment',
+                    aggfunc='count',
+                    fill_value=0
+                )
+                # Convert the 'Hour' column names to datetime objects
+                pivot.columns = pd.to_datetime(pivot.columns, format='%H').time
 
             pivot.columns = pivot.columns.astype(str)  # Convert column labels to strings
 
@@ -632,9 +649,20 @@ if uploaded_file is not None:
                     aggfunc='count',
                     fill_value=0
                 )
+            elif grouping_option == 'Hour':
+                # Ensure the date column is in datetime format
+                feedback_data[date_column] = pd.to_datetime(feedback_data[date_column])
+                pivot = trends_data.pivot_table(
+                    index=['Category', 'Sub-Category'],
+                    columns=feedback_data[date_column].dt.hour,
+                    values='Sentiment',
+                    aggfunc='count',
+                    fill_value=0
+                )
 
             # Format column headers as date strings in 'YYYY-MM-DD' format
-            pivot.columns = pivot.columns.strftime('%Y-%m-%d')
+            if grouping_option != 'Hour':
+                pivot.columns = pivot.columns.strftime('%Y-%m-%d')
 
             # Write pivot tables to Excel
             pivot.to_excel(excel_writer, sheet_name='Trends by ' + grouping_option, merge_cells=False)
