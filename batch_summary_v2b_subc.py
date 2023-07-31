@@ -18,7 +18,7 @@ import base64
 from io import BytesIO
 import streamlit as st
 import textwrap
-from categories_josh1 import default_categories
+from categories_josh_sub import default_categories
 import time
 from tqdm import tqdm
 import re
@@ -33,19 +33,26 @@ def initialize_bert_model():
     print("Initializing BERT model...")
     end_time = time.time()
     print(f"BERT model initialized. Time taken: {end_time - start_time} seconds.")
-    return SentenceTransformer('paraphrase-MiniLM-L12-v2')
+    return SentenceTransformer('paraphrase-MiniLM-L12-v2', device="mps")
 
 
 
-# Create a dictionary to store precomputed embeddings
-@st.cache_resource
-def compute_keyword_embeddings(keywords):
+# Initialize a variable to store the previous state of the categories
+previous_categories = None
+
+# Function to compute keyword embeddings
+def compute_keyword_embeddings(categories):
     start_time = time.time()
     print("Computing keyword embeddings...")
     model = initialize_bert_model()
     keyword_embeddings = {}
-    for keyword in keywords:
-        keyword_embeddings[keyword] = model.encode([keyword])[0]
+
+    for category, subcategories in categories.items():
+        for subcategory, keywords in subcategories.items():
+            for keyword in keywords:
+                if (category, subcategory, keyword) not in keyword_embeddings:
+                    keyword_embeddings[(category, subcategory, keyword)] = model.encode([keyword])[0]
+
     end_time = time.time()
     print(f"Keyword embeddings computed. Time taken: {end_time - start_time} seconds.")
     return keyword_embeddings
@@ -98,7 +105,7 @@ def get_summarization_pipeline():
     # Capture end time
     end_time = time.time()
     print("Time taken to initialize summarization pipeline:", end_time - start_time)
-    return pipeline("summarization", model=model_name, tokenizer=tokenizer)
+    return pipeline("summarization", model=model_name, tokenizer=tokenizer, device="mps")
 
 # Function to compute the token count of a text
 def get_token_count(text, tokenizer):
@@ -204,9 +211,9 @@ def preprocess_comments_and_summarize(feedback_data, comment_column, max_tokens_
 
 
 # Function to compute semantic similarity
-def compute_semantic_similarity(comment_embedding, keyword_embeddings):
-    similarity_scores = cosine_similarity([comment_embedding], keyword_embeddings)
-    return similarity_scores[0]  # Return the first (and only) row of similarity scores
+def compute_semantic_similarity(comment_embedding, keyword_embedding):
+    return cosine_similarity([comment_embedding], [keyword_embedding])[0][0]
+
 
 
 # Streamlit interface
@@ -226,21 +233,41 @@ best_match_score = None
 if emerging_issue_mode:
     similarity_threshold = st.sidebar.slider("Semantic Similarity Threshold", min_value=0.0, max_value=1.0, value=0.35)
 
+# Initialize an empty dictionary for categories
+categories = {}
 
+# Edit categories, subcategories and keywords
 # Edit categories and keywords
 st.sidebar.header("Edit Categories")
 
-categories = {}
-for category, keywords in default_categories.items():
-    category_name = st.sidebar.text_input(f"{category} Category", value=category)
-    category_keywords = st.sidebar.text_area(f"Keywords for {category}", value="\n".join(keywords))
-    categories[category_name] = category_keywords.split("\n")
+# Create a new dictionary to store the updated categories
+new_categories = {}
 
-st.sidebar.subheader("Add or Modify Categories")
-new_category_name = st.sidebar.text_input("New Category Name")
-new_category_keywords = st.sidebar.text_area(f"Keywords for {new_category_name}")
-if new_category_name and new_category_keywords:
-    categories[new_category_name] = new_category_keywords.split("\n")
+# Iterate over each category and its subcategories
+for category, subcategories in default_categories.items():
+    # Create a text input field for the category
+    category_name = st.sidebar.text_input(f"{category} Category", value=category)
+
+    # Create a new dictionary to store the updated subcategories
+    new_subcategories = {}
+
+    # Iterate over each subcategory and its keywords
+    for subcategory, keywords in subcategories.items():
+        # Create a text input field for the subcategory
+        subcategory_name = st.sidebar.text_input(f"{subcategory} Subcategory under {category_name}", value=subcategory)
+
+        # Create a text area for the keywords
+        with st.sidebar.expander(f"Keywords for {subcategory_name}"):
+            category_keywords = st.text_area("Keywords", value="\n".join(keywords))
+
+        # Update the keywords in the new_subcategories dictionary
+        new_subcategories[subcategory_name] = category_keywords.split("\n")
+
+    # Update the subcategories in the new_categories dictionary
+    new_categories[category_name] = new_subcategories
+
+# Replace the original default_categories dictionary with the new_categories dictionary
+default_categories = new_categories
 
 # File upload
 uploaded_file = st.file_uploader("Upload CSV file", type="csv")
@@ -274,8 +301,13 @@ if uploaded_file is not None:
 
         @st.cache_data
         def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold):
-            # Compute keyword embeddings
-            keyword_embeddings = compute_keyword_embeddings([keyword for keywords in categories.values() for keyword in keywords])
+            global previous_categories
+            if previous_categories != categories:  # Use the categories parameter here
+                # Compute keyword embeddings
+                keyword_embeddings = compute_keyword_embeddings(categories)  # And here
+                # Update the previous state of the categories
+                previous_categories = categories.copy()  # And here
+
 
             # Initialize lists for categorized_comments, sentiments, similarity scores, and summaries
             categorized_comments = []
@@ -295,6 +327,7 @@ if uploaded_file is not None:
             summaries_dict = preprocess_comments_and_summarize(feedback_data, comment_column)
 
             # Create a new column for the summarized comments
+            feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
             feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].map(summaries_dict)
 
             # Fill in missing summarized comments with the original preprocessed comments
@@ -335,7 +368,7 @@ if uploaded_file is not None:
             for i in range(0, len(feedback_data), batch_size):
                 batch_embeddings = feedback_data['comment_embeddings'][i:i + batch_size].tolist()
                 for (category, subcategory, keyword), embeddings in keyword_embeddings.items():
-                    batch_similarity_scores = compute_semantic_similarity(batch_embeddings, keyword_embeddings)
+                    batch_similarity_scores = [compute_semantic_similarity(batch_embedding, embeddings) for batch_embedding in batch_embeddings]
                     # Update categories, sub-categories, and keyphrases based on the highest similarity score
                     for j, similarity_score in enumerate(batch_similarity_scores):
                         idx = i + j  # Index in the complete list
@@ -352,33 +385,37 @@ if uploaded_file is not None:
                             keyphrases_list.append(keyword)
                             summarized_texts.append(keyword)
                             similarity_scores.append(similarity_score)
+
             end_time = time.time()
             print(f"Computed semantic similarity and assigned categories. Time taken: {end_time - start_time} seconds.")
+
+
 
             # Prepare final data
             for index, row in feedback_data.iterrows():
                 preprocessed_comment = row['preprocessed_comments']
                 sentiment_score = row['sentiment_scores']
                 category = categories_list[index]
-                sub_category = summarized_texts[index]
+                sub_category = sub_categories_list[index]
+                keyphrase = keyphrases_list[index]
                 best_match_score = similarity_scores[index]
                 summarized_text = row['summarized_comments']
 
-                # If in emerging issue mode and the best match score is below the threshold, set category and sub-category to 'No Match'
+                # If in emerging issue mode and the best match score is below the threshold, set category, sub-category, and keyphrase to 'No Match'
                 if emerging_issue_mode and best_match_score < similarity_threshold:
                     category = 'No Match'
                     sub_category = 'No Match'
+                    keyphrase = 'No Match'
 
                 parsed_date = row[date_column].split(' ')[0] if isinstance(row[date_column], str) else None
-                row_extended = row.tolist() + [preprocessed_comment, summarized_text, category, sub_category, sentiment_score, best_match_score, parsed_date]
+                row_extended = row.tolist() + [preprocessed_comment, summarized_text, category, sub_category, keyphrase, sentiment_score, best_match_score, parsed_date]
                 categorized_comments.append(row_extended)
 
             # Create a new DataFrame with extended columns
             existing_columns = feedback_data.columns.tolist()
-            additional_columns = [comment_column, 'Summarized Text', 'Category', 'Sub-Category', 'Sentiment', 'Best Match Score', 'Parsed Date']
+            additional_columns = [comment_column, 'Summarized Text', 'Category', 'Sub-Category', 'Keyphrase', 'Sentiment', 'Best Match Score', 'Parsed Date']
             headers = existing_columns + additional_columns
             trends_data = pd.DataFrame(categorized_comments, columns=headers)
-            trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce').dt.date
 
             # Rename duplicate column names
             trends_data = trends_data.loc[:, ~trends_data.columns.duplicated()]
@@ -390,10 +427,14 @@ if uploaded_file is not None:
 
             return trends_data
 
-
-
         # Process feedback data and cache the result
-        trends_data = process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold)
+        # Call the function with the correct dictionary format
+        trends_data = process_feedback_data(feedback_data, comment_column, date_column, default_categories, similarity_threshold)
+
+
+
+
+
 
         # Display trends and insights
         if trends_data is not None:
