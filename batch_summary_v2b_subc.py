@@ -472,7 +472,7 @@ if uploaded_file is not None:
 
             elif grouping_option == 'Month':
                 pivot = trends_data.pivot_table(
-                    index=['Category', 'Sub-Category'],
+                    insdex=['Category', 'Sub-Category'],
                     columns=pd.Grouper(key='Parsed Date', freq='M'),
                     values='Sentiment',
                     aggfunc='count',
