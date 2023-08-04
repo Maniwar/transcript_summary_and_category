@@ -111,19 +111,6 @@ def perform_sentiment_analysis(text):
     print(f"Sentiment Analysis completed. Time taken: {end_time - start_time} seconds.")
     return compound_score
 
-# Function to initialize the summarization pipeline
-@st.cache_resource
-def get_summarization_pipeline():
-    start_time = time.time()
-    print("Start Summarization Pipeline text...")
-    # Initialize the summarization pipeline
-    model_name = "knkarthick/MEETING_SUMMARY"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    # Capture end time
-    end_time = time.time()
-    print("Time taken to initialize summarization pipeline:", end_time - start_time)
-    return pipeline("summarization", model=model_name, tokenizer=tokenizer, device="cuda")
-
 # Function to compute the token count of a text
 def get_token_count(text, tokenizer):
     return len(tokenizer.encode(text)) - 2
