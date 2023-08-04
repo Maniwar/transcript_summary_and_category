@@ -171,19 +171,15 @@ def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=
     # Initialize a dictionary to store the summaries
     summaries_dict = {}
 
-    # Initialize a progress bar
-    total_texts = len(short_comments) + len(long_comments)
-    pbar = tqdm(total=total_texts)
-
     # Process short comments in batches
-    for i in range(0, len(short_comments), batch_size):
+    for i in tqdm(range(0, len(short_comments), batch_size), desc="Processing short comments"):
+        # ... Rest of the code for short comments ...
         batch = short_comments[i:i+batch_size]
         input_ids = tokenizer(batch, truncation=True, padding=True, return_tensors='pt')['input_ids'].to(device)
         summaries = model.generate(input_ids, max_length=max_length, min_length=min_length)
         for original_text, summary_ids in zip(batch, summaries):
             summary_text = tokenizer.decode(summary_ids, skip_special_tokens=True)
             summaries_dict[original_text] = summary_text
-        pbar.update(len(batch))
 
     # Create a list of chunks from long comments
     chunks_with_original = []
@@ -194,7 +190,8 @@ def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=
 
     # Process chunks in batches
     chunk_summaries = defaultdict(list)
-    for i in range(0, len(chunks_with_original), batch_size):
+    for i in tqdm(range(0, len(chunks_with_original), batch_size), desc="Processing chunks"):
+        # ... Rest of the code for processing chunks ...
         batch_with_original = chunks_with_original[i:i+batch_size]
         batch = [chunk for _, chunk in batch_with_original]
         input_ids = tokenizer(batch, truncation=True, padding=True, return_tensors='pt')['input_ids'].to(device)
@@ -202,7 +199,6 @@ def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=
         for (original_text, _), summary_ids in zip(batch_with_original, summaries):
             summary_text = tokenizer.decode(summary_ids, skip_special_tokens=True)
             chunk_summaries[original_text].append(summary_text)
-        pbar.update(len(batch_with_original))
 
     # Stitch together and re-summarize if needed
     for original_text, summary_parts in chunk_summaries.items():
@@ -217,7 +213,8 @@ def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=
         print(f"Final summary token count: {get_token_count(full_summary, tokenizer)}")
         summaries_dict[original_text] = full_summary
 
-    pbar.close()
+
+
     return summaries_dict
 
 
