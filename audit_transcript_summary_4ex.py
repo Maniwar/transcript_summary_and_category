@@ -171,7 +171,8 @@ def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=
     summaries_dict = {}
 
     # Process short comments in batches
-    for i in range(0, len(short_comments), batch_size):
+    for i in tqdm(range(0, len(short_comments), batch_size), desc="Processing short comments"):
+        # ... Rest of the code for short comments ...
         batch = short_comments[i:i+batch_size]
         input_ids = tokenizer(batch, truncation=True, padding=True, return_tensors='pt')['input_ids'].to(device)
         summaries = model.generate(input_ids, max_length=max_length, min_length=min_length)
@@ -188,7 +189,8 @@ def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=
 
     # Process chunks in batches
     chunk_summaries = defaultdict(list)
-    for i in range(0, len(chunks_with_original), batch_size):
+    for i in tqdm(range(0, len(chunks_with_original), batch_size), desc="Processing chunks"):
+        # ... Rest of the code for processing chunks ...
         batch_with_original = chunks_with_original[i:i+batch_size]
         batch = [chunk for _, chunk in batch_with_original]
         input_ids = tokenizer(batch, truncation=True, padding=True, return_tensors='pt')['input_ids'].to(device)
