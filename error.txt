@@ -1,99 +1,24 @@
-reprocessing text completed. Time taken: 0.0010001659393310547 seconds.
-2023-08-04 09:27:03.270 Uncaught app exception
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py",
-    entry_bytes = self._read_from_mem_cache(key)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py",
-    raise CacheStorageKeyNotFoundError("Key not found in mem cache")
-streamlit.runtime.caching.storage.cache_storage_protocol.CacheStorageKeyNotFoundError: Key not found in mem c
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_data_api.py", line 634, in read_result
-    pickled_entry = self.storage.get(key)
-                    ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py",
-    entry_bytes = self._persist_storage.get(key)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\local_disk_cache_storage.py", line 1
-    raise CacheStorageKeyNotFoundError(
-streamlit.runtime.caching.storage.cache_storage_protocol.CacheStorageKeyNotFoundError: Local disk cache stora
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 263, in _get_or_create
-    cached_result = cache.read_result(value_key)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_data_api.py", line 636, in read_result
-    raise CacheKeyNotFoundError(str(e)) from e
-streamlit.runtime.caching.cache_errors.CacheKeyNotFoundError: Local disk cache storage is disabled (persist=N
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py",
-    entry_bytes = self._read_from_mem_cache(key)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py",
-    raise CacheStorageKeyNotFoundError("Key not found in mem cache")
-streamlit.runtime.caching.storage.cache_storage_protocol.CacheStorageKeyNotFoundError: Key not found in mem c
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_data_api.py", line 634, in read_result
-    pickled_entry = self.storage.get(key)
-                    ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\in_memory_cache_storage_wrapper.py",
-    entry_bytes = self._persist_storage.get(key)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\storage\local_disk_cache_storage.py", line 1
-    raise CacheStorageKeyNotFoundError(
-streamlit.runtime.caching.storage.cache_storage_protocol.CacheStorageKeyNotFoundError: Local disk cache stora
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 311, in _handle_cache_
-    cached_result = cache.read_result(value_key)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_data_api.py", line 636, in read_result
-    raise CacheKeyNotFoundError(str(e)) from e
-streamlit.runtime.caching.cache_errors.CacheKeyNotFoundError: Local disk cache storage is disabled (persist=N
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_sc
+OSError: [WinError 233] No process is on the other end of the pipe
+Traceback:
+File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
     exec(code, module.__dict__)
-  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_transcript_summary_4ex.
-    trends_data = process_feedback_data(feedback_data, comment_column, date_column, default_categories, simil
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_transcript_summary_4ex.py", line 447, in <module>
+    trends_data = process_feedback_data(feedback_data, comment_column, date_column, default_categories, similarity_threshold)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
     return cached_func(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
     return self._get_or_create_cached_value(args, kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
     return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
     computed_value = self._info.func(*func_args, **func_kwargs)
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_transcript_summary_4ex.
-    summaries_dict = preprocess_comments_and_summarize(feedback_data, comment_column)
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_transcript_summary_4ex.ummarize
-    device = 'cpu' if torch.cpu.is_available() else 'cpu'
-                      ^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: module 'torch.cpu' has no attribute 'is_available'
-Computing keyword embeddings...
-Keyword embeddings computed. Time taken: 15.6798996925354 seconds.
-Preprocessing comments and summarizing if necessary...
-Preprocessing comments and summarizing if necessary...
-
-
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_transcript_summary_4ex.py", line 319, in process_feedback_data
+    keyword_embeddings = compute_keyword_embeddings(categories)  # And here
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_transcript_summary_4ex.py", line 63, in compute_keyword_embeddings
+    print("Computing keyword embeddings...")
