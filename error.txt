@@ -70,3 +70,35 @@ File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\ba
                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_transcript_summary_4ex.py", line 63, in compute_keyword_embeddings
     print("Computing keyword embeddings...")
+
+
+OSError: [WinError 233] No process is on the other end of the pipe
+Traceback:
+File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
+    exec(code, module.__dict__)
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_transcript_summary_4ex.py", line 443, in <module>
+    trends_data = process_feedback_data(feedback_data, comment_column, date_column, default_categories, similarity_threshold)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
+    return cached_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
+    return self._get_or_create_cached_value(args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
+    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
+    computed_value = self._info.func(*func_args, **func_kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_transcript_summary_4ex.py", line 335, in process_feedback_data
+    summaries_dict = preprocess_comments_and_summarize(feedback_data, comment_column)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_transcript_summary_4ex.py", line 175, in preprocess_comments_and_summarize
+    for i in tqdm(range(0, len(short_comments), batch_size), desc="Processing short comments"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\tqdm\std.py", line 1093, in __init__
+    self.sp = self.status_printer(self.fp)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\tqdm\std.py", line 336, in status_printer
+    getattr(sys.stderr, 'flush', lambda: None)()
