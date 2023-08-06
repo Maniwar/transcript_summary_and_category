@@ -2,7 +2,7 @@ OSError: [WinError 233] No process is on the other end of the pipe
 Traceback:
 File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 552, in _run_script
     exec(code, module.__dict__)
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_transcript_summary_4ex.py", line 447, in <module>
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_transcript_summary_4ex.py", line 443, in <module>
     trends_data = process_feedback_data(feedback_data, comment_column, date_column, default_categories, similarity_threshold)
                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
@@ -17,8 +17,30 @@ File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", 
 File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
     computed_value = self._info.func(*func_args, **func_kwargs)
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_transcript_summary_4ex.py", line 319, in process_feedback_data
-    keyword_embeddings = compute_keyword_embeddings(categories)  # And here
-                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_transcript_summary_4ex.py", line 63, in compute_keyword_embeddings
-    print("Computing keyword embeddings...")
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_transcript_summary_4ex.py", line 363, in process_feedback_data
+    feedback_data['sentiment_scores'] = feedback_data['preprocessed_comments'].apply(perform_sentiment_analysis)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\pandas\core\series.py", line 4771, in apply
+    return SeriesApply(self, func, convert_dtype, args, kwargs).apply()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\pandas\core\apply.py", line 1105, in apply
+    return self.apply_standard()
+           ^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\pandas\core\apply.py", line 1156, in apply_standard
+    mapped = lib.map_infer(
+             ^^^^^^^^^^^^^^
+File "pandas\_libs\lib.pyx", line 2918, in pandas._libs.lib.map_infer
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 211, in wrapper
+    return cached_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 240, in __call__
+    return self._get_or_create_cached_value(args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 266, in _get_or_create_cached_value
+    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Python311\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 320, in _handle_cache_miss
+    computed_value = self._info.func(*func_args, **func_kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\batch_transcript_summary_4ex.py", line 111, in perform_sentiment_analysis
+    print(f"Sentiment Analysis completed. Time taken: {end_time - start_time} seconds.")
