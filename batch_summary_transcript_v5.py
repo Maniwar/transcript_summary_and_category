@@ -200,9 +200,17 @@ def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=
         chunks = split_comments_into_chunks([(comment, get_token_count(comment, tokenizer))], tokenizer, max_tokens)
         summaries = [summarize_text(chunk, tokenizer, model, device, max_length, min_length) for chunk in chunks]
         full_summary = " ".join(summaries)
+        
+        resummarization_count = 0
         while get_token_count(full_summary, tokenizer) > max_length:
+            resummarization_count += 1
             print(f"Re-summarizing a long comment with token count: {get_token_count(full_summary, tokenizer)}")
             full_summary = summarize_text(full_summary, tokenizer, model, device, max_length, min_length)
+        
+        # Display the number of times a comment was re-summarized
+        if resummarization_count > 0:
+            print(f"Long comment was re-summarized {resummarization_count} times to fit the max length.")
+        
         summaries_dict[comment] = full_summary
         pbar.update(1)
     pbar.close()
