@@ -167,9 +167,26 @@ def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=
     print("Comments preprocessed.")
 
     # 2. Initialize the summarization model and tokenizer
-    model_name = "knkarthick/MEETING_SUMMARY"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+    # Specify local paths for tokenizer and model
+    tokenizer_path = "/path/to/local/tokenizer"
+    model_path = "/path/to/local/model"
+    
+    # Check if tokenizer and model are already downloaded
+    if not os.path.exists(tokenizer_path):
+        print("Downloading and saving tokenizer...")
+        tokenizer = AutoTokenizer.from_pretrained("knkarthick/MEETING_SUMMARY")
+        tokenizer.save_pretrained(tokenizer_path)
+        print("Tokenizer downloaded and saved.")
+    
+    if not os.path.exists(model_path):
+        print("Downloading and saving model...")
+        model = AutoModelForSeq2SeqLM.from_pretrained("knkarthick/MEETING_SUMMARY")
+        model.save_pretrained(model_path)
+        print("Model downloaded and saved.")
+    
+    # Initialize the summarization model and tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model.to(device)
     print("Summarization model and tokenizer initialized.")
