@@ -1,5 +1,5 @@
 default_categories = {
-    "Website Content / App Critical Feedback": {
+    "Website Feedback - Design and Navigation": {
         "Help Pages and FAQs are hard to find": ["I can't find the help pages", "Do you even have a help center?", "Where are the FAQs?"],
         "Missing Product Details": ["The product details are missing on the website", "Where are the product specs for this cell phone?", "I can't find information about the product on the website"],
         "Website Feedback - Promotion Details": ["The promotion details are unclear", "How do I find the current offers", "Offers and discounts are hard to find on the website", "What are the terms and conditions of this deal on the site?", "How do I take advantage of this offer?", "I don't understand the promotion details on the website"],
@@ -7,20 +7,21 @@ default_categories = {
         "Contact Us options are hard to find": ["I can't find the contact support options", "The phone number to reach you was disconnected", "Calling support was hard, simply because the number was no where to be found.", "How do I get ahold of you for support?", "Where can I find the 'Contact Us' options?"],
         "Website Feedback - My Orders": ["I have feedback about the 'My Orders' page", "I'm not able to return my order on the my orders page", "I'm having issues with the 'My Orders' page"],
         "Website Feedback - Pop Ups": ["I have feedback about the website pop-ups", "there are too many pop ups on the site.", "The website pop-ups are annoying"],
-        "Website Feedback - Search Feature": ["The website's search feature gives poor results", "Your Search bar sucks", "I'm having trouble finding the right product on the website", "I can never find what I'm looking for when I search Samsung.com", "The search bar is worthless", "I'm not satisfied with the search results on the website"],
+        "Website Feedback - Search Feature": ["The website's search feature gives poor results", "I have feedback about the search functionality", "The search functionality could be improved", "Your Search bar sucks", "I'm having trouble finding the right product on the website", "I can never find what I'm looking for when I search Samsung.com", "The search bar is worthless", "I'm not satisfied with the search results on the website"],
         "Website Feedback - Product Compare": ["I have feedback about the product comparison tool", "No clear way to compare multiple products on the website", "The product comparison tool on the website could be improved"],
         "Outlet or Live Commerce Pop Up": ["The outlet pop-up on the website is intrusive", "Who wants to watch people talk about a product", "Why are these annoying people talking about the new phone?", "I have feedback about the live commerce pop-up"],
+        "Website Feedback - Design and Navigation": ["The banners on the page block information and make it more difficult than it needs to be to find details", "your site is hard to navigate", "I have a hard time getting where I want to go on your website", "Apple still has a better website, you should copy them", "The Samsung Programs drop down is so annoying", "I have to minimize the programs thing every time I open a link", "The website is not User Friendly at all"],
+    },
+    "Website Feedback - Performance": {
         "Mobile Webpage and App Feedback": ["I'm having problems with the mobile webpage", "Buggy experiences on the Mobile browswer", "I can't get the page to load on my phone", "The Shop Samsung app is garbage", "The app is not working properly"],
-        "Website Feedback - Search Functionality": ["I have feedback about the search functionality", "The search functionality could be improved"],
         "Website Feedback - Slow and Laggy": ["The website is slow and laggy", "Pages take forever to load", "The Site is soooo slow!", "All these pictures make it take forever to load a page", "I have fast internet, but your website is always so slow", "I'm experiencing performance issues with the website"],
         "M Web & App Feedback - Slow and Laggy": ["The mobile app is slow and laggy", "Fix the app", "It takes forever to load up a page when using my phone to search Samsung.com", "I'm experiencing performance issues with the mobile app"],
         "EPP Store - Unable to Navigate Away": ["I'm stuck in the employee store and can't navigate away", "How Can I get out of the employee store?", "I can't get out of the employee store on the website"],
         "Website Feedback - Samsung Business": ["I'm having navigation issues with the Samsung Business Store", "How do I get out of Samsung Business?", "The Samsung Business Store is hard to navigate"],
         "Website Feedback - Crashing": ["The website keeps crashing", "The site has been down for a long time", "Your site is always down" "Samsung.com crashes all the time"],
-        "Website Feedback - Design and Navigation": ["The banners on the page block information and make it more difficult than it needs to be to find details", "your site is hard to navigate", "I have a hard time getting where I want to go on your website", "Apple still has a better website, you should copy them", "The Samsung Programs drop down is so annoying", "I have to minimize the programs thing every time I open a link", "The website is not User Friendly at all"],
         "Website Feedback - 404 Errors": ["I've never seen so many 404 errors", "Everything I click on results in a 404 error.", "Pages were not loading", "404"],
         "Website Feedback - Buggy or Poor performance": ["This is the buggiest website I have ever used", "Samsung.com is glitchy", "Please fix the website", "Everytime I browse the website, I find a new issue with it", "Why is the website set up this way? It is always mishaving"],
-        "Website Feedback - Inaccurate Geolocation": ["The website did not use my geo-location accurately", "The website thinks I'm in another country", "Samsung thinnks I'm not in the US, but I am", "The website is not accurately detecting my location"]
+        "Website Feedback - Inaccurate Geolocation": ["The website did not use my geo-location accurately", "The website thinks I'm in another country", "Samsung thinks I'm not in the US, but I am", "The website is not accurately detecting my location"]
     },
     "Product Support, Warranty and Repair (Care)": {
         "Loaner Phone Request for repair": ["I need a loaner phone for the repair", "Can I get another phone temporarily while mine is out for repair?", "What am I supposed to do without a working phone?", "Can I get a loaner phone while my phone is being repaired?"],
@@ -212,7 +213,7 @@ default_categories = {
         "Watch 6 Missing Band": ["The band I ordered is missing", "I'm missing the watch band", "I didn't get a band with my order", "Indigo leather band is missing", "The watch strap is missing"],
         "Sound Bar Discount": ["Wants to purchase the Samsung Q series 9.1.2 ch Dolby atoms soundbar system + rear speakers for a low price.", "Everyone is getting this sound bar at this price", "Samsung Q series 9.1.2 ch Dolby atoms soundbar system + rear speakers has a better employee offer and I would like the same discount.", "I want to buy HW-Q910C (2023) and get the lowest price, sainging $400."],
         "Watch 6 Color": ["The Watch I received isn't Gold", "This is silver", "I ordered the gold watch and received a silver one", "I thought this would be a gold watch", "This is not gold"]
-    },
+    },  
     "Accessibility Feedback": {
         "Samsung Mobile Phones": ["I have feedback about accessibility options for Samsung mobile phones"],
         "Samsung Mobile Devices": ["I have feedback about accessibility options for other Samsung mobile devices"],
