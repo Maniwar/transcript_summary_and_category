@@ -317,7 +317,7 @@ if uploaded_file is not None:
     total_rows = sum(1 for row in uploaded_file) - 1  # Subtract 1 for the header
     
     # Calculate estimated total chunks
-    chunksize = 64  # This is the chunksize you've set in your code
+    chunksize = 16  # This is the chunksize you've set in your code
     estimated_total_chunks = math.ceil(total_rows / chunksize)
     
     try:
@@ -367,7 +367,7 @@ if uploaded_file is not None:
     combined_placeholders = [(st.empty(), st.empty()) for _ in range(10)]
 
 
-
+    @st.cache_data(persist="disk")
     def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold):
         global previous_categories
         
@@ -512,7 +512,7 @@ if uploaded_file is not None:
         return trends_data
 
     if comment_column is not None and date_column is not None and grouping_option is not None and process_button:
-        chunk_iter = pd.read_csv(BytesIO(csv_data), encoding=encoding, chunksize=64)  # Adjust chunksize as needed
+        chunk_iter = pd.read_csv(BytesIO(csv_data), encoding=encoding, chunksize=16)  # Adjust chunksize as needed
         
         # Initialize a DataFrame to store the cumulative results
         processed_chunks = []
@@ -574,10 +574,15 @@ if uploaded_file is not None:
                         fill_value=0
                     )
                 elif grouping_option == 'Hour':
-                    # Ensure the date column is in datetime format
-                    feedback_data[date_column] = pd.to_datetime(feedback_data[date_column])
-                    # Extract 'Hour' from 'Parsed Date' and add it to the DataFrame
-                    trends_data['Hour'] = feedback_data[date_column].dt.hour
+                    if 'Hour' not in trends_data.columns:
+                        print("Hour column not found in trends_data. Extracting now...")
+                        # Ensure the date column is in datetime format
+                        feedback_data[date_column] = pd.to_datetime(feedback_data[date_column])
+                        # Extract 'Hour' from 'Parsed Date' and add it to the DataFrame
+                        trends_data['Hour'] = feedback_data[date_column].dt.hour
+                    else:
+                        print("Hour column already exists in trends_data.")
+
                     pivot = trends_data.pivot_table(
                         index=['Category', 'Sub-Category'],
                         columns='Hour',  # Use the 'Hour' column for pivot table
@@ -766,6 +771,8 @@ if uploaded_file is not None:
                 # Format column headers as date strings in 'YYYY-MM-DD' format
                 if grouping_option != 'Hour':
                     pivot.columns = pivot.columns.strftime('%Y-%m-%d')
+
+
 
                 # Write pivot tables to Excel
                 pivot.to_excel(excel_writer, sheet_name='Trends by ' + grouping_option, merge_cells=False)
