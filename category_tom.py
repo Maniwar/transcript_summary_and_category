@@ -40,8 +40,6 @@ default_categories = {
    "Wrong Address" : ["delivered to the wrong address", "address on the package is incorrect", "didn't get it, wrong delivery address"],
    "Wrong Product Received" : ["received the wrong item", "this isn't what I ordered", "wrong product delivered"],
 },
-
-    },
    "eCom Support": {
        "Issue1": [
             "Facing issues related to issue1.",
