@@ -20,7 +20,6 @@ default_categories = {
             "Problems encountered with issue1."
         ],
     },
-   "Delivery & Installation": {
 "Delivery & Installation": {
    "Cancelled" : ["order was cancelled", "didn't receive because it was cancelled", "why was my delivery cancelled?"],
    "Damages" : ["product arrived damaged", "broken item on delivery", "damaged during shipping"],
