@@ -1,129 +1,129 @@
 default_categories = {
    "Website Design & Navigation": {
        "Issue1": [
-            "I have an issue with issue1.",
-            "My experience with issue1 wasn't great.",
-            "There's something wrong with the issue1."
+            "Facing issues related to issue1.",
+            "Issue1 wasn't as expected.",
+            "Problems encountered with issue1."
         ],
     },
    "Product Information": {
        "Issue1": [
-            "I have an issue with issue1.",
-            "My experience with issue1 wasn't great.",
-            "There's something wrong with the issue1."
+            "Facing issues related to issue1.",
+            "Issue1 wasn't as expected.",
+            "Problems encountered with issue1."
         ],
     },
    "Online Purchasing": {
        "Issue1": [
-            "I have an issue with issue1.",
-            "My experience with issue1 wasn't great.",
-            "There's something wrong with the issue1."
+            "Facing issues related to issue1.",
+            "Issue1 wasn't as expected.",
+            "Problems encountered with issue1."
         ],
     },
    "Delivery & Installation": {
        "Cancelled": [
-            "I have an issue with cancelled.",
-            "My experience with cancelled wasn't great.",
-            "There's something wrong with the cancelled."
+            "My order was cancelled without any reason.",
+            "Received a cancellation notice unexpectedly.",
+            "Why was my purchase cancelled?"
         ],
        "Damages": [
-            "I have an issue with damages.",
-            "My experience with damages wasn't great.",
-            "There's something wrong with the damages."
+            "Received a damaged product.",
+            "The item has visible scratches and dents.",
+            "Packaging was torn, leading to product damage."
         ],
        "Empty Box": [
-            "I have an issue with empty box.",
-            "My experience with empty box wasn't great.",
-            "There's something wrong with the empty box."
+            "Box was empty when I opened it.",
+            "Received a package without the actual product.",
+            "Ordered an item but got an empty box."
         ],
        "Incorrect Delivery Dates - Post": [
-            "I have an issue with incorrect delivery dates - post.",
-            "My experience with incorrect delivery dates - post wasn't great.",
-            "There's something wrong with the incorrect delivery dates - post."
+            "Facing issues related to incorrect delivery dates - post.",
+            "Incorrect Delivery Dates - Post wasn't as expected.",
+            "Problems encountered with incorrect delivery dates - post."
         ],
        "Installation Issues": [
-            "I have an issue with installation issues.",
-            "My experience with installation issues wasn't great.",
-            "There's something wrong with the installation issues."
+            "Facing issues related to installation issues.",
+            "Installation Issues wasn't as expected.",
+            "Problems encountered with installation issues."
         ],
        "Lack of Delivery Delay Notification": [
-            "I have an issue with lack of delivery delay notification.",
-            "My experience with lack of delivery delay notification wasn't great.",
-            "There's something wrong with the lack of delivery delay notification."
+            "Facing issues related to lack of delivery delay notification.",
+            "Lack of Delivery Delay Notification wasn't as expected.",
+            "Problems encountered with lack of delivery delay notification."
         ],
        "Lack of Delivery Service": [
-            "I have an issue with lack of delivery service.",
-            "My experience with lack of delivery service wasn't great.",
-            "There's something wrong with the lack of delivery service."
+            "Facing issues related to lack of delivery service.",
+            "Lack of Delivery Service wasn't as expected.",
+            "Problems encountered with lack of delivery service."
         ],
        "Lack of Delivery Service AGS": [
-            "I have an issue with lack of delivery service ags.",
-            "My experience with lack of delivery service ags wasn't great.",
-            "There's something wrong with the lack of delivery service ags."
+            "Facing issues related to lack of delivery service ags.",
+            "Lack of Delivery Service AGS wasn't as expected.",
+            "Problems encountered with lack of delivery service ags."
         ],
        "Lack of Delivery Service FedEx": [
-            "I have an issue with lack of delivery service fedex.",
-            "My experience with lack of delivery service fedex wasn't great.",
-            "There's something wrong with the lack of delivery service fedex."
+            "Facing issues related to lack of delivery service fedex.",
+            "Lack of Delivery Service FedEx wasn't as expected.",
+            "Problems encountered with lack of delivery service fedex."
         ],
        "Lack of Delivery Service Forward Air": [
-            "I have an issue with lack of delivery service forward air.",
-            "My experience with lack of delivery service forward air wasn't great.",
-            "There's something wrong with the lack of delivery service forward air."
+            "Facing issues related to lack of delivery service forward air.",
+            "Lack of Delivery Service Forward Air wasn't as expected.",
+            "Problems encountered with lack of delivery service forward air."
         ],
        "Lack of Delivery Service RXO": [
-            "I have an issue with lack of delivery service rxo.",
-            "My experience with lack of delivery service rxo wasn't great.",
-            "There's something wrong with the lack of delivery service rxo."
+            "Facing issues related to lack of delivery service rxo.",
+            "Lack of Delivery Service RXO wasn't as expected.",
+            "Problems encountered with lack of delivery service rxo."
         ],
        "Lack of Delivery Service UPS": [
-            "I have an issue with lack of delivery service ups.",
-            "My experience with lack of delivery service ups wasn't great.",
-            "There's something wrong with the lack of delivery service ups."
+            "Facing issues related to lack of delivery service ups.",
+            "Lack of Delivery Service UPS wasn't as expected.",
+            "Problems encountered with lack of delivery service ups."
         ],
        "No Delivery": [
-            "I have an issue with no delivery.",
-            "My experience with no delivery wasn't great.",
-            "There's something wrong with the no delivery."
+            "Facing issues related to no delivery.",
+            "No Delivery wasn't as expected.",
+            "Problems encountered with no delivery."
         ],
        "Reschedules - No Cx notification": [
-            "I have an issue with reschedules - no cx notification.",
-            "My experience with reschedules - no cx notification wasn't great.",
-            "There's something wrong with the reschedules - no cx notification."
+            "Facing issues related to reschedules - no cx notification.",
+            "Reschedules - No Cx notification wasn't as expected.",
+            "Problems encountered with reschedules - no cx notification."
         ],
        "Tracking Issues": [
-            "I have an issue with tracking issues.",
-            "My experience with tracking issues wasn't great.",
-            "There's something wrong with the tracking issues."
+            "Facing issues related to tracking issues.",
+            "Tracking Issues wasn't as expected.",
+            "Problems encountered with tracking issues."
         ],
        "Where's My Stuff - Not Agent Related (Not BOPIS)": [
-            "I have an issue with where's my stuff - not agent related (not bopis).",
-            "My experience with where's my stuff - not agent related (not bopis) wasn't great.",
-            "There's something wrong with the where's my stuff - not agent related (not bopis)."
+            "Facing issues related to where's my stuff - not agent related (not bopis).",
+            "Where's My Stuff - Not Agent Related (Not BOPIS) wasn't as expected.",
+            "Problems encountered with where's my stuff - not agent related (not bopis)."
         ],
        "Wrong Address": [
-            "I have an issue with wrong address.",
-            "My experience with wrong address wasn't great.",
-            "There's something wrong with the wrong address."
+            "Facing issues related to wrong address.",
+            "Wrong Address wasn't as expected.",
+            "Problems encountered with wrong address."
         ],
        "Wrong Product Received": [
-            "I have an issue with wrong product received.",
-            "My experience with wrong product received wasn't great.",
-            "There's something wrong with the wrong product received."
+            "Facing issues related to wrong product received.",
+            "Wrong Product Received wasn't as expected.",
+            "Problems encountered with wrong product received."
         ],
     },
    "eCom Support": {
        "Issue1": [
-            "I have an issue with issue1.",
-            "My experience with issue1 wasn't great.",
-            "There's something wrong with the issue1."
+            "Facing issues related to issue1.",
+            "Issue1 wasn't as expected.",
+            "Problems encountered with issue1."
         ],
     },
    "CARE Support": {
        "Issue1": [
-            "I have an issue with issue1.",
-            "My experience with issue1 wasn't great.",
-            "There's something wrong with the issue1."
+            "Facing issues related to issue1.",
+            "Issue1 wasn't as expected.",
+            "Problems encountered with issue1."
         ],
     },
 }
