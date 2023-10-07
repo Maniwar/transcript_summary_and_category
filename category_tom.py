@@ -25,7 +25,7 @@ default_categories = {
    "Damages" : ["product arrived damaged", "broken item on delivery", "damaged during shipping"],
    "Empty Box" : ["box was empty", "received an empty package", "no product inside the box"],
    "Incorrect Delivery Dates - Post" : ["delivery date changed", "was supposed to get it earlier", "wrong delivery estimate"],
-   "Installation Issues" : ["problem with installation", "can't set it up", "installation service was poor"],
+   "Installation Issues" : ["problem with installation", "the installer didn't set it up", "installation service was poor"],
    "Lack of Delivery Delay Notification" : ["wasn't informed about the delay", "no notification for late delivery", "should have told me it was delayed"],
    "Lack of Delivery Service" : ["no delivery service offered", "can't get it delivered", "no shipping options available"],
    "Lack of Delivery Service AGS" : ["AGS didn't deliver", "no AGS delivery service", "why isn't AGS delivering?"],
