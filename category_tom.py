@@ -21,96 +21,27 @@ default_categories = {
         ],
     },
    "Delivery & Installation": {
-       "Cancelled": [
-            "My order was cancelled without any reason.",
-            "Received a cancellation notice unexpectedly.",
-            "Why was my purchase cancelled?"
-        ],
-       "Damages": [
-            "Received a damaged product.",
-            "The item has visible scratches and dents.",
-            "Packaging was torn, leading to product damage."
-        ],
-       "Empty Box": [
-            "Box was empty when I opened it.",
-            "Received a package without the actual product.",
-            "Ordered an item but got an empty box."
-        ],
-       "Incorrect Delivery Dates - Post": [
-            "Facing issues related to incorrect delivery dates - post.",
-            "Incorrect Delivery Dates - Post wasn't as expected.",
-            "Problems encountered with incorrect delivery dates - post."
-        ],
-       "Installation Issues": [
-            "Facing issues related to installation issues.",
-            "Installation Issues wasn't as expected.",
-            "Problems encountered with installation issues."
-        ],
-       "Lack of Delivery Delay Notification": [
-            "Facing issues related to lack of delivery delay notification.",
-            "Lack of Delivery Delay Notification wasn't as expected.",
-            "Problems encountered with lack of delivery delay notification."
-        ],
-       "Lack of Delivery Service": [
-            "Facing issues related to lack of delivery service.",
-            "Lack of Delivery Service wasn't as expected.",
-            "Problems encountered with lack of delivery service."
-        ],
-       "Lack of Delivery Service AGS": [
-            "Facing issues related to lack of delivery service ags.",
-            "Lack of Delivery Service AGS wasn't as expected.",
-            "Problems encountered with lack of delivery service ags."
-        ],
-       "Lack of Delivery Service FedEx": [
-            "Facing issues related to lack of delivery service fedex.",
-            "Lack of Delivery Service FedEx wasn't as expected.",
-            "Problems encountered with lack of delivery service fedex."
-        ],
-       "Lack of Delivery Service Forward Air": [
-            "Facing issues related to lack of delivery service forward air.",
-            "Lack of Delivery Service Forward Air wasn't as expected.",
-            "Problems encountered with lack of delivery service forward air."
-        ],
-       "Lack of Delivery Service RXO": [
-            "Facing issues related to lack of delivery service rxo.",
-            "Lack of Delivery Service RXO wasn't as expected.",
-            "Problems encountered with lack of delivery service rxo."
-        ],
-       "Lack of Delivery Service UPS": [
-            "Facing issues related to lack of delivery service ups.",
-            "Lack of Delivery Service UPS wasn't as expected.",
-            "Problems encountered with lack of delivery service ups."
-        ],
-       "No Delivery": [
-            "Facing issues related to no delivery.",
-            "No Delivery wasn't as expected.",
-            "Problems encountered with no delivery."
-        ],
-       "Reschedules - No Cx notification": [
-            "Facing issues related to reschedules - no cx notification.",
-            "Reschedules - No Cx notification wasn't as expected.",
-            "Problems encountered with reschedules - no cx notification."
-        ],
-       "Tracking Issues": [
-            "Facing issues related to tracking issues.",
-            "Tracking Issues wasn't as expected.",
-            "Problems encountered with tracking issues."
-        ],
-       "Where's My Stuff - Not Agent Related (Not BOPIS)": [
-            "Facing issues related to where's my stuff - not agent related (not bopis).",
-            "Where's My Stuff - Not Agent Related (Not BOPIS) wasn't as expected.",
-            "Problems encountered with where's my stuff - not agent related (not bopis)."
-        ],
-       "Wrong Address": [
-            "Facing issues related to wrong address.",
-            "Wrong Address wasn't as expected.",
-            "Problems encountered with wrong address."
-        ],
-       "Wrong Product Received": [
-            "Facing issues related to wrong product received.",
-            "Wrong Product Received wasn't as expected.",
-            "Problems encountered with wrong product received."
-        ],
+"Delivery & Installation": {
+   "Cancelled" : ["order was cancelled", "didn't receive because it was cancelled", "why was my delivery cancelled?"],
+   "Damages" : ["product arrived damaged", "broken item on delivery", "damaged during shipping"],
+   "Empty Box" : ["box was empty", "received an empty package", "no product inside the box"],
+   "Incorrect Delivery Dates - Post" : ["delivery date changed", "was supposed to get it earlier", "wrong delivery estimate"],
+   "Installation Issues" : ["problem with installation", "can't set it up", "installation service was poor"],
+   "Lack of Delivery Delay Notification" : ["wasn't informed about the delay", "no notification for late delivery", "should have told me it was delayed"],
+   "Lack of Delivery Service" : ["no delivery service offered", "can't get it delivered", "no shipping options available"],
+   "Lack of Delivery Service AGS" : ["AGS didn't deliver", "no AGS delivery service", "why isn't AGS delivering?"],
+   "Lack of Delivery Service FedEx" : ["FedEx didn't deliver", "no FedEx delivery option", "why isn't FedEx delivering?"],
+   "Lack of Delivery Service Forward Air" : ["Forward Air didn't deliver", "no Forward Air delivery option", "why isn't Forward Air delivering?"],
+   "Lack of Delivery Service RXO" : ["RXO didn't deliver", "no RXO delivery option", "why isn't RXO delivering?"],
+   "Lack of Delivery Service UPS" : ["UPS didn't deliver", "no UPS delivery option", "why isn't UPS delivering?"],
+   "No Delivery" : ["never received my order", "product never arrived", "waiting for my delivery"],
+   "Reschedules - No Cx notification" : ["delivery was rescheduled without informing me", "didn't get a reschedule notification", "why was my delivery date changed without notice?"],
+   "Tracking Issues" : ["can't track my order", "tracking number not working", "where can I track my shipment?"],
+   "Where's My Stuff - Not Agent Related (Not BOPIS)" : ["where's my order?", "haven't received my stuff", "order is missing and it's not BOPIS"],
+   "Wrong Address" : ["delivered to the wrong address", "address on the package is incorrect", "didn't get it, wrong delivery address"],
+   "Wrong Product Received" : ["received the wrong item", "this isn't what I ordered", "wrong product delivered"],
+},
+
     },
    "eCom Support": {
        "Issue1": [
