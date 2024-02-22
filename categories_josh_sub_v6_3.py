@@ -89,8 +89,8 @@ default_categories = {
         "Trade-In Discount Changed in Cart": ["My trade in credit is changing once I get into the cart or checkout",  "Notice of pricing should have info on trade in at the top.", "The full value of my trade in isn't being reflected in checkout."]
     },
     "Cancelled Orders - System Cancellation": {
-        "Order cancelled by System": ["My order was cancelled - I chose the financing option", "I ordered this smart watch 2 times using 2 different credit cards with all of the CORRECT billing information.  The finds were deducted and reimbursed,  cancelling my order each time", "Random cancellations, multiple hoops to jump through to get order placed", "None of my orders go through"],
-        "Order cancelled - Outside the US": ["My order was cancelled because my payment method is from outside the US United States","My order was cancelled because my payment method is from Mexico","My order was cancelled because my payment method is from Russia","My order was cancelled because my payment method is from Canada", "Is my order cancelled because I'm from outside the U.S.?"],
+        "Order cancelled by System": ["My order was cancelled",  "Random cancellations of my order", "None of my orders go through", "my order keeps getting cancelled", "stop repeatedly cancelling my order"],
+        "Order cancelled - Outside the US": ["My order was cancelled because my payment method is from outside the US United States"],
     },
     "Post-Checkout Order Modification and Management": {
         "Unable to Change Delivery Options": ["I'm unable to change the  delivery options", "Can I change my shipping method to get this faster?", "I can't change the delivery options for my order"],
@@ -112,7 +112,7 @@ default_categories = {
         "Wrong Product Received - Model": ["I received the wrong product - the model is incorrect", "The product I received is the wrong model"],
         "Wrong Product Received - General": ["I received the wrong product", "The product I received is not what I ordered"],
         "Product Delivered Damaged": ["My order was delivered damaged", "My fridge was delivered damaged", "The dishwasher was damaged, so I refused delivery", "I've had to reorder this several times because it keeps arriving cracked", "Get better delivery drivers, they keep breaking my order", "IT was smashed in the box", "This looks like it was ran over", "It has a giant hole in the package"],
-        "BESPOKE Fridge / Refrigerator Panels - Not Shipped Delay": ["The BESPOKE fridge/refrigerator panels have not been shipped yet", "It took several months to work between Your company and Lowes to get a useable code to place my order", "PRODUCTS WERE BACK ORDERED AND IT WAS EXTREMELY DIFFICULT TO GET THE PRODUCT WANTED ORDERED."],
+        "BESPOKE Fridge / Refrigerator Panels - Not Shipped Delay": ["The BESPOKE fridge/refrigerator panels have not been shipped yet", "Bespoke Refrigerator WERE BACK ORDERED AND IT WAS EXTREMELY DIFFICULT TO GET THE PRODUCT WANTED ORDERED."],
         "Customization and Exclusive Color delivery delay Time, weeks": ["The delivery of the customization and exclusive color is delayed by weeks", "Why is the delivery of the customization and exclusive color delayed?"],
         "Buy Online Pickup in store - Best Buy Pickup Delay": ["The pickup at Best Buy is delayed", "Why is the pickup at Best Buy delayed?"],
         "Buy Online Pickup in store - Best Buy Out of stock Delay": ["The pickup at Best Buy is delayed because the product is out of stock",  "Why is the pickup at Best Buy delayed? The product is out of stock"],
