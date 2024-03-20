@@ -1,4 +1,0 @@
-Extract and Preprocess Data: Write a script to parse your JSON data and extract necessary information. Convert structured and numerical data into a textual format for summarization, if needed.
-Summarize Textual Data: Use a model like BART or T5 from the transformers library to summarize textual information.
-Aggregate Numerical Data: Use Pandas or similar libraries to calculate your specific KPIs based on the aggregation rules defined in your JSON.
-Integrate and Present Summary: Combine the textual summary with the aggregated numerical data to create a comprehensive overview of your KPIs.
