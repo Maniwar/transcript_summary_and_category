@@ -1,0 +1,36 @@
+ I'm trying use NLP LLM model to build summary on the KPI metrics on Key value pair. Can you suggest any model to do that? 
+it has numbers as well.
+this has performance metrics pulled on daily basis. Need to get the daily summary (aggregated) .
+
+
+{
+    "name": "ProUpliftPercent",
+    "editable": {
+        "storagelevel": "inputlevel",
+        "enablepastweeks": false,
+        "editmode": "all",
+        "code": "LIFT"
+    },
+    "distribution": {
+        "timehierarchydisttype": "equal",
+        "planhierarchydisttype": "equal",
+        "distributionorder": "TimeThenPlan"
+    },
+    "display": {
+        "subsets": [
+            "Planning",
+            "VPC"
+        ],
+        "round": 2,
+        "enabled": true
+    },
+    "compoundmain": false,
+    "aggregation": {
+        "timerule": "formula",
+        "skippeddimensions": [
+            "Tactic"
+        ],
+        "rule": "formula"
+    }
+}
+
