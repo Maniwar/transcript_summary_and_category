@@ -2,3 +2,4 @@ streamlit
 sentence-transformers
 scikit-learn
 transformers
+sentencepiece
