@@ -17,7 +17,7 @@ import chardet
 from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
 import streamlit as st
 import textwrap
-from categories_josh_sub_V6_3 import default_categories  # Restored original import
+from categories_josh_sub_V6_3 import default_categories
 import json
 from tqdm import tqdm
 import re
@@ -28,8 +28,8 @@ from datetime import datetime
 from collections import defaultdict
 
 # Environment setup
-os.environ["TOKENIZERS_PARALLELISM"] = "true"  # Enable parallelism for tokenizers
-nltk.download('vader_lexicon', quiet=True)  # Ensure sentiment lexicon is available
+os.environ["TOKENIZERS_PARALLELISM"] = "true"
+nltk.download('vader_lexicon', quiet=True)
 
 # --- Custom Dataset ---
 class SummarizationDataset(Dataset):
@@ -48,7 +48,6 @@ class SummarizationDataset(Dataset):
 
 # --- Utility Functions ---
 def preprocess_text(text):
-    """Preprocess text by removing special characters, HTML, and normalizing spaces."""
     if pd.isna(text):
         return ""
     text = str(text).encode('ascii', 'ignore').decode('ascii')
@@ -59,15 +58,16 @@ def preprocess_text(text):
 
 # --- Model Initialization ---
 @st.cache_resource
-def get_embedding_model():
-    """Load and cache the SentenceTransformer model."""
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    return SentenceTransformer('all-mpnet-base-v2', device=device)
+def initialize_bert_model():
+    start_time = time.time()
+    print("Initializing BERT model...")
+    model = SentenceTransformer('all-mpnet-base-v2', device='cpu')
+    print(f"BERT model initialized. Time taken: {time.time() - start_time} seconds.")
+    return model
 
 @st.cache_resource
 def get_summarization_model_and_tokenizer():
-    """Load and cache the summarization model and tokenizer."""
-    model_name = "facebook/bart-large-cnn"
+    model_name = "knkarthick/MEETING_SUMMARY"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -76,35 +76,30 @@ def get_summarization_model_and_tokenizer():
 
 @st.cache_resource
 def get_sentiment_model():
-    """Load and cache the transformer-based sentiment model."""
-    return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english", 
+    return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english",
                     device=0 if torch.cuda.is_available() else -1)
 
 @st.cache_resource
 def get_summarizer():
-    """Load and cache the summarization pipeline for clusters."""
-    return pipeline("summarization", model="facebook/bart-large-cnn", 
+    return pipeline("summarization", model="facebook/bart-large-cnn",
                     device=0 if torch.cuda.is_available() else -1)
 
 # --- Processing Functions ---
-def perform_sentiment_analysis(text, sentiment_model=None, use_nltk=False):
-    """Compute sentiment score with option for NLTK or transformer model."""
+def perform_sentiment_analysis(text, sentiment_model=None, use_nltk=True):
     if use_nltk:
         analyzer = SentimentIntensityAnalyzer()
         return analyzer.polarity_scores(text)['compound']
     else:
         try:
-            result = sentiment_model(text[:512])[0]  # Truncate to max length
+            result = sentiment_model(text[:512])[0]
             return result['score'] if result['label'] == 'POSITIVE' else -result['score']
         except Exception:
             return 0.0
 
 def get_token_count(text, tokenizer):
-    """Compute token count for a text."""
     return len(tokenizer.encode(text)) - 2
 
 def split_comments_into_chunks(comments, tokenizer, max_tokens=1000):
-    """Split comments into chunks if they exceed max tokens."""
     sorted_comments = sorted(comments, key=lambda x: x[1], reverse=True)
     chunks = []
     current_chunk = []
@@ -136,13 +131,11 @@ def split_comments_into_chunks(comments, tokenizer, max_tokens=1000):
     return chunks
 
 def summarize_text_batch(texts, tokenizer, model, device, max_length=75, min_length=30):
-    """Summarize a batch of texts efficiently."""
     inputs = tokenizer(texts, truncation=True, padding=True, max_length=1024, return_tensors='pt').to(device)
     summary_ids = model.generate(inputs['input_ids'], max_length=max_length, min_length=min_length, num_beams=4)
     return tokenizer.batch_decode(summary_ids, skip_special_tokens=True)
 
 def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=32, max_length=75, min_length=30, max_tokens=1000, very_short_limit=30):
-    """Preprocess and summarize comments with detailed handling."""
     model, tokenizer, device = get_summarization_model_and_tokenizer()
     feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
     comments = feedback_data['preprocessed_comments'].tolist()
@@ -151,7 +144,7 @@ def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=
     short = [(c, get_token_count(c, tokenizer)) for c in comments if very_short_limit < get_token_count(c, tokenizer) <= max_tokens]
     long = [(c, get_token_count(c, tokenizer)) for c in comments if get_token_count(c, tokenizer) > max_tokens]
     
-    summaries_dict = {c: c for c, _ in very_short}  # Very short comments unchanged
+    summaries_dict = {c: c for c, _ in very_short}
     
     short_texts = [c for c, _ in short]
     for i in tqdm(range(0, len(short_texts), batch_size), desc="Summarizing short comments"):
@@ -172,7 +165,6 @@ def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=
     return feedback_data
 
 def compute_keyword_embeddings(categories, model):
-    """Compute and cache keyword embeddings."""
     keyword_embeddings = {}
     for category, subcategories in categories.items():
         for subcategory, keywords in subcategories.items():
@@ -183,7 +175,6 @@ def compute_keyword_embeddings(categories, model):
     return keyword_embeddings
 
 def categorize_comments(feedback_data, categories, similarity_threshold, emerging_issue_mode, model):
-    """Categorize comments with vectorized similarity and store embeddings."""
     keyword_embeddings = compute_keyword_embeddings(categories, model)
     keyword_matrix = np.array(list(keyword_embeddings.values()))
     keyword_mapping = list(keyword_embeddings.keys())
@@ -213,11 +204,10 @@ def categorize_comments(feedback_data, categories, similarity_threshold, emergin
     feedback_data['Sub-Category'] = subcats_list
     feedback_data['Keyphrase'] = keyphrases_list
     feedback_data['Best Match Score'] = max_scores
-    feedback_data['embeddings'] = list(comment_matrix)  # For clustering
+    feedback_data['embeddings'] = list(comment_matrix)
     return feedback_data
 
 def summarize_cluster(comments, summarizer):
-    """Summarize a cluster of comments into a concise category name."""
     combined_text = " ".join(comments)
     try:
         summary = summarizer(combined_text, max_length=15, min_length=5, do_sample=False)[0]['summary_text']
@@ -226,7 +216,6 @@ def summarize_cluster(comments, summarizer):
         return "Unnamed Cluster"
 
 def cluster_no_match_comments(feedback_data, summarizer):
-    """Cluster 'No Match' comments and assign summarized category names."""
     no_match_idx = feedback_data['Category'] == 'No Match'
     if no_match_idx.sum() <= 10:
         return feedback_data
@@ -252,30 +241,18 @@ def cluster_no_match_comments(feedback_data, summarizer):
 
 @st.cache_data(persist="disk", hash_funcs={dict: lambda x: str(sorted(x.items()))})
 def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold, emerging_issue_mode):
-    """Process feedback data comprehensively."""
-    model = get_embedding_model()
+    model = initialize_bert_model()
     sentiment_model = get_sentiment_model()
     summarizer = get_summarizer()
     
-    # Preprocess and summarize
     feedback_data = preprocess_comments_and_summarize(feedback_data, comment_column)
-    
-    # Sentiment analysis (transformer-based)
     feedback_data['Sentiment'] = feedback_data['preprocessed_comments'].apply(
         lambda x: perform_sentiment_analysis(x, sentiment_model))
-    
-    # Categorize
     feedback_data = categorize_comments(feedback_data, categories, similarity_threshold, emerging_issue_mode, model)
-    
-    # Cluster "No Match" comments
     if emerging_issue_mode:
         feedback_data = cluster_no_match_comments(feedback_data, summarizer)
-    
-    # Date parsing
     feedback_data['Parsed Date'] = pd.to_datetime(feedback_data[date_column], errors='coerce')
     feedback_data['Hour'] = feedback_data['Parsed Date'].dt.hour
-    
-    # Drop embeddings to save memory
     feedback_data.drop(columns=['embeddings'], inplace=True)
     return feedback_data
 
@@ -292,11 +269,10 @@ def main():
     st.sidebar.write("Emerging issue mode clusters uncategorized comments and names them with summaries.")
     chunk_size = st.sidebar.number_input("Chunk Size", min_value=32, value=32, step=32)
     
-    # Restore original category editing from provided code
+    # Category Editing
     st.sidebar.header("Edit Categories")
-    categories = default_categories  # Use imported default_categories
+    categories = default_categories
     new_categories = {}
-
     for category, subcategories in categories.items():
         category_name = st.sidebar.text_input(f"{category} Category", value=category)
         new_subcategories = {}
@@ -306,7 +282,7 @@ def main():
                 category_keywords = st.text_area("Keywords", value="\n".join(keywords))
             new_subcategories[subcategory_name] = category_keywords.split("\n")
         new_categories[category_name] = new_subcategories
-    categories = new_categories  # Update categories with edited values
+    categories = new_categories
 
     if uploaded_file:
         csv_data = uploaded_file.read()
