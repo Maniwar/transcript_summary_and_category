@@ -241,15 +241,16 @@ def summarize_cluster(comments, summarizer):
     except Exception:
         return "Unnamed Cluster"
 
-def cluster_no_match_comments(feedback_data, summarizer):
+def cluster_no_match_comments(feedback_data, summarizer, max_clusters=10):
     """Cluster 'No Match' comments and assign them to new 'Emerging Issues' categories."""
     no_match_idx = feedback_data['Category'] == 'No Match'
-    if no_match_idx.sum() <= 10:
+    if no_match_idx.sum() < 2:
+        st.warning("Not enough 'No Match' comments to cluster.")
         return feedback_data
     
     no_match_embeddings = np.array(feedback_data.loc[no_match_idx, 'embeddings'].tolist())
     no_match_embeddings = normalize(no_match_embeddings)
-    k = min(math.ceil(math.sqrt(no_match_idx.sum())), 10)
+    k = min(math.ceil(math.sqrt(no_match_idx.sum())), max_clusters)
     try:
         kmeans = KMeans(n_clusters=k, random_state=42)
         clusters = kmeans.fit_predict(no_match_embeddings)
@@ -261,7 +262,10 @@ def cluster_no_match_comments(feedback_data, summarizer):
     for i, idx in enumerate(feedback_data.index[no_match_idx]):
         cluster_comments[clusters[i]].append(feedback_data.at[idx, 'preprocessed_comments'])
     
-    cluster_summaries = {cid: summarize_cluster(comments, summarizer) for cid, comments in cluster_comments.items()}
+    cluster_summaries = {}
+    for cid, comments in cluster_comments.items():
+        cluster_summaries[cid] = summarize_cluster(comments, summarizer)
+        print(f"Cluster {cid} summary: {cluster_summaries[cid]}")  # Debug cluster summaries
     
     for i, idx in enumerate(feedback_data.index[no_match_idx]):
         cluster_id = clusters[i]
@@ -271,7 +275,7 @@ def cluster_no_match_comments(feedback_data, summarizer):
     return feedback_data
 
 @st.cache_data(persist="disk", hash_funcs={dict: lambda x: str(sorted(x.items()))})
-def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold, emerging_issue_mode):
+def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold, emerging_issue_mode, max_clusters=10):
     """Main function to process feedback data: summarize, categorize, analyze sentiment, and cluster."""
     if comment_column not in feedback_data.columns or date_column not in feedback_data.columns:
         st.error(f"Missing required column(s): '{comment_column}' or '{date_column}' not in CSV.")
@@ -286,7 +290,7 @@ def process_feedback_data(feedback_data, comment_column, date_column, categories
         lambda x: perform_sentiment_analysis(x, sentiment_model))
     feedback_data = categorize_comments(feedback_data, categories, similarity_threshold, emerging_issue_mode, model)
     if emerging_issue_mode:
-        feedback_data = cluster_no_match_comments(feedback_data, summarizer)
+        feedback_data = cluster_no_match_comments(feedback_data, summarizer, max_clusters)
     feedback_data['Parsed Date'] = pd.to_datetime(feedback_data[date_column], errors='coerce')
     feedback_data['Hour'] = feedback_data['Parsed Date'].dt.hour
     if 'embeddings' in feedback_data.columns:
@@ -305,6 +309,7 @@ def main():
     emerging_issue_mode = st.sidebar.checkbox("Enable Emerging Issue Detection", value=True)
     st.sidebar.write("Emerging issue mode clusters uncategorized comments and names them with summaries.")
     chunk_size = st.sidebar.number_input("Chunk Size", min_value=32, value=32, step=32)
+    max_clusters = st.sidebar.number_input("Maximum clusters for emerging issues", min_value=1, max_value=50, value=10)
     
     # Category editing in sidebar
     st.sidebar.header("Edit Categories")
@@ -340,6 +345,11 @@ def main():
         date_column = st.selectbox("Select date column", column_names)
         grouping_option = st.radio("Group by", ["Date", "Week", "Month", "Quarter", "Hour"])
         
+        # Initialize chart placeholders to prevent duplication
+        trends_chart_placeholder = st.empty()
+        category_chart_placeholder = st.empty()
+        subcategory_chart_placeholder = st.empty()
+
         if st.button("Process Feedback"):
             chunk_iter = pd.read_csv(BytesIO(csv_data), encoding=encoding, chunksize=chunk_size)
             progress_bar = st.progress(0)
@@ -350,7 +360,7 @@ def main():
             for i, chunk in enumerate(chunk_iter):
                 status_text.text(f"Processing chunk {i+1}/{total_chunks}...")
                 processed_chunk = process_feedback_data(chunk, comment_column, date_column, categories, 
-                                                       similarity_threshold, emerging_issue_mode)
+                                                       similarity_threshold, emerging_issue_mode, max_clusters)
                 if not processed_chunk.empty:
                     trends_data_list.append(processed_chunk)
                 progress_bar.progress((i + 1) / total_chunks)
@@ -379,6 +389,8 @@ def main():
                                 aggfunc='count',
                                 fill_value=0
                             ).reset_index()
+                            print("Pivot table for trends:")
+                            print(pivot.head())  # Debug pivot table
                         else:
                             st.warning("No valid dates for trend analysis.")
                             pivot = pd.DataFrame()
@@ -390,6 +402,8 @@ def main():
                             aggfunc='count',
                             fill_value=0
                         ).reset_index()
+                        print("Pivot table for hourly trends:")
+                        print(pivot.head())  # Debug pivot table
 
                     if not pivot.empty:
                         # Melt the pivot table to long format for plotting
@@ -399,6 +413,8 @@ def main():
                             var_name='Date' if grouping_option != 'Hour' else 'Hour',
                             value_name='Sentiment Count'
                         )
+                        print("Melted data for trends:")
+                        print(melted.head())  # Debug melted data
 
                         # Filter for top 5 sub-categories based on total sentiment count
                         numeric_cols = pivot.select_dtypes(include=[np.number]).columns
@@ -412,7 +428,7 @@ def main():
                                 x='Date',
                                 y='Sentiment Count',
                                 color='Sub-Category',
-                                title="Top 5 Trends"
+                                title="Top 5 Sub-Category Trends"
                             )
                         else:
                             fig_trends = px.line(
@@ -420,24 +436,48 @@ def main():
                                 x='Hour',
                                 y='Sentiment Count',
                                 color='Sub-Category',
-                                title="Top 5 Trends by Hour"
+                                title="Top 5 Sub-Category Trends by Hour"
                             )
-                        st.plotly_chart(fig_trends)
+                        fig_trends.update_layout(
+                            title="Top 5 Sub-Category Trends",
+                            xaxis_title="Date" if grouping_option != 'Hour' else "Hour",
+                            yaxis_title="Sentiment Count",
+                            legend_title="Sub-Category"
+                        )
+                        trends_chart_placeholder.plotly_chart(fig_trends)
                     
                     # Category vs Sentiment and Quantity
                     st.subheader("Category vs Sentiment and Quantity")
                     pivot1 = trends_data.groupby('Category')['Sentiment'].agg(['mean', 'count']).sort_values('count', ascending=False)
+                    print("Pivot table for categories:")
+                    print(pivot1.head())  # Debug pivot table
                     st.dataframe(pivot1)
-                    fig_cat = px.bar(pivot1, x=pivot1.index, y='count', title="Category Quantity")
-                    st.plotly_chart(fig_cat)
+                    fig_cat = px.bar(pivot1.sort_values('count', ascending=False), x=pivot1.index, y='count', title="Category Quantity")
+                    fig_cat.update_layout(
+                        title="Category Quantity",
+                        xaxis_title="Category",
+                        yaxis_title="Count"
+                    )
+                    category_chart_placeholder.plotly_chart(fig_cat)
                     
                     # Sub-Category vs Sentiment and Quantity
                     st.subheader("Sub-Category vs Sentiment and Quantity")
                     pivot2 = trends_data.groupby(['Category', 'Sub-Category'])['Sentiment'].agg(['mean', 'count']).sort_values('count', ascending=False)
+                    print("Pivot table for sub-categories:")
+                    print(pivot2.head())  # Debug pivot table
                     st.dataframe(pivot2)
-                    fig_subcat = px.bar(pivot2, x=pivot2.index.get_level_values('Sub-Category'), y='count', 
-                                       color=pivot2.index.get_level_values('Category'), title="Sub-Category Quantity")
-                    st.plotly_chart(fig_subcat)
+                    fig_subcat = px.bar(pivot2.sort_values('count', ascending=False), 
+                                       x=pivot2.index.get_level_values('Sub-Category'), 
+                                       y='count', 
+                                       color=pivot2.index.get_level_values('Category'), 
+                                       title="Sub-Category Quantity")
+                    fig_subcat.update_layout(
+                        title="Sub-Category Quantity",
+                        xaxis_title="Sub-Category",
+                        yaxis_title="Count",
+                        legend_title="Category"
+                    )
+                    subcategory_chart_placeholder.plotly_chart(fig_subcat)
                     
                     # Top 10 Recent Comments by Sub-Category
                     st.subheader("Top 10 Recent Comments by Sub-Category")
