@@ -226,420 +226,400 @@ def preprocess_comments_and_summarize(
 def compute_semantic_similarity(comment_embedding, keyword_embedding):
     return cosine_similarity([comment_embedding], [keyword_embedding])[0][0]
 
-# Set the default layout mode to "wide"
-st.set_page_config(layout="wide")
-st.title("👨‍💻 Transcript Categorization")
+@st.cache_data(persist="disk")
+def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold):
+    global previous_categories
 
-# Initialize BERT once and cache it
-model = initialize_bert_model()
-
-# Add checkbox for emerging issue mode
-emerging_issue_mode = st.sidebar.checkbox("Emerging Issue Mode")
-
-# Sidebar description for emerging issue mode
-st.sidebar.write(
-    "Emerging issue mode allows you to set a minimum similarity score. "
-    "If the comment doesn't match up to the categories based on the threshold, "
-    "it will be set to NO MATCH and clustered."
-)
-
-# Add slider for semantic similarity threshold
-similarity_threshold = None
-if emerging_issue_mode:
-    similarity_threshold = st.sidebar.slider("Semantic Similarity Threshold", 0.0, 1.0, 0.35)
-
-# Edit categories
-st.sidebar.header("Edit Categories")
-new_categories = {}
-for category, subcategories in default_categories.items():
-    category_name = st.sidebar.text_input(f"{category} Category", value=category)
-    new_subcategories = {}
-    for subcategory, keywords in subcategories.items():
-        subcategory_name = st.sidebar.text_input(f"{subcategory} Subcategory under {category_name}", value=subcategory)
-        with st.sidebar.expander(f"Keywords for {subcategory_name}"):
-            category_keywords = st.text_area("Keywords", value="\n".join(keywords))
-        new_subcategories[subcategory_name] = category_keywords.split("\n")
-    new_categories[category_name] = new_subcategories
-default_categories = new_categories
-
-uploaded_file = st.file_uploader("Upload CSV file", type="csv")
-
-comment_column = None
-date_column = None
-trends_data = None
-all_processed_data = []
-feedback_data = pd.DataFrame()
-
-if uploaded_file is not None:
-    csv_data = uploaded_file.read()
-    result = chardet.detect(csv_data)
-    encoding = result['encoding']
-
-    uploaded_file.seek(0)
-    total_rows = sum(1 for _ in uploaded_file) - 1
-
-    chunksize = 32
-    estimated_total_chunks = math.ceil(total_rows / chunksize)
-
-    uploaded_file.seek(0)
-    try:
-        first_chunk = next(pd.read_csv(BytesIO(csv_data), encoding=encoding, chunksize=1))
-        column_names = first_chunk.columns.tolist()
-    except Exception as e:
-        st.error(f"Error reading the CSV file: {e}")
-
-    comment_column = st.selectbox("Select the column containing the comments", column_names)
-    date_column = st.selectbox("Select the column containing the dates", column_names)
-    grouping_option = st.radio("Select how to group the dates", ["Date", "Week", "Month", "Quarter", "Hour"])
-    process_button = st.button("Process Feedback")
-
-    # UI placeholders
-    progress_bar = st.progress(0)
-    processed_chunks_count = 0
-    trends_dataframe_placeholder = st.empty()
-    download_link_placeholder = st.empty()
-
-    st.subheader("All Categories Trends Line Chart")
-    line_chart_placeholder = st.empty()
-    pivot_table_placeholder = st.empty()
-    st.subheader("Category vs Sentiment and Quantity")
-    category_sentiment_dataframe_placeholder = st.empty()
-    category_sentiment_bar_chart_placeholder = st.empty()
-    st.subheader("Sub-Category vs Sentiment and Quantity")
-    subcategory_sentiment_dataframe_placeholder = st.empty()
-    subcategory_sentiment_bar_chart_placeholder = st.empty()
-    st.subheader("Top 10 Most Recent Comments for Each Top Subcategory")
-    combined_placeholders = [(st.empty(), st.empty()) for _ in range(10)]
-
-    @st.cache_data(persist="disk")
-    def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold):
-        global previous_categories
+    # 1. Retrieve or compute keyword embeddings
+    keyword_embeddings = compute_keyword_embeddings(categories)
+    if previous_categories != categories:
         keyword_embeddings = compute_keyword_embeddings(categories)
-        if previous_categories != categories:
+        previous_categories = categories.copy()
+    else:
+        if not keyword_embeddings:
             keyword_embeddings = compute_keyword_embeddings(categories)
-            previous_categories = categories.copy()
-        else:
-            if not keyword_embeddings:
-                keyword_embeddings = compute_keyword_embeddings(categories)
 
-        # Preprocess & Summarize
-        summaries_dict = preprocess_comments_and_summarize(feedback_data, comment_column)
-        feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
-        feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].map(summaries_dict)
-        feedback_data['summarized_comments'].fillna(feedback_data['preprocessed_comments'], inplace=True)
+    # 2. Preprocess and Summarize
+    summaries_dict = preprocess_comments_and_summarize(feedback_data, comment_column)
+    feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
+    feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].map(summaries_dict)
+    feedback_data['summarized_comments'].fillna(feedback_data['preprocessed_comments'], inplace=True)
 
-        # Compute embeddings
-        batch_size = 1024
-        comment_embeddings = []
-        for i in range(0, len(feedback_data), batch_size):
-            batch = feedback_data['summarized_comments'][i:i+batch_size].tolist()
-            emb = model.encode(batch, show_progress_bar=False)
-            comment_embeddings.extend(emb)
-        feedback_data['comment_embeddings'] = comment_embeddings
+    # 3. Compute embeddings
+    batch_size = 1024
+    comment_embeddings = []
+    for i in range(0, len(feedback_data), batch_size):
+        batch = feedback_data['summarized_comments'][i:i+batch_size].tolist()
+        emb = model.encode(batch, show_progress_bar=False)
+        comment_embeddings.extend(emb)
+    feedback_data['comment_embeddings'] = comment_embeddings
 
-        # Compute sentiment
-        feedback_data['sentiment_scores'] = feedback_data['preprocessed_comments'].apply(perform_sentiment_analysis)
+    # 4. Sentiment
+    feedback_data['sentiment_scores'] = feedback_data['preprocessed_comments'].apply(perform_sentiment_analysis)
 
-        # Assign categories
-        categories_list = [''] * len(feedback_data)
-        sub_categories_list = [''] * len(feedback_data)
-        keyphrases_list = [''] * len(feedback_data)
-        similarity_scores = [0.0] * len(feedback_data)
+    # 5. Assign categories
+    categories_list = [''] * len(feedback_data)
+    sub_categories_list = [''] * len(feedback_data)
+    keyphrases_list = [''] * len(feedback_data)
+    similarity_scores = [0.0] * len(feedback_data)
 
-        kw_keys = list(keyword_embeddings.keys())
-        kw_vals = list(keyword_embeddings.values())
+    kw_keys = list(keyword_embeddings.keys())
+    kw_vals = list(keyword_embeddings.values())
 
-        for i in range(0, len(feedback_data), batch_size):
-            embs_batch = feedback_data['comment_embeddings'][i : i + batch_size].tolist()
-            for j, emb in enumerate(embs_batch):
-                idx = i + j
-                best_score = 0.0
-                best_cat = ""
-                best_sub = ""
-                best_kw = ""
-                for (cat, sub, kw), kv in zip(kw_keys, kw_vals):
-                    score = compute_semantic_similarity(emb, kv)
-                    if score > best_score:
-                        best_score = score
-                        best_cat = cat
-                        best_sub = sub
-                        best_kw = kw
-                categories_list[idx] = best_cat
-                sub_categories_list[idx] = best_sub
-                keyphrases_list[idx] = best_kw
-                similarity_scores[idx] = best_score
+    for i in range(0, len(feedback_data), batch_size):
+        embs_batch = feedback_data['comment_embeddings'][i : i + batch_size].tolist()
+        for j, emb in enumerate(embs_batch):
+            idx = i + j
+            best_score = 0.0
+            best_cat = ""
+            best_sub = ""
+            best_kw = ""
+            for (cat, sub, kw), kv in zip(kw_keys, kw_vals):
+                score = compute_semantic_similarity(emb, kv)
+                if score > best_score:
+                    best_score = score
+                    best_cat = cat
+                    best_sub = sub
+                    best_kw = kw
+            categories_list[idx] = best_cat
+            sub_categories_list[idx] = best_sub
+            keyphrases_list[idx] = best_kw
+            similarity_scores[idx] = best_score
 
-        # 6. **Emerging Issue Clustering** if threshold is set
-        if emerging_issue_mode and similarity_threshold is not None:
-            no_match_indices = [ix for ix, sc in enumerate(similarity_scores) if sc < similarity_threshold]
-            if len(no_match_indices) > 1:
-                # Perform KMeans on these comments
-                no_match_embs = np.array([feedback_data.iloc[ix]['comment_embeddings'] for ix in no_match_indices])
-                num_clusters = min(10, len(no_match_indices))
-                kmeans = KMeans(n_clusters=num_clusters, random_state=42)
-                clusters = kmeans.fit_predict(no_match_embs)
+    # 6. Emerging Issue Clustering if needed
+    if emerging_issue_mode and similarity_threshold is not None:
+        no_match_indices = [ix for ix, sc in enumerate(similarity_scores) if sc < similarity_threshold]
+        if len(no_match_indices) > 1:
+            no_match_embs = np.array([feedback_data.iloc[ix]['comment_embeddings'] for ix in no_match_indices])
+            num_clusters = min(10, len(no_match_indices))
+            kmeans = KMeans(n_clusters=num_clusters, random_state=42)
+            clusters = kmeans.fit_predict(no_match_embs)
 
-                # Summarize centroid for each cluster
-                model_sum, tokenizer_sum, device_sum = get_summarization_model_and_tokenizer()
-                cluster_labels = {}
-                for c_id in range(num_clusters):
-                    cluster_idx = [no_match_indices[z] for z, cval in enumerate(clusters) if cval == c_id]
-                    if not cluster_idx:
-                        continue
-                    # find centroid rep
-                    cluster_array = np.array([feedback_data.iloc[ii]['comment_embeddings'] for ii in cluster_idx])
-                    centroid = kmeans.cluster_centers_[c_id]
-                    dists = cosine_similarity([centroid], cluster_array)[0]
-                    best_idx = cluster_idx[np.argmax(dists)]
-                    centroid_comment = feedback_data.iloc[best_idx]['summarized_comments']
-                    # Summarize the comment
-                    cluster_summary = summarize_text(centroid_comment, tokenizer_sum, model_sum, device_sum, 75, 30)
-                    cluster_labels[c_id] = cluster_summary
+            # Summarize centroid for each cluster
+            model_sum, tokenizer_sum, device_sum = get_summarization_model_and_tokenizer()
+            cluster_labels = {}
+            for c_id in range(num_clusters):
+                cluster_idx = [no_match_indices[z] for z, cval in enumerate(clusters) if cval == c_id]
+                if not cluster_idx:
+                    continue
+                cluster_array = np.array([feedback_data.iloc[ii]['comment_embeddings'] for ii in cluster_idx])
+                centroid = kmeans.cluster_centers_[c_id]
+                dists = cosine_similarity([centroid], cluster_array)[0]
+                best_idx = cluster_idx[np.argmax(dists)]
+                centroid_comment = feedback_data.iloc[best_idx]['summarized_comments']
+                cluster_summary = summarize_text(centroid_comment, tokenizer_sum, model_sum, device_sum, 75, 30)
+                cluster_labels[c_id] = cluster_summary
 
-                # Update sub-category
-                for i_n, c_val in zip(no_match_indices, clusters):
-                    categories_list[i_n] = "No Match"
-                    sub_categories_list[i_n] = f"Emerging Issue: {cluster_labels[c_val]}"
+            # Instead of 'No Match', assign an 'Emerging Issues' category
+            for i_n, c_val in zip(no_match_indices, clusters):
+                categories_list[i_n] = "Emerging Issues"
+                sub_categories_list[i_n] = f"Cluster: {cluster_labels[c_val]}"
+                keyphrases_list[i_n] = "Cluster"
 
-        feedback_data.drop(columns=['comment_embeddings'], inplace=True)
+    feedback_data.drop(columns=['comment_embeddings'], inplace=True)
 
-        # Build final
-        rows_extended = []
-        for idx in range(len(feedback_data)):
-            row = feedback_data.iloc[idx]
-            cat = categories_list[idx]
-            s_cat = sub_categories_list[idx]
-            kwp = keyphrases_list[idx]
-            sc = similarity_scores[idx]
-            preproc = row['preprocessed_comments']
-            sumtext = row['summarized_comments']
-            sent = row['sentiment_scores']
-            parsed_date = row[date_column].split(' ')[0] if isinstance(row[date_column], str) else None
-            hour = pd.to_datetime(row[date_column]).hour if pd.notnull(row[date_column]) else None
+    # 7. Build final DataFrame
+    rows_extended = []
+    for idx in range(len(feedback_data)):
+        row = feedback_data.iloc[idx]
+        cat = categories_list[idx]
+        s_cat = sub_categories_list[idx]
+        kwp = keyphrases_list[idx]
+        sc = similarity_scores[idx]
+        preproc = row['preprocessed_comments']
+        sumtext = row['summarized_comments']
+        sent = row['sentiment_scores']
+        parsed_date = row[date_column].split(' ')[0] if isinstance(row[date_column], str) else None
+        hour = pd.to_datetime(row[date_column]).hour if pd.notnull(row[date_column]) else None
 
-            row_ext = row.tolist() + [
-                preproc,
-                sumtext,
-                cat,
-                s_cat,
-                kwp,
-                sent,
-                sc,
-                parsed_date,
-                hour
-            ]
-            rows_extended.append(row_ext)
-
-        ex_cols = feedback_data.columns.tolist()
-        add_cols = [
-            comment_column,
-            'Summarized Text',
-            'Category',
-            'Sub-Category',
-            'Keyphrase',
-            'Sentiment',
-            'Best Match Score',
-            'Parsed Date',
-            'Hour'
+        row_ext = row.tolist() + [
+            preproc,
+            sumtext,
+            cat,
+            s_cat,
+            kwp,
+            sent,
+            sc,
+            parsed_date,
+            hour
         ]
-        headers = ex_cols + add_cols
-        trends = pd.DataFrame(rows_extended, columns=headers)
-        trends = trends.loc[:, ~trends.columns.duplicated()]
-        return trends
+        rows_extended.append(row_ext)
 
-    if process_button and comment_column and date_column and grouping_option:
-        chunk_iter = pd.read_csv(BytesIO(csv_data), encoding=encoding, chunksize=chunksize)
+    ex_cols = feedback_data.columns.tolist()
+    add_cols = [
+        comment_column,
+        'Summarized Text',
+        'Category',
+        'Sub-Category',
+        'Keyphrase',
+        'Sentiment',
+        'Best Match Score',
+        'Parsed Date',
+        'Hour'
+    ]
+    headers = ex_cols + add_cols
+    trends = pd.DataFrame(rows_extended, columns=headers)
+    trends = trends.loc[:, ~trends.columns.duplicated()]
+    return trends
 
-        processed_chunks = []
-        for feedback_data in chunk_iter:
-            processed_chunk = process_feedback_data(feedback_data, comment_column, date_column, default_categories, similarity_threshold)
-            processed_chunks.append(processed_chunk)
+# Main Streamlit flow
+if __name__ == "__main__":
+    st.title("👨‍💻 Transcript Categorization")
+    model = initialize_bert_model()
 
-            # Concatenate
-            trends_data = pd.concat(processed_chunks, ignore_index=True)
-            trends_dataframe_placeholder.dataframe(trends_data)
-            processed_chunks_count += 1
-            progress_bar.progress(processed_chunks_count / estimated_total_chunks)
+    emerging_issue_mode = st.sidebar.checkbox("Emerging Issue Mode")
+    similarity_threshold = None
+    if emerging_issue_mode:
+        similarity_threshold = st.sidebar.slider("Semantic Similarity Threshold", 0.0, 1.0, 0.35)
 
-            if trends_data is not None:
-                # Convert date
-                trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce')
-                # Build pivot
-                if grouping_option == 'Date':
+    st.sidebar.header("Edit Categories")
+    new_categories = {}
+    for category, subcategories in default_categories.items():
+        category_name = st.sidebar.text_input(f"{category} Category", value=category)
+        new_subcategories = {}
+        for subcategory, keywords in subcategories.items():
+            subcategory_name = st.sidebar.text_input(f"{subcategory} Subcategory under {category_name}", value=subcategory)
+            with st.sidebar.expander(f"Keywords for {subcategory_name}"):
+                category_keywords = st.text_area("Keywords", value="\n".join(keywords))
+            new_subcategories[subcategory_name] = category_keywords.split("\n")
+        new_categories[category_name] = new_subcategories
+    default_categories = new_categories
+
+    uploaded_file = st.file_uploader("Upload CSV file", type="csv")
+    if uploaded_file is not None:
+        csv_data = uploaded_file.read()
+        result = chardet.detect(csv_data)
+        encoding = result['encoding']
+
+        uploaded_file.seek(0)
+        total_rows = sum(1 for _ in uploaded_file) - 1
+
+        chunksize = 32
+        estimated_total_chunks = math.ceil(total_rows / chunksize)
+
+        uploaded_file.seek(0)
+        try:
+            first_chunk = next(pd.read_csv(BytesIO(csv_data), encoding=encoding, chunksize=1))
+            column_names = first_chunk.columns.tolist()
+        except Exception as e:
+            st.error(f"Error reading the CSV file: {e}")
+
+        comment_column = st.selectbox("Select the column containing the comments", column_names)
+        date_column = st.selectbox("Select the column containing the dates", column_names)
+        grouping_option = st.radio("Select how to group the dates", ["Date", "Week", "Month", "Quarter", "Hour"])
+        process_button = st.button("Process Feedback")
+
+        # UI placeholders
+        progress_bar = st.progress(0)
+        processed_chunks_count = 0
+        trends_dataframe_placeholder = st.empty()
+        download_link_placeholder = st.empty()
+
+        st.subheader("All Categories Trends Line Chart")
+        line_chart_placeholder = st.empty()
+        pivot_table_placeholder = st.empty()
+        st.subheader("Category vs Sentiment and Quantity")
+        category_sentiment_dataframe_placeholder = st.empty()
+        category_sentiment_bar_chart_placeholder = st.empty()
+        st.subheader("Sub-Category vs Sentiment and Quantity")
+        subcategory_sentiment_dataframe_placeholder = st.empty()
+        subcategory_sentiment_bar_chart_placeholder = st.empty()
+        st.subheader("Top 10 Most Recent Comments for Each Top Subcategory")
+        combined_placeholders = [(st.empty(), st.empty()) for _ in range(10)]
+
+        if process_button and comment_column and date_column and grouping_option:
+            chunk_iter = pd.read_csv(BytesIO(csv_data), encoding=encoding, chunksize=chunksize)
+
+            processed_chunks = []
+            for feedback_data in chunk_iter:
+                processed_chunk = process_feedback_data(feedback_data, comment_column, date_column, default_categories, similarity_threshold)
+                processed_chunks.append(processed_chunk)
+
+                # Concatenate
+                trends_data = pd.concat(processed_chunks, ignore_index=True)
+                trends_dataframe_placeholder.dataframe(trends_data)
+                processed_chunks_count += 1
+                progress_bar.progress(processed_chunks_count / estimated_total_chunks)
+
+                if trends_data is not None:
+                    # Convert date
+                    trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce')
+                    # Build pivot
+                    if grouping_option == 'Date':
+                        pivot = trends_data.pivot_table(
+                            index=['Category', 'Sub-Category'],
+                            columns=pd.Grouper(key='Parsed Date', freq='D'),
+                            values='Sentiment',
+                            aggfunc='count',
+                            fill_value=0
+                        )
+                    elif grouping_option == 'Week':
+                        pivot = trends_data.pivot_table(
+                            index=['Category', 'Sub-Category'],
+                            columns=pd.Grouper(key='Parsed Date', freq='W-SUN', closed='left', label='left'),
+                            values='Sentiment',
+                            aggfunc='count',
+                            fill_value=0
+                        )
+                    elif grouping_option == 'Month':
+                        pivot = trends_data.pivot_table(
+                            index=['Category', 'Sub-Category'],
+                            columns=pd.Grouper(key='Parsed Date', freq='M'),
+                            values='Sentiment',
+                            aggfunc='count',
+                            fill_value=0
+                        )
+                    elif grouping_option == 'Quarter':
+                        pivot = trends_data.pivot_table(
+                            index=['Category', 'Sub-Category'],
+                            columns=pd.Grouper(key='Parsed Date', freq='Q'),
+                            values='Sentiment',
+                            aggfunc='count',
+                            fill_value=0
+                        )
+                    elif grouping_option == 'Hour':
+                        if 'Hour' not in trends_data.columns:
+                            feedback_data[date_column] = pd.to_datetime(feedback_data[date_column])
+                            trends_data['Hour'] = feedback_data[date_column].dt.hour
+                        pivot = trends_data.pivot_table(
+                            index=['Category', 'Sub-Category'],
+                            columns='Hour',
+                            values='Sentiment',
+                            aggfunc='count',
+                            fill_value=0
+                        )
+                        pivot.columns = pd.to_datetime(pivot.columns, format='%H').time
+
+                    pivot.columns = pivot.columns.astype(str)
+                    pivot = pivot.loc[pivot.sum(axis=1).sort_values(ascending=False).index]
+                    pivot = pivot[sorted(pivot.columns, reverse=True)]
+
+                    pivot_reset = pivot.reset_index()
+                    if 'Sub-Category' in pivot_reset.columns:
+                        pivot_reset = pivot_reset.set_index('Sub-Category')
+                    if 'Category' in pivot_reset.columns:
+                        pivot_reset = pivot_reset.drop(columns=['Category'], errors='ignore')
+
+                    # Top 5 chart
+                    top_5_trends = pivot_reset.head(5).T
+                    line_chart_placeholder.line_chart(top_5_trends)
+                    pivot_table_placeholder.dataframe(pivot)
+
+                    pivot1 = trends_data.groupby('Category')['Sentiment'].agg(['mean', 'count'])
+                    pivot1.columns = ['Average Sentiment', 'Quantity']
+                    pivot1 = pivot1.sort_values('Quantity', ascending=False)
+
+                    pivot2 = trends_data.groupby(['Category', 'Sub-Category'])['Sentiment'].agg(['mean', 'count'])
+                    pivot2.columns = ['Average Sentiment', 'Quantity']
+                    pivot2 = pivot2.sort_values('Quantity', ascending=False)
+                    pivot2_reset = pivot2.reset_index().set_index('Sub-Category')
+
+                    category_sentiment_bar_chart_placeholder.bar_chart(pivot1['Quantity'])
+                    category_sentiment_dataframe_placeholder.dataframe(pivot1)
+                    subcategory_sentiment_bar_chart_placeholder.bar_chart(pivot2_reset['Quantity'])
+                    subcategory_sentiment_dataframe_placeholder.dataframe(pivot2_reset)
+
+                    top_subcategories = pivot2_reset.head(10).index.tolist()
+                    for idx, subcat in enumerate(top_subcategories):
+                        title_placeholder, table_placeholder = combined_placeholders[idx]
+                        title_placeholder.subheader(subcat)
+                        filtered_data = trends_data[trends_data['Sub-Category'] == subcat]
+                        top_comments = filtered_data.nlargest(10, 'Parsed Date')[
+                            ['Parsed Date', comment_column, 'Summarized Text', 'Keyphrase', 'Sentiment', 'Best Match Score']
+                        ]
+                        top_comments['Parsed Date'] = top_comments['Parsed Date'].dt.date.astype(str)
+                        table_placeholder.table(top_comments)
+
+                    # Convert date to str
+                    trends_data['Parsed Date'] = trends_data['Parsed Date'].dt.strftime('%Y-%m-%d').fillna('')
                     pivot = trends_data.pivot_table(
                         index=['Category', 'Sub-Category'],
-                        columns=pd.Grouper(key='Parsed Date', freq='D'),
+                        columns=pd.to_datetime(trends_data['Parsed Date']).dt.strftime('%Y-%m-%d'),
                         values='Sentiment',
                         aggfunc='count',
                         fill_value=0
                     )
-                elif grouping_option == 'Week':
-                    pivot = trends_data.pivot_table(
-                        index=['Category', 'Sub-Category'],
-                        columns=pd.Grouper(key='Parsed Date', freq='W-SUN', closed='left', label='left'),
-                        values='Sentiment',
-                        aggfunc='count',
-                        fill_value=0
-                    )
-                elif grouping_option == 'Month':
-                    pivot = trends_data.pivot_table(
-                        index=['Category', 'Sub-Category'],
-                        columns=pd.Grouper(key='Parsed Date', freq='M'),
-                        values='Sentiment',
-                        aggfunc='count',
-                        fill_value=0
-                    )
-                elif grouping_option == 'Quarter':
-                    pivot = trends_data.pivot_table(
-                        index=['Category', 'Sub-Category'],
-                        columns=pd.Grouper(key='Parsed Date', freq='Q'),
-                        values='Sentiment',
-                        aggfunc='count',
-                        fill_value=0
-                    )
-                elif grouping_option == 'Hour':
-                    if 'Hour' not in trends_data.columns:
+                    pivot = pivot.loc[pivot.sum(axis=1).sort_values(ascending=False).index]
+                    pivot = pivot[sorted(pivot.columns, reverse=True)]
+
+                # Build final Excel
+                excel_file = BytesIO()
+                with pd.ExcelWriter(excel_file, engine='xlsxwriter', mode='xlsx') as excel_writer:
+                    trends_data.to_excel(excel_writer, sheet_name='Feedback Trends and Insights', index=False)
+                    trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce')
+                    trends_data['Formatted Date'] = trends_data['Parsed Date'].dt.strftime('%Y-%m-%d')
+                    if 'level_0' in trends_data.columns:
+                        trends_data.drop(columns='level_0', inplace=True)
+                    trends_data.reset_index(inplace=True)
+                    trends_data.set_index('Formatted Date', inplace=True)
+
+                    if grouping_option == 'Date':
+                        pivot = trends_data.pivot_table(
+                            index=['Category', 'Sub-Category'],
+                            columns='Parsed Date',
+                            values='Sentiment',
+                            aggfunc='count',
+                            fill_value=0
+                        )
+                    elif grouping_option == 'Week':
+                        pivot = trends_data.pivot_table(
+                            index=['Category', 'Sub-Category'],
+                            columns=pd.Grouper(key='Parsed Date', freq='W-SUN', closed='left', label='left'),
+                            values='Sentiment',
+                            aggfunc='count',
+                            fill_value=0
+                        )
+                    elif grouping_option == 'Month':
+                        pivot = trends_data.pivot_table(
+                            index=['Category', 'Sub-Category'],
+                            columns=pd.Grouper(key='Parsed Date', freq='M'),
+                            values='Sentiment',
+                            aggfunc='count',
+                            fill_value=0
+                        )
+                    elif grouping_option == 'Quarter':
+                        pivot = trends_data.pivot_table(
+                            index=['Category', 'Sub-Category'],
+                            columns=pd.Grouper(key='Parsed Date', freq='Q'),
+                            values='Sentiment',
+                            aggfunc='count',
+                            fill_value=0
+                        )
+                    elif grouping_option == 'Hour':
                         feedback_data[date_column] = pd.to_datetime(feedback_data[date_column])
-                        trends_data['Hour'] = feedback_data[date_column].dt.hour
-                    pivot = trends_data.pivot_table(
-                        index=['Category', 'Sub-Category'],
-                        columns='Hour',
-                        values='Sentiment',
-                        aggfunc='count',
-                        fill_value=0
-                    )
-                    pivot.columns = pd.to_datetime(pivot.columns, format='%H').time
+                        pivot = trends_data.pivot_table(
+                            index=['Category', 'Sub-Category'],
+                            columns=feedback_data[date_column].dt.hour,
+                            values='Sentiment',
+                            aggfunc='count',
+                            fill_value=0
+                        )
+                    if grouping_option != 'Hour':
+                        pivot.columns = pivot.columns.strftime('%Y-%m-%d')
 
-                pivot.columns = pivot.columns.astype(str)
-                pivot = pivot.loc[pivot.sum(axis=1).sort_values(ascending=False).index]
-                pivot = pivot[sorted(pivot.columns, reverse=True)]
+                    pivot.to_excel(excel_writer, sheet_name='Trends by ' + grouping_option, merge_cells=False)
+                    pivot1.to_excel(excel_writer, sheet_name='Categories', merge_cells=False)
+                    pivot2.to_excel(excel_writer, sheet_name='Subcategories', merge_cells=False)
 
-                pivot_reset = pivot.reset_index()
-                if 'Sub-Category' in pivot_reset.columns:
-                    pivot_reset = pivot_reset.set_index('Sub-Category')
-                if 'Category' in pivot_reset.columns:
-                    pivot_reset = pivot_reset.drop(columns=['Category'], errors='ignore')
+                    example_comments_sheet = excel_writer.book.add_worksheet('Example Comments')
+                    for subcat in top_subcategories:
+                        filtered_data = trends_data[trends_data['Sub-Category'] == subcat]
+                        top_comments = filtered_data.nlargest(10, 'Parsed Date')[
+                            ['Parsed Date', comment_column]
+                        ]
+                        start_row = (top_subcategories.index(subcat) * 8) + 1
+                        example_comments_sheet.merge_range(start_row, 0, start_row, 1, subcat)
+                        example_comments_sheet.write(start_row, 2, '')
+                        example_comments_sheet.write(start_row + 1, 0, 'Date')
+                        example_comments_sheet.write(start_row + 1, 1, comment_column)
+                        for i, (_, row) in enumerate(top_comments.iterrows(), start=start_row + 2):
+                            example_comments_sheet.write(i, 0, str(row['Parsed Date']))
+                            example_comments_sheet.write_string(i, 1, str(row[comment_column]))
 
-                # Top 5 chart
-                top_5_trends = pivot_reset.head(5).T
-                line_chart_placeholder.line_chart(top_5_trends)
-                pivot_table_placeholder.dataframe(pivot)
+                if not excel_writer.book.fileclosed:
+                    excel_writer.close()
 
-                pivot1 = trends_data.groupby('Category')['Sentiment'].agg(['mean', 'count'])
-                pivot1.columns = ['Average Sentiment', 'Quantity']
-                pivot1 = pivot1.sort_values('Quantity', ascending=False)
-
-                pivot2 = trends_data.groupby(['Category', 'Sub-Category'])['Sentiment'].agg(['mean', 'count'])
-                pivot2.columns = ['Average Sentiment', 'Quantity']
-                pivot2 = pivot2.sort_values('Quantity', ascending=False)
-                pivot2_reset = pivot2.reset_index().set_index('Sub-Category')
-
-                category_sentiment_bar_chart_placeholder.bar_chart(pivot1['Quantity'])
-                category_sentiment_dataframe_placeholder.dataframe(pivot1)
-                subcategory_sentiment_bar_chart_placeholder.bar_chart(pivot2_reset['Quantity'])
-                subcategory_sentiment_dataframe_placeholder.dataframe(pivot2_reset)
-
-                top_subcategories = pivot2_reset.head(10).index.tolist()
-                for idx, subcat in enumerate(top_subcategories):
-                    title_placeholder, table_placeholder = combined_placeholders[idx]
-                    title_placeholder.subheader(subcat)
-                    filtered_data = trends_data[trends_data['Sub-Category'] == subcat]
-                    top_comments = filtered_data.nlargest(10, 'Parsed Date')[
-                        ['Parsed Date', comment_column, 'Summarized Text', 'Keyphrase', 'Sentiment', 'Best Match Score']
-                    ]
-                    top_comments['Parsed Date'] = top_comments['Parsed Date'].dt.date.astype(str)
-                    table_placeholder.table(top_comments)
-
-                # Convert date to str
-                trends_data['Parsed Date'] = trends_data['Parsed Date'].dt.strftime('%Y-%m-%d').fillna('')
-                pivot = trends_data.pivot_table(
-                    index=['Category', 'Sub-Category'],
-                    columns=pd.to_datetime(trends_data['Parsed Date']).dt.strftime('%Y-%m-%d'),
-                    values='Sentiment',
-                    aggfunc='count',
-                    fill_value=0
-                )
-                pivot = pivot.loc[pivot.sum(axis=1).sort_values(ascending=False).index]
-                pivot = pivot[sorted(pivot.columns, reverse=True)]
-
-            # Build final Excel
-            excel_file = BytesIO()
-            with pd.ExcelWriter(excel_file, engine='xlsxwriter', mode='xlsx') as excel_writer:
-                trends_data.to_excel(excel_writer, sheet_name='Feedback Trends and Insights', index=False)
-                trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce')
-                trends_data['Formatted Date'] = trends_data['Parsed Date'].dt.strftime('%Y-%m-%d')
-                if 'level_0' in trends_data.columns:
-                    trends_data.drop(columns='level_0', inplace=True)
-                trends_data.reset_index(inplace=True)
-                trends_data.set_index('Formatted Date', inplace=True)
-
-                if grouping_option == 'Date':
-                    pivot = trends_data.pivot_table(
-                        index=['Category', 'Sub-Category'],
-                        columns='Parsed Date',
-                        values='Sentiment',
-                        aggfunc='count',
-                        fill_value=0
-                    )
-                elif grouping_option == 'Week':
-                    pivot = trends_data.pivot_table(
-                        index=['Category', 'Sub-Category'],
-                        columns=pd.Grouper(key='Parsed Date', freq='W-SUN', closed='left', label='left'),
-                        values='Sentiment',
-                        aggfunc='count',
-                        fill_value=0
-                    )
-                elif grouping_option == 'Month':
-                    pivot = trends_data.pivot_table(
-                        index=['Category', 'Sub-Category'],
-                        columns=pd.Grouper(key='Parsed Date', freq='M'),
-                        values='Sentiment',
-                        aggfunc='count',
-                        fill_value=0
-                    )
-                elif grouping_option == 'Quarter':
-                    pivot = trends_data.pivot_table(
-                        index=['Category', 'Sub-Category'],
-                        columns=pd.Grouper(key='Parsed Date', freq='Q'),
-                        values='Sentiment',
-                        aggfunc='count',
-                        fill_value=0
-                    )
-                elif grouping_option == 'Hour':
-                    feedback_data[date_column] = pd.to_datetime(feedback_data[date_column])
-                    pivot = trends_data.pivot_table(
-                        index=['Category', 'Sub-Category'],
-                        columns=feedback_data[date_column].dt.hour,
-                        values='Sentiment',
-                        aggfunc='count',
-                        fill_value=0
-                    )
-                if grouping_option != 'Hour':
-                    pivot.columns = pivot.columns.strftime('%Y-%m-%d')
-
-                pivot.to_excel(excel_writer, sheet_name='Trends by ' + grouping_option, merge_cells=False)
-                pivot1.to_excel(excel_writer, sheet_name='Categories', merge_cells=False)
-                pivot2.to_excel(excel_writer, sheet_name='Subcategories', merge_cells=False)
-
-                example_comments_sheet = excel_writer.book.add_worksheet('Example Comments')
-                for subcat in top_subcategories:
-                    filtered_data = trends_data[trends_data['Sub-Category'] == subcat]
-                    top_comments = filtered_data.nlargest(10, 'Parsed Date')[
-                        ['Parsed Date', comment_column]
-                    ]
-                    start_row = (top_subcategories.index(subcat) * 8) + 1
-                    example_comments_sheet.merge_range(start_row, 0, start_row, 1, subcat)
-                    example_comments_sheet.write(start_row, 2, '')
-                    example_comments_sheet.write(start_row + 1, 0, 'Date')
-                    example_comments_sheet.write(start_row + 1, 1, comment_column)
-                    for i, (_, row) in enumerate(top_comments.iterrows(), start=start_row + 2):
-                        example_comments_sheet.write(i, 0, str(row['Parsed Date']))
-                        example_comments_sheet.write_string(i, 1, str(row[comment_column]))
-
-            if not excel_writer.book.fileclosed:
-                excel_writer.close()
-
-            excel_file.seek(0)
-            b64 = base64.b64encode(excel_file.read()).decode()
-            href = f'<a href="data:application/octet-stream;base64,{b64}" download="feedback_trends.xlsx">Download Excel File</a>'
-            download_link_placeholder.markdown(href, unsafe_allow_html=True)
+                excel_file.seek(0)
+                b64 = base64.b64encode(excel_file.read()).decode()
+                href = f'<a href="data:application/octet-stream;base64,{b64}" download="feedback_trends.xlsx">Download Excel File</a>'
+                download_link_placeholder.markdown(href, unsafe_allow_html=True)
