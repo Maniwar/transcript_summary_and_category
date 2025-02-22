@@ -35,9 +35,6 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 tf.get_logger().setLevel('ERROR')
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-# Note: Monitor updates for transformers and sentence_transformers libraries
-# to address deprecation warnings in future versions.
-
 # Environment setup
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 nltk.download('vader_lexicon', quiet=True)
@@ -265,15 +262,14 @@ def cluster_no_match_comments(feedback_data, summarizer, max_clusters=10):
     return feedback_data
 
 @st.cache_data(persist="disk", hash_funcs={dict: lambda x: str(sorted(x.items()))})
-def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold, emerging_issue_mode, max_clusters=10):
-    """Process feedback data with summarization, categorization, and sentiment analysis."""
+def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold, emerging_issue_mode, max_clusters=10, summary_max_length=75, summary_min_length=30):
     if comment_column not in feedback_data.columns or date_column not in feedback_data.columns:
         st.error(f"Missing required column(s): '{comment_column}' or '{date_column}' not in CSV.")
         return pd.DataFrame()
     model = initialize_bert_model()
     sentiment_model = get_sentiment_model()
     summarizer = get_summarizer()
-    feedback_data = preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=64)
+    feedback_data = preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=64, max_length=summary_max_length, min_length=summary_min_length)
     feedback_data['Sentiment'] = feedback_data['preprocessed_comments'].apply(lambda x: perform_sentiment_analysis(x, sentiment_model))
     feedback_data = categorize_comments(feedback_data, categories, similarity_threshold, emerging_issue_mode, model)
     if emerging_issue_mode:
@@ -322,13 +318,23 @@ def main():
         "Maximum Clusters for Emerging Issues", min_value=1, max_value=50, value=config.get('max_clusters', 10),
         help="Max clusters for uncategorized comments."
     )
+    summary_max_length = st.sidebar.number_input(
+        "Summary Max Length", min_value=10, value=config.get('summary_max_length', 75), step=5,
+        help="Maximum length of the summary in tokens."
+    )
+    summary_min_length = st.sidebar.number_input(
+        "Summary Min Length", min_value=5, value=config.get('summary_min_length', 30), step=5,
+        help="Minimum length of the summary in tokens."
+    )
     
     # Save configuration
     current_config = {
         "similarity_threshold": similarity_threshold,
         "emerging_issue_mode": emerging_issue_mode,
         "chunk_size": chunk_size,
-        "max_clusters": max_clusters
+        "max_clusters": max_clusters,
+        "summary_max_length": summary_max_length,
+        "summary_min_length": summary_min_length
     }
     st.session_state['config'] = current_config
     if st.sidebar.button("Save Configuration"):
@@ -386,29 +392,54 @@ def main():
         
         if st.button("Process Feedback", help="Start processing the uploaded feedback data."):
             chunk_iter = pd.read_csv(BytesIO(csv_data), encoding=encoding, chunksize=chunk_size)
-            progress_bar = st.progress(0)
-            status_text = st.empty()
             trends_data_list = []
             start_time = time.time()
+            
+            # Processing Progress Section
+            st.header("Processing Progress")
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            processed_data_placeholder = st.empty()
+            category_counts_placeholder = st.empty()
             
             for i, chunk in enumerate(chunk_iter):
                 status_text.text(f"Processing chunk {i+1}/{total_chunks}...")
                 processed_chunk = process_feedback_data(
                     chunk, comment_column, date_column, categories,
-                    similarity_threshold, emerging_issue_mode, max_clusters
+                    similarity_threshold, emerging_issue_mode, max_clusters,
+                    summary_max_length, summary_min_length
                 )
                 if not processed_chunk.empty:
                     trends_data_list.append(processed_chunk)
                 progress_bar.progress((i + 1) / total_chunks)
+                
+                # Update partial results
+                if trends_data_list:
+                    partial_data = pd.concat(trends_data_list, ignore_index=True)
+                    partial_data = partial_data.drop_duplicates(subset=['preprocessed_comments', 'Parsed Date'])
+                    partial_data['Category'] = partial_data['Category'].str.strip().str.lower()
+                    partial_data['Sub-Category'] = partial_data['Sub-Category'].str.strip().str.lower()
+                    partial_data = partial_data.dropna(subset=['Category', 'Sub-Category', 'Sentiment'])
+                    styled_partial_data = partial_data.style.map(color_sentiment, subset=['Sentiment'])
+                    with processed_data_placeholder:
+                        st.subheader("📋 Processed Feedback Data (Partial)")
+                        st.dataframe(styled_partial_data, use_container_width=True)
+                    category_counts = partial_data['Category'].value_counts()
+                    with category_counts_placeholder:
+                        st.subheader("📊 Category Counts (Partial)")
+                        st.bar_chart(category_counts)
                 eta = ((time.time() - start_time) / (i + 1)) * (total_chunks - (i + 1)) if i + 1 < total_chunks else 0
                 status_text.text(f"Chunk {i+1}/{total_chunks} done. ETA: {int(eta)}s")
-
+            
             if trends_data_list:
                 trends_data = pd.concat(trends_data_list, ignore_index=True)
                 trends_data = trends_data.drop_duplicates(subset=['preprocessed_comments', 'Parsed Date'])
                 trends_data['Category'] = trends_data['Category'].str.strip().str.lower()
                 trends_data['Sub-Category'] = trends_data['Sub-Category'].str.strip().str.lower()
                 trends_data = trends_data.dropna(subset=['Category', 'Sub-Category', 'Sentiment'])
+                
+                # Complete Analysis Section
+                st.header("Complete Analysis")
                 
                 # Processed Feedback Data with Sentiment Colors
                 def color_sentiment(val):
