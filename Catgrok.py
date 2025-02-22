@@ -310,12 +310,12 @@ def main():
         # Initialize placeholders for UI components
         processed_data_placeholder = st.empty()
         trends_chart_placeholder = st.empty()
-        category_df_placeholder = st.empty()
-        category_chart_placeholder = st.empty()
-        subcategory_df_placeholder = st.empty()
-        subcategory_chart_placeholder = st.empty()
-        debug_placeholder = st.empty()
+        sentiment_dist_placeholder = st.empty()  # New: Sentiment distribution plot
+        keyword_freq_placeholder = st.empty()    # New: Keyword frequency plot
+        category_sentiment_df_placeholder = st.empty()  # New: Average sentiment per category
+        subcategory_sentiment_df_placeholder = st.empty()  # New: Average sentiment per subcategory
         top_comments_placeholder = st.empty()
+        emerging_issues_placeholder = st.empty()  # New: Emerging issues widgets
         download_placeholder = st.empty()
 
         if st.button("Process Feedback", help="Start processing the uploaded feedback data."):
@@ -358,81 +358,87 @@ def main():
                         st.subheader("📋 Processed Feedback Data")
                         st.dataframe(styled_trends_data, use_container_width=True)
                     
-                    # All Categories Trends - Using Streamlit's line chart
+                    # Trends Chart - Using Streamlit's line chart
                     freq_map = {'Date': 'D', 'Week': 'W', 'Month': 'M', 'Quarter': 'Q', 'Hour': 'H'}
                     if grouping_option != 'Hour':
                         trends_data_valid = trends_data.dropna(subset=['Parsed Date'])
                         if not trends_data_valid.empty:
-                            # Group by the selected frequency and subcategory
                             trends_data_valid['Grouped Date'] = trends_data_valid['Parsed Date'].dt.to_period(freq_map[grouping_option]).dt.to_timestamp()
                             pivot_trends = trends_data_valid.groupby(['Grouped Date', 'Sub-Category']).size().unstack(fill_value=0)
-                            # Select top 5 subcategories by total count
                             top_subcats = pivot_trends.sum().nlargest(5).index
                             pivot_trends_top = pivot_trends[top_subcats]
                             with trends_chart_placeholder:
-                                st.subheader("📈 All Categories Trends")
+                                st.subheader("📈 Top 5 Sub-Category Trends Over Time")
                                 st.line_chart(pivot_trends_top)
                         else:
                             with trends_chart_placeholder:
-                                st.subheader("📈 All Categories Trends")
+                                st.subheader("📈 Top 5 Sub-Category Trends Over Time")
                                 st.warning("No data available for trends chart.")
                     else:
                         pivot_trends = trends_data.groupby(['Hour', 'Sub-Category']).size().unstack(fill_value=0)
                         top_subcats = pivot_trends.sum().nlargest(5).index
                         pivot_trends_top = pivot_trends[top_subcats]
                         with trends_chart_placeholder:
-                            st.subheader("📈 All Categories Trends")
+                            st.subheader("📈 Top 5 Sub-Category Trends by Hour")
                             st.line_chart(pivot_trends_top)
 
-                    # Category vs Sentiment and Quantity - Using Streamlit's bar chart
-                    pivot1 = trends_data.groupby('Category')['Sentiment'].agg(['mean', 'count']).sort_values('count', ascending=False)
-                    pivot1.columns = ['Average Sentiment', 'Count']
-                    with category_df_placeholder:
-                        st.subheader("📊 Category vs Sentiment and Quantity")
-                        st.dataframe(pivot1, use_container_width=True)
-                    with category_chart_placeholder:
-                        st.subheader("Category Quantity")
-                        st.bar_chart(pivot1['Count'])
+                    # --- New: Sentiment Distribution Plot ---
+                    with sentiment_dist_placeholder:
+                        st.subheader("📊 Sentiment Distribution")
+                        # Bin sentiment scores into categories
+                        sentiment_bins = pd.cut(trends_data['Sentiment'], bins=[-1, -0.5, 0.5, 1], labels=['Negative', 'Neutral', 'Positive'])
+                        sentiment_dist = sentiment_bins.value_counts().sort_index()
+                        st.bar_chart(sentiment_dist)
+                    
+                    # --- New: Keyword Frequency Plot ---
+                    with keyword_freq_placeholder:
+                        st.subheader("🔑 Top 10 Keywords by Frequency")
+                        keyword_counts = trends_data['Keyphrase'].value_counts().head(10)
+                        if not keyword_counts.empty:
+                            st.bar_chart(keyword_counts)
+                        else:
+                            st.warning("No keyword data available.")
 
-                    # Sub-Category vs Sentiment and Quantity - Using Streamlit's bar chart
-                    pivot2 = trends_data.groupby(['Category', 'Sub-Category'])['Sentiment'].agg(['mean', 'count']).sort_values('count', ascending=False)
-                    pivot2.columns = ['Average Sentiment', 'Count']
-                    pivot2_reset = pivot2.reset_index()
-                    pivot2_reset['Category-Subcategory'] = pivot2_reset['Category'] + ' - ' + pivot2_reset['Sub-Category']
-                    with subcategory_df_placeholder:
-                        st.subheader("📊 Sub-Category vs Sentiment and Quantity")
-                        st.dataframe(pivot2, use_container_width=True)
-                    with subcategory_chart_placeholder:
-                        st.subheader("Sub-Category Quantity")
-                        # Streamlit's bar chart doesn't directly support multi-index, so we use the reset dataframe
-                        st.bar_chart(pivot2_reset.set_index('Category-Subcategory')['Count'])
+                    # --- New: Average Sentiment per Category DataFrame ---
+                    with category_sentiment_df_placeholder:
+                        st.subheader("📊 Average Sentiment per Category")
+                        avg_sentiment_category = trends_data.groupby('Category')['Sentiment'].mean().sort_values(ascending=False)
+                        st.dataframe(avg_sentiment_category)
 
-                    # Debug: Verify Subcategory Counts
-                    with debug_placeholder:
-                        st.subheader("🔍 Subcategory Count Verification")
-                        subcat_counts = trends_data.groupby(['Category', 'Sub-Category']).size().reset_index(name='Total Count')
-                        pivot2_reset_simple = pivot2.reset_index()[['Category', 'Sub-Category', 'Count']]
-                        comparison = pd.merge(subcat_counts, pivot2_reset_simple, 
-                                            on=['Category', 'Sub-Category'], 
-                                            how='left',
-                                            suffixes=('_data', '_pivot'))
-                        comparison['Match'] = comparison['Total Count'] == comparison['Count']
-                        st.write("Count Comparison (Total Count from trends_data vs. Count from pivot2):")
-                        st.dataframe(comparison)
+                    # --- New: Average Sentiment per Sub-Category DataFrame ---
+                    with subcategory_sentiment_df_placeholder:
+                        st.subheader("📊 Average Sentiment per Sub-Category")
+                        avg_sentiment_subcategory = trends_data.groupby(['Category', 'Sub-Category'])['Sentiment'].mean().sort_values(ascending=False)
+                        st.dataframe(avg_sentiment_subcategory)
 
-                    # Top 10 Recent Comments by Sub-Category
+                    # Top 10 Recent Comments by Sub-Category with Enhanced Columns
                     with top_comments_placeholder:
                         st.subheader("📝 Top 10 Recent Comments by Sub-Category")
-                        if not pivot2.empty:
-                            top_subcats = pivot2.head(10).index.get_level_values('Sub-Category')
+                        pivot_subcat_counts = trends_data.groupby(['Category', 'Sub-Category']).size().sort_values(ascending=False)
+                        if not pivot_subcat_counts.empty:
+                            top_subcats = pivot_subcat_counts.head(10).index.get_level_values('Sub-Category')
                             for subcat in top_subcats:
                                 with st.expander(f"Comments for {subcat}"):
                                     st.markdown(f"### {subcat}")
                                     filtered = trends_data[trends_data['Sub-Category'] == subcat].nlargest(10, 'Parsed Date')
-                                    st.table(filtered[['Parsed Date', comment_column, 'summarized_comments', 'Sentiment']])
+                                    st.table(filtered[['Category', 'Parsed Date', comment_column, 'summarized_comments', 'Sentiment']])
                                     st.markdown("---")
                         else:
                             st.write("No sub-category data available.")
+
+                    # --- New: Emerging Issues Widgets (if enabled) ---
+                    if emerging_issue_mode:
+                        with emerging_issues_placeholder:
+                            st.subheader("🔍 Emerging Issues")
+                            emerging_issues = trends_data[trends_data['Category'] == 'emerging issues']
+                            if not emerging_issues.empty:
+                                cluster_names = emerging_issues['Sub-Category'].unique()
+                                selected_cluster = st.selectbox("Select an Emerging Issue Cluster", cluster_names)
+                                cluster_data = emerging_issues[emerging_issues['Sub-Category'] == selected_cluster]
+                                st.write(f"Comments in cluster '{selected_cluster}':")
+                                st.table(cluster_data[['Parsed Date', comment_column, 'summarized_comments', 'Sentiment']])
+                            else:
+                                st.write("No emerging issues detected.")
 
             # After processing, provide Excel download
             if trends_data_list:
@@ -442,21 +448,21 @@ def main():
                 excel_file = BytesIO()
                 with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
                     trends_data.to_excel(writer, sheet_name='Feedback Trends', index=False)
-                    if 'pivot' in locals() and not pivot.empty:
-                        pivot.to_excel(writer, sheet_name=f'Trends by {grouping_option}')
-                    pivot1.to_excel(writer, sheet_name='Categories')
-                    pivot2.to_excel(writer, sheet_name='Subcategories')
-                    comments_sheet = writer.book.add_worksheet('Example Comments')
-                    start_row = 0
-                    for subcat in top_subcats:
-                        filtered = trends_data[trends_data['Sub-Category'] == subcat].nlargest(10, 'Parsed Date')
-                        comments_sheet.merge_range(start_row, 0, start_row, 1, subcat)
-                        comments_sheet.write(start_row + 1, 0, 'Date')
-                        comments_sheet.write(start_row + 1, 1, comment_column)
-                        for i, (_, row) in enumerate(filtered.iterrows(), start=start_row + 2):
-                            comments_sheet.write(i, 0, row['Parsed Date'].strftime('%Y-%m-%d') if pd.notna(row['Parsed Date']) else '')
-                            comments_sheet.write_string(i, 1, str(row[comment_column]))
-                        start_row += 12
+                    if 'pivot_trends' in locals():
+                        pivot_trends.to_excel(writer, sheet_name=f'Trends by {grouping_option}')
+                    # Add example comments for top subcategories
+                    if not pivot_subcat_counts.empty:
+                        comments_sheet = writer.book.add_worksheet('Example Comments')
+                        start_row = 0
+                        for subcat in top_subcats:
+                            filtered = trends_data[trends_data['Sub-Category'] == subcat].nlargest(10, 'Parsed Date')
+                            comments_sheet.merge_range(start_row, 0, start_row, 1, subcat)
+                            comments_sheet.write(start_row + 1, 0, 'Date')
+                            comments_sheet.write(start_row + 1, 1, comment_column)
+                            for i, (_, row) in enumerate(filtered.iterrows(), start=start_row + 2):
+                                comments_sheet.write(i, 0, row['Parsed Date'].strftime('%Y-%m-%d') if pd.notna(row['Parsed Date']) else '')
+                                comments_sheet.write_string(i, 1, str(row[comment_column]))
+                            start_row += 12
                 excel_file.seek(0)
                 with download_placeholder:
                     st.download_button("Download Excel", data=excel_file, file_name="feedback_trends.xlsx", 
