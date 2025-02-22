@@ -334,14 +334,14 @@ def process_feedback_data_chunk(
 ###################################################################
 def cluster_emerging_issues_hdbscan(trends_data, min_cluster_size=5):
     """
-    Refined HDBSCAN pass for leftover "No Match" data in feedback categorization.
+    Refined HDBSCAN pass for "No Match" comments using best practices.
 
-    - We set cluster_selection_method='leaf' to allow smaller subclusters.
-    - We set cluster_selection_epsilon=0.05 to help separate borderline clusters.
-    - We set min_samples=5 to ensure stable membership within clusters.
-    - We do normalized embeddings for consistent distance measures.
+    - Uses 'cosine' metric for normalized embeddings.
+    - Sets parameters for stable, meaningful clusters.
+    - Generates concise labels via summarization.
+    - Handles noise points explicitly.
 
-    Adjust these parameters if you get too many/few clusters or too much noise.
+    Adjust parameters based on clustering results.
     """
     import hdbscan
     no_match_mask = (trends_data['Category'] == 'No Match')
@@ -353,11 +353,7 @@ def cluster_emerging_issues_hdbscan(trends_data, min_cluster_size=5):
     emb_model = SentenceTransformer('all-mpnet-base-v2', device='cpu')
 
     df_no_match = trends_data.loc[no_match_mask].copy()
-    if 'Summarized Text' in df_no_match.columns:
-        text_col = 'Summarized Text'
-    else:
-        text_col = 'preprocessed_comments'
-
+    text_col = 'Summarized Text' if 'Summarized Text' in df_no_match.columns else 'preprocessed_comments'
     no_match_texts = df_no_match[text_col].fillna('').tolist()
 
     # Normalize embeddings for consistent distance measures
@@ -367,14 +363,14 @@ def cluster_emerging_issues_hdbscan(trends_data, min_cluster_size=5):
         normalize_embeddings=True
     )
 
-    # HDBSCAN with refined parameters
+    # HDBSCAN with best practice parameters
     clusterer = hdbscan.HDBSCAN(
-        min_cluster_size=min_cluster_size,       # cluster must have at least 5 items
-        min_samples=5,                           # ensures stable membership
-        metric='euclidean',                      # effectively 'cosine' if normalized
-        cluster_selection_method='leaf',         # produce smaller leaf clusters
-        cluster_selection_epsilon=0.05,          # help separate borderline clusters
-        allow_single_cluster=False               # disallow merging everything into 1
+        min_cluster_size=min_cluster_size,       # Start with 5
+        min_samples=5,                           # Ensures stable membership
+        metric='cosine',                         # Suitable for normalized embeddings
+        cluster_selection_method='eom',          # Excess of Mass for significant clusters
+        cluster_selection_epsilon=0.05,          # Helps separate borderline clusters
+        allow_single_cluster=False               # Disallow single large cluster
     )
     clusters = clusterer.fit_predict(no_match_embs)
 
@@ -387,24 +383,23 @@ def cluster_emerging_issues_hdbscan(trends_data, min_cluster_size=5):
     cluster_labels = {}
     for c_id, idx_list in cluster_map.items():
         if c_id == -1:
-            continue  # noise
+            continue  # Noise points
         cluster_vectors = np.array([no_match_embs[i] for i in idx_list])
         centroid = cluster_vectors.mean(axis=0)
         dists = cosine_similarity([centroid], cluster_vectors)[0]
         best_local_idx = np.argmax(dists)
         best_global_idx = idx_list[best_local_idx]
         best_comment = no_match_texts[best_global_idx]
-        # Summarize with smaller max_length for a shorter label
+        # Summarize with a shorter max_length for concise labels
         cluster_summary = summarize_text(
             best_comment,
             tokenizer_sum, model_sum, device_sum,
-            max_length=40,  # keep it short
+            max_length=40,  # Shorter labels
             min_length=10
         )
-        # Optionally truncate to ~80 chars if still too long
+        # Truncate if still too long
         if len(cluster_summary) > 80:
             cluster_summary = cluster_summary[:80].rstrip() + '...'
-
         cluster_labels[c_id] = cluster_summary
 
     for local_idx, c_id in enumerate(clusters):
