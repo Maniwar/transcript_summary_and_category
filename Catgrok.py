@@ -1,43 +1,3 @@
-2025-02-21 19:48:24.590267: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
-WARNING:tensorflow:From C:\Python311\Lib\site-packages\keras\src\losses.py:2976: The name tf.losses.sparse_softmax_cross_entropy is deprecated. Please use tf.compat.v1.losses.sparse_softmax_cross_entropy instead.
-
-WARNING:tensorflow:From C:\Python311\Lib\site-packages\keras\src\backend.py:277: The name tf.reset_default_graph is deprecated. Please use tf.compat.v1.reset_default_graph instead.
-
-C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py:356: FutureWarning: Styler.applymap has been deprecated. Use Styler.map instead.
-  styled_trends_data = trends_data.style.applymap(color_sentiment, subset=['Sentiment'])
-C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py:356: FutureWarning: Styler.applymap has been deprecated. Use Styler.map instead.
-  styled_trends_data = trends_data.style.applymap(color_sentiment, subset=['Sentiment'])
-C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py:356: FutureWarning: Styler.applymap has been deprecated. Use Styler.map instead.
-  styled_trends_data = trends_data.style.applymap(color_sentiment, subset=['Sentiment'])
-2025-02-21 19:49:08.685 Uncaught app exception
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 584, in _run_script
-    exec(code, module.__dict__)
-  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 477, in <module>
-    main()
-  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 435, in main
-    selected_cluster = st.selectbox(
-                       ^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\metrics_util.py", line 397, in wrapped_func
-    result = non_optional_func(*args, **kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 198, in selectbox
-    return self._selectbox(
-           ^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 281, in _selectbox
-    widget_state = register_widget(
-                   ^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\state\widgets.py", line 164, in register_widget
-    return register_widget_from_metadata(metadata, ctx, widget_func_name, element_type)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\state\widgets.py", line 197, in register_widget_from_metadata
-    raise DuplicateWidgetID(
-streamlit.errors.DuplicateWidgetID: There are multiple widgets with the same `key='emerging_issue_cluster_select_unique'`.
-
-To fix this, please make sure that the `key` argument is unique for each
-widget you create.
-
-
 import os
 import time
 import math
@@ -65,6 +25,18 @@ import string
 import unicodedata
 from datetime import datetime
 from collections import defaultdict
+import warnings
+import tensorflow as tf
+import plotly.express as px
+import plotly.graph_objects as go
+
+# Ignore TensorFlow deprecation warnings
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+tf.get_logger().setLevel('ERROR')
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+# Note: Monitor updates for transformers and sentence_transformers libraries
+# to address deprecation warnings in future versions.
 
 # Environment setup
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
@@ -114,6 +86,7 @@ def get_summarizer():
 
 # --- Utility Functions ---
 def preprocess_text(text):
+    """Preprocess text by removing special characters and normalizing whitespace."""
     if pd.isna(text):
         return ""
     text = str(text).encode('ascii', 'ignore').decode('ascii')
@@ -123,6 +96,7 @@ def preprocess_text(text):
     return re.sub(r'\s+', ' ', text).strip()
 
 def perform_sentiment_analysis(text, sentiment_model=None, use_nltk=True):
+    """Perform sentiment analysis using NLTK or a transformer model."""
     if not isinstance(text, str):
         return 0.0
     if use_nltk:
@@ -136,12 +110,14 @@ def perform_sentiment_analysis(text, sentiment_model=None, use_nltk=True):
             return 0.0
 
 def get_token_count(text, tokenizer):
+    """Count tokens in the text using the provided tokenizer."""
     try:
         return len(tokenizer.encode(text)) - 2
     except Exception:
         return 0
 
 def split_comments_into_chunks(comments, tokenizer, max_tokens=1000):
+    """Split comments into chunks based on token limits."""
     sorted_comments = sorted(comments, key=lambda x: x[1], reverse=True)
     chunks = []
     current_chunk = []
@@ -171,6 +147,7 @@ def split_comments_into_chunks(comments, tokenizer, max_tokens=1000):
     return chunks
 
 def summarize_text_batch(texts, tokenizer, model, device, max_length=75, min_length=30):
+    """Summarize a batch of texts using the provided model and tokenizer."""
     try:
         inputs = tokenizer(texts, truncation=True, padding=True, max_length=1024, return_tensors='pt').to(device)
         summary_ids = model.generate(inputs['input_ids'], max_length=max_length, min_length=min_length, num_beams=4)
@@ -179,7 +156,8 @@ def summarize_text_batch(texts, tokenizer, model, device, max_length=75, min_len
         st.error(f"Error in summarization: {e}")
         return ["Error"] * len(texts)
 
-def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=32, max_length=75, min_length=30, max_tokens=1000, very_short_limit=30):
+def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=64, max_length=75, min_length=30, max_tokens=1000, very_short_limit=30):
+    """Preprocess and summarize comments in the feedback data."""
     if comment_column not in feedback_data.columns:
         st.error(f"Comment column '{comment_column}' not found in CSV.")
         return feedback_data
@@ -191,11 +169,13 @@ def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=
     long = [(c, get_token_count(c, tokenizer)) for c in comments if get_token_count(c, tokenizer) > max_tokens]
     summaries_dict = {c: c for c, _ in very_short}
     short_texts = [c for c, _ in short]
+    summarization_progress = st.progress(0)
     for i in tqdm(range(0, len(short_texts), batch_size), desc="Summarizing short comments"):
         batch = short_texts[i:i + batch_size]
         summaries = summarize_text_batch(batch, tokenizer, model, device, max_length, min_length)
         for orig, summ in zip(batch, summaries):
             summaries_dict[orig] = summ
+        summarization_progress.progress((i + batch_size) / len(short_texts))
     for comment, tokens in tqdm(long, desc="Summarizing long comments"):
         chunks = split_comments_into_chunks([(comment, tokens)], tokenizer, max_tokens)
         chunk_summaries = summarize_text_batch(chunks, tokenizer, model, device, max_length, min_length)
@@ -207,6 +187,7 @@ def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=
     return feedback_data
 
 def compute_keyword_embeddings(categories, model):
+    """Compute embeddings for category keywords."""
     keyword_embeddings = {}
     for category, subcategories in categories.items():
         for subcategory, keywords in subcategories.items():
@@ -217,15 +198,18 @@ def compute_keyword_embeddings(categories, model):
     return keyword_embeddings
 
 def categorize_comments(feedback_data, categories, similarity_threshold, emerging_issue_mode, model):
+    """Categorize comments based on similarity to keywords."""
     keyword_embeddings = compute_keyword_embeddings(categories, model)
     keyword_matrix = np.array(list(keyword_embeddings.values()))
     keyword_mapping = list(keyword_embeddings.keys())
     batch_size = 1024
     comment_embeddings = []
     comments = feedback_data['summarized_comments'].tolist()
+    categorization_progress = st.progress(0)
     for i in range(0, len(comments), batch_size):
         batch = comments[i:i + batch_size]
         comment_embeddings.extend(model.encode(batch, show_progress_bar=False))
+        categorization_progress.progress((i + batch_size) / len(comments))
     comment_matrix = np.array(comment_embeddings)
     similarity_matrix = cosine_similarity(comment_matrix, keyword_matrix)
     max_scores = similarity_matrix.max(axis=1)
@@ -246,6 +230,7 @@ def categorize_comments(feedback_data, categories, similarity_threshold, emergin
     return feedback_data
 
 def summarize_cluster(comments, summarizer):
+    """Summarize a cluster of comments."""
     combined_text = " ".join(comments)
     try:
         summary = summarizer(combined_text, max_length=15, min_length=5, do_sample=False)[0]['summary_text']
@@ -254,6 +239,7 @@ def summarize_cluster(comments, summarizer):
         return "Unnamed Cluster"
 
 def cluster_no_match_comments(feedback_data, summarizer, max_clusters=10):
+    """Cluster uncategorized comments and assign them to emerging issues."""
     no_match_idx = feedback_data['Category'] == 'No Match'
     if no_match_idx.sum() < 2:
         st.warning("Not enough 'No Match' comments to cluster.")
@@ -282,13 +268,14 @@ def cluster_no_match_comments(feedback_data, summarizer, max_clusters=10):
 
 @st.cache_data(persist="disk", hash_funcs={dict: lambda x: str(sorted(x.items()))})
 def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold, emerging_issue_mode, max_clusters=10):
+    """Process feedback data with summarization, categorization, and sentiment analysis."""
     if comment_column not in feedback_data.columns or date_column not in feedback_data.columns:
         st.error(f"Missing required column(s): '{comment_column}' or '{date_column}' not in CSV.")
         return pd.DataFrame()
     model = initialize_bert_model()
     sentiment_model = get_sentiment_model()
     summarizer = get_summarizer()
-    feedback_data = preprocess_comments_and_summarize(feedback_data, comment_column)
+    feedback_data = preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=64)
     feedback_data['Sentiment'] = feedback_data['preprocessed_comments'].apply(lambda x: perform_sentiment_analysis(x, sentiment_model))
     feedback_data = categorize_comments(feedback_data, categories, similarity_threshold, emerging_issue_mode, model)
     if emerging_issue_mode:
@@ -308,11 +295,54 @@ def main():
     # Sidebar configuration
     st.sidebar.header("⚙️ Configuration")
     uploaded_file = st.sidebar.file_uploader("Upload CSV", type="csv", help="Upload a CSV file with feedback data.")
-    similarity_threshold = st.sidebar.slider("Similarity Threshold", 0.0, 1.0, 0.35, help="Threshold for keyword matching.")
-    emerging_issue_mode = st.sidebar.checkbox("Enable Emerging Issue Detection", value=True, help="Cluster uncategorized comments and name them with summaries.")
-    chunk_size = st.sidebar.number_input("Chunk Size", min_value=32, value=32, step=32, help="Number of rows to process per batch.")
-    max_clusters = st.sidebar.number_input("Maximum Clusters for Emerging Issues", min_value=1, max_value=50, value=10, help="Max clusters for uncategorized comments.")
     
+    # Configuration saving and loading
+    st.sidebar.subheader("💾 Save/Load Configuration")
+    config = st.session_state.get('config', {})
+    config_file = st.sidebar.file_uploader("Load Configuration (JSON)", type="json", help="Upload a JSON file with saved settings.")
+    if config_file:
+        try:
+            config = json.load(config_file)
+            st.session_state['config'] = config
+            st.sidebar.success("Configuration loaded successfully.")
+        except Exception as e:
+            st.sidebar.error(f"Error loading configuration: {e}")
+    
+    similarity_threshold = st.sidebar.slider(
+        "Similarity Threshold", 0.0, 1.0, config.get('similarity_threshold', 0.35),
+        help="Threshold for keyword matching."
+    )
+    emerging_issue_mode = st.sidebar.checkbox(
+        "Enable Emerging Issue Detection", value=config.get('emerging_issue_mode', True),
+        help="Cluster uncategorized comments and name them with summaries."
+    )
+    chunk_size = st.sidebar.number_input(
+        "Chunk Size", min_value=32, value=config.get('chunk_size', 32), step=32,
+        help="Number of rows to process per batch."
+    )
+    max_clusters = st.sidebar.number_input(
+        "Maximum Clusters for Emerging Issues", min_value=1, max_value=50, value=config.get('max_clusters', 10),
+        help="Max clusters for uncategorized comments."
+    )
+    
+    # Save configuration
+    current_config = {
+        "similarity_threshold": similarity_threshold,
+        "emerging_issue_mode": emerging_issue_mode,
+        "chunk_size": chunk_size,
+        "max_clusters": max_clusters
+    }
+    st.session_state['config'] = current_config
+    if st.sidebar.button("Save Configuration"):
+        config_json = json.dumps(current_config, indent=4)
+        st.sidebar.download_button(
+            label="Download Configuration",
+            data=config_json,
+            file_name="config.json",
+            mime="application/json",
+            help="Download the current configuration as a JSON file."
+        )
+
     # Category editing in sidebar
     st.sidebar.header("📋 Edit Categories")
     categories = default_categories.copy()  # Avoid modifying the original
@@ -343,21 +373,19 @@ def main():
             st.error(f"Error reading CSV: {e}")
             return
         
-        comment_column = st.selectbox("Select Comment Column", column_names, help="Column containing feedback text.", key="comment_column_select")
-        date_column = st.selectbox("Select Date Column", column_names, help="Column containing date information.", key="date_column_select")
-        grouping_option = st.radio("Group By", ["Date", "Week", "Month", "Quarter", "Hour"], help="Group trends by time period.")
+        comment_column = st.selectbox(
+            "Select Comment Column", column_names,
+            help="Column containing feedback text.", key="comment_column_select"
+        )
+        date_column = st.selectbox(
+            "Select Date Column", column_names,
+            help="Column containing date information.", key="date_column_select"
+        )
+        grouping_option = st.radio(
+            "Group By", ["Date", "Week", "Month", "Quarter", "Hour"],
+            help="Group trends by time period."
+        )
         
-        # Initialize placeholders for UI components
-        processed_data_placeholder = st.empty()
-        trends_chart_placeholder = st.empty()
-        sentiment_dist_placeholder = st.empty()
-        keyword_freq_placeholder = st.empty()
-        category_sentiment_df_placeholder = st.empty()
-        subcategory_sentiment_df_placeholder = st.empty()
-        top_comments_placeholder = st.empty()
-        emerging_issues_placeholder = st.empty()
-        download_placeholder = st.empty()
-
         if st.button("Process Feedback", help="Start processing the uploaded feedback data."):
             chunk_iter = pd.read_csv(BytesIO(csv_data), encoding=encoding, chunksize=chunk_size)
             progress_bar = st.progress(0)
@@ -367,149 +395,177 @@ def main():
             
             for i, chunk in enumerate(chunk_iter):
                 status_text.text(f"Processing chunk {i+1}/{total_chunks}...")
-                processed_chunk = process_feedback_data(chunk, comment_column, date_column, categories, 
-                                                       similarity_threshold, emerging_issue_mode, max_clusters)
+                processed_chunk = process_feedback_data(
+                    chunk, comment_column, date_column, categories,
+                    similarity_threshold, emerging_issue_mode, max_clusters
+                )
                 if not processed_chunk.empty:
                     trends_data_list.append(processed_chunk)
                 progress_bar.progress((i + 1) / total_chunks)
                 eta = ((time.time() - start_time) / (i + 1)) * (total_chunks - (i + 1)) if i + 1 < total_chunks else 0
                 status_text.text(f"Chunk {i+1}/{total_chunks} done. ETA: {int(eta)}s")
-                
-                # Concatenate cumulative data for real-time updates
-                if trends_data_list:
-                    trends_data = pd.concat(trends_data_list, ignore_index=True)
-                    
-                    # Remove duplicates to prevent inflated counts
-                    trends_data = trends_data.drop_duplicates(subset=['preprocessed_comments', 'Parsed Date'])
-                    
-                    # Normalize category and subcategory names
-                    trends_data['Category'] = trends_data['Category'].str.strip().str.lower()
-                    trends_data['Sub-Category'] = trends_data['Sub-Category'].str.strip().str.lower()
-                    
-                    # Ensure no NaN values in critical columns
-                    trends_data = trends_data.dropna(subset=['Category', 'Sub-Category', 'Sentiment'])
-                    
-                    # Processed Feedback Data with Sentiment Colors
-                    def color_sentiment(val):
-                        color = 'green' if val > 0 else 'red' if val < 0 else 'gray'
-                        return f'color: {color}'
-                    styled_trends_data = trends_data.style.applymap(color_sentiment, subset=['Sentiment'])
-                    with processed_data_placeholder:
-                        st.subheader("📋 Processed Feedback Data")
-                        st.dataframe(styled_trends_data, use_container_width=True)
-                    
-                    # Trends Chart - Using Streamlit's line chart
-                    freq_map = {'Date': 'D', 'Week': 'W', 'Month': 'M', 'Quarter': 'Q', 'Hour': 'H'}
-                    if grouping_option != 'Hour':
-                        trends_data_valid = trends_data.dropna(subset=['Parsed Date'])
-                        if not trends_data_valid.empty:
-                            trends_data_valid['Grouped Date'] = trends_data_valid['Parsed Date'].dt.to_period(freq_map[grouping_option]).dt.to_timestamp()
-                            pivot_trends = trends_data_valid.groupby(['Grouped Date', 'Sub-Category']).size().unstack(fill_value=0)
-                            top_subcats = pivot_trends.sum().nlargest(5).index
-                            pivot_trends_top = pivot_trends[top_subcats]
-                            with trends_chart_placeholder:
-                                st.subheader("📈 Top 5 Sub-Category Trends Over Time")
-                                st.line_chart(pivot_trends_top)
-                        else:
-                            with trends_chart_placeholder:
-                                st.subheader("📈 Top 5 Sub-Category Trends Over Time")
-                                st.warning("No data available for trends chart.")
-                    else:
-                        pivot_trends = trends_data.groupby(['Hour', 'Sub-Category']).size().unstack(fill_value=0)
-                        top_subcats = pivot_trends.sum().nlargest(5).index
-                        pivot_trends_top = pivot_trends[top_subcats]
-                        with trends_chart_placeholder:
-                            st.subheader("📈 Top 5 Sub-Category Trends by Hour")
-                            st.line_chart(pivot_trends_top)
 
-                    # --- Sentiment Distribution Plot ---
-                    with sentiment_dist_placeholder:
-                        st.subheader("📊 Sentiment Distribution")
-                        sentiment_bins = pd.cut(trends_data['Sentiment'], bins=[-1, -0.5, 0.5, 1], labels=['Negative', 'Neutral', 'Positive'])
-                        sentiment_dist = sentiment_bins.value_counts().sort_index()
-                        st.bar_chart(sentiment_dist)
-                    
-                    # --- Keyword Frequency Plot ---
-                    with keyword_freq_placeholder:
-                        st.subheader("🔑 Top 10 Keywords by Frequency")
-                        keyword_counts = trends_data['Keyphrase'].value_counts().head(10)
-                        if not keyword_counts.empty:
-                            st.bar_chart(keyword_counts)
-                        else:
-                            st.warning("No keyword data available.")
-
-                    # --- Average Sentiment per Category DataFrame ---
-                    with category_sentiment_df_placeholder:
-                        st.subheader("📊 Average Sentiment per Category")
-                        avg_sentiment_category = trends_data.groupby('Category')['Sentiment'].mean().sort_values(ascending=False)
-                        st.dataframe(avg_sentiment_category)
-
-                    # --- Average Sentiment per Sub-Category DataFrame ---
-                    with subcategory_sentiment_df_placeholder:
-                        st.subheader("📊 Average Sentiment per Sub-Category")
-                        avg_sentiment_subcategory = trends_data.groupby(['Category', 'Sub-Category'])['Sentiment'].mean().sort_values(ascending=False)
-                        st.dataframe(avg_sentiment_subcategory)
-
-                    # Top 10 Recent Comments by Sub-Category with Enhanced Columns
-                    with top_comments_placeholder:
-                        st.subheader("📝 Top 10 Recent Comments by Sub-Category")
-                        pivot_subcat_counts = trends_data.groupby(['Category', 'Sub-Category']).size().sort_values(ascending=False)
-                        if not pivot_subcat_counts.empty:
-                            top_subcats = pivot_subcat_counts.head(10).index.get_level_values('Sub-Category')
-                            for subcat in top_subcats:
-                                with st.expander(f"Comments for {subcat}"):
-                                    st.markdown(f"### {subcat}")
-                                    filtered = trends_data[trends_data['Sub-Category'] == subcat].nlargest(10, 'Parsed Date')
-                                    st.table(filtered[['Category', 'Parsed Date', comment_column, 'summarized_comments', 'Sentiment']])
-                                    st.markdown("---")
-                        else:
-                            st.write("No sub-category data available.")
-
-                    # --- Emerging Issues Widgets (if enabled) ---
-                    if emerging_issue_mode:
-                        with emerging_issues_placeholder:
-                            st.subheader("🔍 Emerging Issues")
-                            emerging_issues = trends_data[trends_data['Category'] == 'emerging issues']
-                            if not emerging_issues.empty:
-                                cluster_names = emerging_issues['Sub-Category'].unique()
-                                selected_cluster = st.selectbox(
-                                    "Select an Emerging Issue Cluster",
-                                    cluster_names,
-                                    key="emerging_issue_cluster_select_unique"  # Unique key
-                                )
-                                cluster_data = emerging_issues[emerging_issues['Sub-Category'] == selected_cluster]
-                                st.write(f"Comments in cluster '{selected_cluster}':")
-                                st.table(cluster_data[['Parsed Date', comment_column, 'summarized_comments', 'Sentiment']])
-                            else:
-                                st.write("No emerging issues detected.")
-
-            # After processing, provide Excel download
             if trends_data_list:
                 trends_data = pd.concat(trends_data_list, ignore_index=True)
                 trends_data = trends_data.drop_duplicates(subset=['preprocessed_comments', 'Parsed Date'])
+                trends_data['Category'] = trends_data['Category'].str.strip().str.lower()
+                trends_data['Sub-Category'] = trends_data['Sub-Category'].str.strip().str.lower()
                 trends_data = trends_data.dropna(subset=['Category', 'Sub-Category', 'Sentiment'])
-                excel_file = BytesIO()
-                with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
-                    trends_data.to_excel(writer, sheet_name='Feedback Trends', index=False)
-                    if 'pivot_trends' in locals():
-                        pivot_trends.to_excel(writer, sheet_name=f'Trends by {grouping_option}')
-                    if not pivot_subcat_counts.empty:
-                        comments_sheet = writer.book.add_worksheet('Example Comments')
-                        start_row = 0
-                        for subcat in top_subcats:
+                
+                # Processed Feedback Data with Sentiment Colors
+                def color_sentiment(val):
+                    color = 'green' if val > 0 else 'red' if val < 0 else 'gray'
+                    return f'color: {color}'
+                styled_trends_data = trends_data.style.map(color_sentiment, subset=['Sentiment'])
+                st.subheader("📋 Processed Feedback Data")
+                st.dataframe(styled_trends_data, use_container_width=True)
+                
+                # Trends Chart - Interactive Plotly Chart
+                freq_map = {'Date': 'D', 'Week': 'W', 'Month': 'M', 'Quarter': 'Q', 'Hour': 'H'}
+                st.subheader("📈 Top 5 Sub-Category Trends Over Time")
+                if grouping_option != 'Hour':
+                    trends_data_valid = trends_data.dropna(subset=['Parsed Date'])
+                    if not trends_data_valid.empty:
+                        trends_data_valid['Grouped Date'] = trends_data_valid['Parsed Date'].dt.to_period(freq_map[grouping_option]).dt.to_timestamp()
+                        pivot_trends = trends_data_valid.groupby(['Grouped Date', 'Sub-Category']).size().unstack(fill_value=0)
+                        top_subcats = pivot_trends.sum().nlargest(5).index
+                        pivot_trends_top = pivot_trends[top_subcats].reset_index()
+                        fig = px.line(
+                            pivot_trends_top, x='Grouped Date', y=top_subcats,
+                            title="Top 5 Sub-Category Trends Over Time",
+                            labels={"value": "Count", "Grouped Date": "Date"}
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        st.warning("No data available for trends chart.")
+                else:
+                    pivot_trends = trends_data.groupby(['Hour', 'Sub-Category']).size().unstack(fill_value=0)
+                    top_subcats = pivot_trends.sum().nlargest(5).index
+                    pivot_trends_top = pivot_trends[top_subcats].reset_index()
+                    fig = px.line(
+                        pivot_trends_top, x='Hour', y=top_subcats,
+                        title="Top 5 Sub-Category Trends by Hour",
+                        labels={"value": "Count", "Hour": "Hour of Day"}
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+
+                # Sentiment Distribution - Interactive Plotly Chart
+                st.subheader("📊 Sentiment Distribution")
+                sentiment_bins = pd.cut(
+                    trends_data['Sentiment'], bins=[-1, -0.5, 0.5, 1],
+                    labels=['Negative', 'Neutral', 'Positive']
+                )
+                sentiment_dist = sentiment_bins.value_counts().sort_index().reset_index()
+                sentiment_dist.columns = ['Sentiment', 'Count']
+                fig = px.bar(
+                    sentiment_dist, x='Sentiment', y='Count',
+                    title="Sentiment Distribution",
+                    color='Sentiment',
+                    color_discrete_map={'Negative': 'red', 'Neutral': 'gray', 'Positive': 'green'}
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+                # Keyword Frequency - Interactive Plotly Chart
+                st.subheader("🔑 Top 10 Keywords by Frequency")
+                keyword_counts = trends_data['Keyphrase'].value_counts().head(10).reset_index()
+                keyword_counts.columns = ['Keyword', 'Count']
+                if not keyword_counts.empty:
+                    fig = px.bar(
+                        keyword_counts, x='Keyword', y='Count',
+                        title="Top 10 Keywords by Frequency",
+                        color='Count'
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.warning("No keyword data available.")
+
+                # Average Sentiment per Category
+                st.subheader("📊 Average Sentiment per Category")
+                avg_sentiment_category = trends_data.groupby('Category')['Sentiment'].mean().sort_values(ascending=False)
+                st.dataframe(avg_sentiment_category)
+
+                # Average Sentiment per Sub-Category
+                st.subheader("📊 Average Sentiment per Sub-Category")
+                avg_sentiment_subcategory = trends_data.groupby(['Category', 'Sub-Category'])['Sentiment'].mean().sort_values(ascending=False)
+                st.dataframe(avg_sentiment_subcategory)
+
+                # Top 10 Recent Comments by Sub-Category
+                st.subheader("📝 Top 10 Recent Comments by Sub-Category")
+                pivot_subcat_counts = trends_data.groupby(['Category', 'Sub-Category']).size().sort_values(ascending=False)
+                if not pivot_subcat_counts.empty:
+                    top_subcats = pivot_subcat_counts.head(10).index.get_level_values('Sub-Category')
+                    for subcat in top_subcats:
+                        with st.expander(f"Comments for {subcat}"):
+                            st.markdown(f"### {subcat}")
                             filtered = trends_data[trends_data['Sub-Category'] == subcat].nlargest(10, 'Parsed Date')
-                            comments_sheet.merge_range(start_row, 0, start_row, 1, subcat)
-                            comments_sheet.write(start_row + 1, 0, 'Date')
-                            comments_sheet.write(start_row + 1, 1, comment_column)
-                            for i, (_, row) in enumerate(filtered.iterrows(), start=start_row + 2):
-                                comments_sheet.write(i, 0, row['Parsed Date'].strftime('%Y-%m-%d') if pd.notna(row['Parsed Date']) else '')
-                                comments_sheet.write_string(i, 1, str(row[comment_column]))
-                            start_row += 12
-                excel_file.seek(0)
-                with download_placeholder:
-                    st.download_button("Download Excel", data=excel_file, file_name="feedback_trends.xlsx", 
-                                      mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                      help="Download the processed data as an Excel file.")
+                            st.table(filtered[['Category', 'Parsed Date', comment_column, 'summarized_comments', 'Sentiment']])
+                            st.markdown("---")
+                else:
+                    st.write("No sub-category data available.")
+
+                # Emerging Issues
+                if emerging_issue_mode:
+                    st.subheader("🔍 Emerging Issues")
+                    emerging_issues = trends_data[trends_data['Category'] == 'emerging issues']
+                    if not emerging_issues.empty:
+                        cluster_names = emerging_issues['Sub-Category'].unique()
+                        selected_cluster = st.selectbox(
+                            "Select an Emerging Issue Cluster",
+                            cluster_names,
+                            key="emerging_issue_cluster_select_main",
+                            help="Select a cluster to view its comments."
+                        )
+                        cluster_data = emerging_issues[emerging_issues['Sub-Category'] == selected_cluster]
+                        st.write(f"Comments in cluster '{selected_cluster}':")
+                        st.table(cluster_data[['Parsed Date', comment_column, 'summarized_comments', 'Sentiment']])
+                    else:
+                        st.write("No emerging issues detected.")
+
+                # Export Options
+                st.subheader("💾 Export Data")
+                export_format = st.selectbox(
+                    "Select Export Format", ["Excel", "CSV", "JSON"],
+                    help="Choose the format for exporting the processed data."
+                )
+                
+                if export_format == "Excel":
+                    excel_file = BytesIO()
+                    with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
+                        trends_data.to_excel(writer, sheet_name='Feedback Trends', index=False)
+                        if 'pivot_trends' in locals():
+                            pivot_trends.to_excel(writer, sheet_name=f'Trends by {grouping_option}')
+                        if not pivot_subcat_counts.empty:
+                            comments_sheet = writer.book.add_worksheet('Example Comments')
+                            start_row = 0
+                            for subcat in top_subcats:
+                                filtered = trends_data[trends_data['Sub-Category'] == subcat].nlargest(10, 'Parsed Date')
+                                comments_sheet.merge_range(start_row, 0, start_row, 1, subcat)
+                                comments_sheet.write(start_row + 1, 0, 'Date')
+                                comments_sheet.write(start_row + 1, 1, comment_column)
+                                for i, (_, row) in enumerate(filtered.iterrows(), start=start_row + 2):
+                                    comments_sheet.write(i, 0, row['Parsed Date'].strftime('%Y-%m-%d') if pd.notna(row['Parsed Date']) else '')
+                                    comments_sheet.write_string(i, 1, str(row[comment_column]))
+                                start_row += 12
+                    excel_file.seek(0)
+                    st.download_button(
+                        "Download Excel", data=excel_file, file_name="feedback_trends.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        help="Download the processed data as an Excel file."
+                    )
+                elif export_format == "CSV":
+                    csv_data = trends_data.to_csv(index=False)
+                    st.download_button(
+                        "Download CSV", data=csv_data, file_name="feedback_trends.csv",
+                        mime="text/csv",
+                        help="Download the processed data as a CSV file."
+                    )
+                elif export_format == "JSON":
+                    json_data = trends_data.to_json(orient='records', date_format='iso')
+                    st.download_button(
+                        "Download JSON", data=json_data, file_name="feedback_trends.json",
+                        mime="application/json",
+                        help="Download the processed data as a JSON file."
+                    )
             else:
                 st.error("No valid data processed for export.")
 
