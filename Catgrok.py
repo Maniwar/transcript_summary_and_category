@@ -23,7 +23,6 @@ from tqdm import tqdm
 import re
 import string
 import unicodedata
-import plotly.express as px
 from datetime import datetime
 from collections import defaultdict
 
@@ -315,7 +314,7 @@ def main():
         category_chart_placeholder = st.empty()
         subcategory_df_placeholder = st.empty()
         subcategory_chart_placeholder = st.empty()
-        debug_placeholder = st.empty()  # New placeholder for debugging counts
+        debug_placeholder = st.empty()
         top_comments_placeholder = st.empty()
         download_placeholder = st.empty()
 
@@ -359,59 +358,43 @@ def main():
                         st.subheader("📋 Processed Feedback Data")
                         st.dataframe(styled_trends_data, use_container_width=True)
                     
-                    # All Categories Trends
-                    freq_map = {'Date': 'D', 'Week': 'W-SUN', 'Month': 'M', 'Quarter': 'Q', 'Hour': 'H'}
+                    # All Categories Trends - Using Streamlit's line chart
+                    freq_map = {'Date': 'D', 'Week': 'W', 'Month': 'M', 'Quarter': 'Q', 'Hour': 'H'}
                     if grouping_option != 'Hour':
                         trends_data_valid = trends_data.dropna(subset=['Parsed Date'])
                         if not trends_data_valid.empty:
-                            pivot = trends_data_valid.pivot_table(
-                                index=['Category', 'Sub-Category'],
-                                columns=pd.Grouper(key='Parsed Date', freq=freq_map[grouping_option]),
-                                values='Sentiment',
-                                aggfunc='count',
-                                fill_value=0
-                            ).reset_index()
+                            # Group by the selected frequency and subcategory
+                            trends_data_valid['Grouped Date'] = trends_data_valid['Parsed Date'].dt.to_period(freq_map[grouping_option]).dt.to_timestamp()
+                            pivot_trends = trends_data_valid.groupby(['Grouped Date', 'Sub-Category']).size().unstack(fill_value=0)
+                            # Select top 5 subcategories by total count
+                            top_subcats = pivot_trends.sum().nlargest(5).index
+                            pivot_trends_top = pivot_trends[top_subcats]
+                            with trends_chart_placeholder:
+                                st.subheader("📈 All Categories Trends")
+                                st.line_chart(pivot_trends_top)
                         else:
-                            pivot = pd.DataFrame()
+                            with trends_chart_placeholder:
+                                st.subheader("📈 All Categories Trends")
+                                st.warning("No data available for trends chart.")
                     else:
-                        pivot = trends_data.pivot_table(
-                            index=['Category', 'Sub-Category'],
-                            columns='Hour',
-                            values='Sentiment',
-                            aggfunc='count',
-                            fill_value=0
-                        ).reset_index()
-
-                    if not pivot.empty:
-                        melted = pd.melt(pivot, id_vars=['Category', 'Sub-Category'], var_name='Date' if grouping_option != 'Hour' else 'Hour', value_name='Sentiment Count')
-                        numeric_cols = pivot.select_dtypes(include=[np.number]).columns
-                        top_subcats = pivot.groupby('Sub-Category')[numeric_cols].sum().sum(axis=1).nlargest(5).index
-                        melted_top = melted[melted['Sub-Category'].isin(top_subcats)]
-                        fig_trends = px.line(melted_top, x='Date' if grouping_option != 'Hour' else 'Hour', y='Sentiment Count', color='Sub-Category', title="Top 5 Sub-Category Trends")
+                        pivot_trends = trends_data.groupby(['Hour', 'Sub-Category']).size().unstack(fill_value=0)
+                        top_subcats = pivot_trends.sum().nlargest(5).index
+                        pivot_trends_top = pivot_trends[top_subcats]
                         with trends_chart_placeholder:
                             st.subheader("📈 All Categories Trends")
-                            st.plotly_chart(fig_trends, use_container_width=True)
-                    else:
-                        with trends_chart_placeholder:
-                            st.subheader("📈 All Categories Trends")
-                            st.warning("No data available for trends chart.")
+                            st.line_chart(pivot_trends_top)
 
-                    # Category vs Sentiment and Quantity
+                    # Category vs Sentiment and Quantity - Using Streamlit's bar chart
                     pivot1 = trends_data.groupby('Category')['Sentiment'].agg(['mean', 'count']).sort_values('count', ascending=False)
                     pivot1.columns = ['Average Sentiment', 'Count']
                     with category_df_placeholder:
                         st.subheader("📊 Category vs Sentiment and Quantity")
                         st.dataframe(pivot1, use_container_width=True)
-                    fig_cat = px.bar(pivot1.sort_values('Count', ascending=False), 
-                                     x=pivot1.index, 
-                                     y='Count', 
-                                     title="Category Quantity",
-                                     hover_data=['Average Sentiment'])
-                    fig_cat.update_layout(xaxis_tickangle=-45)
                     with category_chart_placeholder:
-                        st.plotly_chart(fig_cat, use_container_width=True)
+                        st.subheader("Category Quantity")
+                        st.bar_chart(pivot1['Count'])
 
-                    # Sub-Category vs Sentiment and Quantity
+                    # Sub-Category vs Sentiment and Quantity - Using Streamlit's bar chart
                     pivot2 = trends_data.groupby(['Category', 'Sub-Category'])['Sentiment'].agg(['mean', 'count']).sort_values('count', ascending=False)
                     pivot2.columns = ['Average Sentiment', 'Count']
                     pivot2_reset = pivot2.reset_index()
@@ -419,15 +402,10 @@ def main():
                     with subcategory_df_placeholder:
                         st.subheader("📊 Sub-Category vs Sentiment and Quantity")
                         st.dataframe(pivot2, use_container_width=True)
-                    fig_subcat = px.bar(pivot2_reset.sort_values('Count', ascending=False), 
-                                        x='Category-Subcategory', 
-                                        y='Count', 
-                                        color='Category', 
-                                        title="Sub-Category Quantity",
-                                        hover_data=['Average Sentiment'])
-                    fig_subcat.update_layout(xaxis_tickangle=-45, barmode='group')
                     with subcategory_chart_placeholder:
-                        st.plotly_chart(fig_subcat, use_container_width=True)
+                        st.subheader("Sub-Category Quantity")
+                        # Streamlit's bar chart doesn't directly support multi-index, so we use the reset dataframe
+                        st.bar_chart(pivot2_reset.set_index('Category-Subcategory')['Count'])
 
                     # Debug: Verify Subcategory Counts
                     with debug_placeholder:
@@ -464,7 +442,7 @@ def main():
                 excel_file = BytesIO()
                 with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
                     trends_data.to_excel(writer, sheet_name='Feedback Trends', index=False)
-                    if not pivot.empty:
+                    if 'pivot' in locals() and not pivot.empty:
                         pivot.to_excel(writer, sheet_name=f'Trends by {grouping_option}')
                     pivot1.to_excel(writer, sheet_name='Categories')
                     pivot2.to_excel(writer, sheet_name='Subcategories')
