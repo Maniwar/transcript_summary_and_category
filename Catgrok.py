@@ -303,8 +303,9 @@ def main():
             st.error(f"Error reading CSV: {e}")
             return
         
-        comment_column = st.selectbox("Select Comment Column", column_names, help="Column containing feedback text.")
-        date_column = st.selectbox("Select Date Column", column_names, help="Column containing date information.")
+        # Use unique keys for st.selectbox widgets
+        comment_column = st.selectbox("Select Comment Column", column_names, key="comment_column_select", help="Column containing feedback text.")
+        date_column = st.selectbox("Select Date Column", column_names, key="date_column_select", help="Column containing date information.")
         grouping_option = st.radio("Group By", ["Date", "Week", "Month", "Quarter", "Hour"], help="Group trends by time period.")
         
         # Initialize placeholders for UI components
@@ -415,11 +416,14 @@ def main():
                         st.subheader("📝 Top 10 Recent Comments by Sub-Category")
                         pivot_subcat_counts = trends_data.groupby(['Category', 'Sub-Category']).size().sort_values(ascending=False)
                         if not pivot_subcat_counts.empty:
-                            top_subcats = pivot_subcat_counts.head(10).index.get_level_values('Sub-Category')
-                            for subcat in top_subcats:
-                                with st.expander(f"Comments for {subcat}"):
-                                    st.markdown(f"### {subcat}")
-                                    filtered = trends_data[trends_data['Sub-Category'] == subcat].nlargest(10, 'Parsed Date')
+                            top_subcats = pivot_subcat_counts.head(10).index
+                            for category, subcat in top_subcats:
+                                with st.expander(f"Comments for {category} - {subcat}"):
+                                    st.markdown(f"### {category} - {subcat}")
+                                    filtered = trends_data[
+                                        (trends_data['Category'] == category) & 
+                                        (trends_data['Sub-Category'] == subcat)
+                                    ].nlargest(10, 'Parsed Date')
                                     st.table(filtered[['Category', 'Parsed Date', comment_column, 'summarized_comments', 'Sentiment']])
                                     st.markdown("---")
                         else:
@@ -432,7 +436,7 @@ def main():
                             emerging_issues = trends_data[trends_data['Category'] == 'emerging issues']
                             if not emerging_issues.empty:
                                 cluster_names = emerging_issues['Sub-Category'].unique()
-                                selected_cluster = st.selectbox("Select an Emerging Issue Cluster", cluster_names)
+                                selected_cluster = st.selectbox("Select an Emerging Issue Cluster", cluster_names, key="emerging_issue_cluster_select")
                                 cluster_data = emerging_issues[emerging_issues['Sub-Category'] == selected_cluster]
                                 st.write(f"Comments in cluster '{selected_cluster}':")
                                 st.table(cluster_data[['Parsed Date', comment_column, 'summarized_comments', 'Sentiment']])
@@ -447,14 +451,17 @@ def main():
                 excel_file = BytesIO()
                 with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
                     trends_data.to_excel(writer, sheet_name='Feedback Trends', index=False)
-                    if 'pivot_trends' in locals():
+                    if 'pivot_trends' in locals() and not pivot_trends.empty:
                         pivot_trends.to_excel(writer, sheet_name=f'Trends by {grouping_option}')
                     if not pivot_subcat_counts.empty:
                         comments_sheet = writer.book.add_worksheet('Example Comments')
                         start_row = 0
-                        for subcat in top_subcats:
-                            filtered = trends_data[trends_data['Sub-Category'] == subcat].nlargest(10, 'Parsed Date')
-                            comments_sheet.merge_range(start_row, 0, start_row, 1, subcat)
+                        for category, subcat in top_subcats:
+                            filtered = trends_data[
+                                (trends_data['Category'] == category) & 
+                                (trends_data['Sub-Category'] == subcat)
+                            ].nlargest(10, 'Parsed Date')
+                            comments_sheet.merge_range(start_row, 0, start_row, 1, f"{category} - {subcat}")
                             comments_sheet.write(start_row + 1, 0, 'Date')
                             comments_sheet.write(start_row + 1, 1, comment_column)
                             for i, (_, row) in enumerate(filtered.iterrows(), start=start_row + 2):
