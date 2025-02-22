@@ -1,3 +1,39 @@
+Traceback (most recent call last):
+  File "sklearn\metrics\_dist_metrics.pyx", line 420, in sklearn.metrics._dist_metrics.DistanceMetric64.get_metric
+KeyError: 'cosine'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 121, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+  File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 591, in code_to_exec
+    exec(code, module.__dict__)
+  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 607, in <module>
+    trends_data = cluster_emerging_issues_hdbscan(trends_data, min_cluster_size=3)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 375, in cluster_emerging_issues_hdbscan
+    clusters = clusterer.fit_predict(no_match_embs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\hdbscan\hdbscan_.py", line 1291, in fit_predict
+    self.fit(X)
+  File "C:\Python311\Lib\site-packages\hdbscan\hdbscan_.py", line 1251, in fit
+    ) = hdbscan(clean_data, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\hdbscan\hdbscan_.py", line 872, in hdbscan
+    (single_linkage_tree, result_min_span_tree) = memory.cache(
+                                                  ^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\joblib\memory.py", line 353, in __call__
+    return self.func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\hdbscan\hdbscan_.py", line 299, in _hdbscan_prims_balltree
+    tree = BallTree(X, metric=metric, leaf_size=leaf_size, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "sklearn\neighbors\_binary_tree.pxi", line 837, in sklearn.neighbors._ball_tree.BinaryTree.__init__
+  File "sklearn\metrics\_dist_metrics.pyx", line 211, in sklearn.metrics._dist_metrics.DistanceMetric.get_metric
+  File "sklearn\metrics\_dist_metrics.pyx", line 422, in sklearn.metrics._dist_metrics.DistanceMetric64.get_metric
+ValueError: Unrecognized metric 'cosine'
 import os
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
