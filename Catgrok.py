@@ -356,7 +356,7 @@ def main():
         date_column = st.selectbox("Select Date Column", column_names, help="Column containing date information.")
         grouping_option = st.radio("Group By", ["Date", "Week", "Month", "Quarter", "Hour"], help="Group trends by time period.")
         
-        # Initialize chart placeholders to prevent duplication
+        # Define chart placeholders before the processing loop
         trends_chart_placeholder = st.empty()
         category_chart_placeholder = st.empty()
         subcategory_chart_placeholder = st.empty()
@@ -444,6 +444,7 @@ def main():
                             yaxis_title="Sentiment Count",
                             legend_title="Sub-Category"
                         )
+                        # Update the placeholder instead of creating a new chart
                         trends_chart_placeholder.plotly_chart(fig_trends, use_container_width=True)
                     
                     # Category vs Sentiment and Quantity
@@ -456,6 +457,7 @@ def main():
                         xaxis_title="Category",
                         yaxis_title="Count"
                     )
+                    # Update the placeholder instead of creating a new chart
                     category_chart_placeholder.plotly_chart(fig_cat, use_container_width=True)
                     
                     # Sub-Category vs Sentiment and Quantity
@@ -473,6 +475,7 @@ def main():
                         yaxis_title="Count",
                         legend_title="Category"
                     )
+                    # Update the placeholder instead of creating a new chart
                     subcategory_chart_placeholder.plotly_chart(fig_subcat, use_container_width=True)
                     
                     # Top 10 Recent Comments by Sub-Category
