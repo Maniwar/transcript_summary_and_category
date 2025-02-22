@@ -1,3 +1,14 @@
+DuplicateWidgetID: There are multiple widgets with the same key='emerging_issue_cluster_select'.
+
+To fix this, please make sure that the key argument is unique for each widget you create.
+
+Traceback:
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 480, in <module>
+    main()
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 439, in main
+    selected_cluster = st.selectbox("Select an Emerging Issue Cluster", cluster_names, key="emerging_issue_cluster_select")
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 import os
 import time
 import math
