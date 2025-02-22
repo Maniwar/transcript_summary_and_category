@@ -1,3 +1,21 @@
+
+Comments preprocessed.
+Summarization model and tokenizer retrieved from cache.
+Separated comments into categories: 28 very short, 4 short, 0 long comments.
+28 very short comments directly added to summaries.
+Summarizing short comments: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 4/4 [00:12<00:00,  3.10s/it] 
+Summarizing long comments: 0it [00:00, ?it/s]
+Preprocessing and summarization completed.
+C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py:246: FutureWarning: A value is trying to be set on a copy of a DataFrame or Series through chained assignment using an inplace method.
+The behavior will change in pandas 3.0. This inplace method will never work because the intermediate object on which we are setting values always behaves as a copy.
+
+For example, when doing 'df[col].method(value, inplace=True)', try using 'df.method({col: value}, inplace=True)' or df[col] = df[col].method(value) instead, to perform the operation inplace on the original object.
+
+
+  feedback_data['summarized_comments'].fillna(feedback_data['preprocessed_comments'], inplace=True)
+C:\Python311\Lib\site-packages\sklearn\cluster\_kmeans.py:1416: FutureWarning: The default value of `n_init` will change from 10 to 'auto' in 1.4. Set the value of `n_init` explicitly to suppress the warning
+  super()._check_params_vs_input(X, default_n_init=10)
+
 import os
 
 # Set the environment variable to control tokenizers parallelism
