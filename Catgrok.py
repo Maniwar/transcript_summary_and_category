@@ -1,3 +1,17 @@
+StreamlitAPIException: Progress Value has invalid value [0.0, 1.0]: 32.000000
+
+Traceback:
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 573, in <module>
+    main()
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 398, in main
+    processed_chunk = process_feedback_data(
+                      ^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 278, in process_feedback_data
+    feedback_data = preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=64)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 178, in preprocess_comments_and_summarize
+    summarization_progress.progress((i + batch_size) / len(short_texts))
+
 import os
 import time
 import math
