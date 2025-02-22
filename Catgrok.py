@@ -1,17 +1,3 @@
-StreamlitAPIException: Progress Value has invalid value [0.0, 1.0]: 32.000000
-
-Traceback:
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 573, in <module>
-    main()
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 398, in main
-    processed_chunk = process_feedback_data(
-                      ^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 278, in process_feedback_data
-    feedback_data = preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=64)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 178, in preprocess_comments_and_summarize
-    summarization_progress.progress((i + batch_size) / len(short_texts))
-
 import os
 import time
 import math
@@ -171,7 +157,6 @@ def summarize_text_batch(texts, tokenizer, model, device, max_length=75, min_len
         return ["Error"] * len(texts)
 
 def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=64, max_length=75, min_length=30, max_tokens=1000, very_short_limit=30):
-    """Preprocess and summarize comments in the feedback data."""
     if comment_column not in feedback_data.columns:
         st.error(f"Comment column '{comment_column}' not found in CSV.")
         return feedback_data
@@ -189,7 +174,7 @@ def preprocess_comments_and_summarize(feedback_data, comment_column, batch_size=
         summaries = summarize_text_batch(batch, tokenizer, model, device, max_length, min_length)
         for orig, summ in zip(batch, summaries):
             summaries_dict[orig] = summ
-        summarization_progress.progress((i + batch_size) / len(short_texts))
+        summarization_progress.progress(min((i + batch_size) / len(short_texts), 1.0))
     for comment, tokens in tqdm(long, desc="Summarizing long comments"):
         chunks = split_comments_into_chunks([(comment, tokens)], tokenizer, max_tokens)
         chunk_summaries = summarize_text_batch(chunks, tokenizer, model, device, max_length, min_length)
@@ -212,7 +197,6 @@ def compute_keyword_embeddings(categories, model):
     return keyword_embeddings
 
 def categorize_comments(feedback_data, categories, similarity_threshold, emerging_issue_mode, model):
-    """Categorize comments based on similarity to keywords."""
     keyword_embeddings = compute_keyword_embeddings(categories, model)
     keyword_matrix = np.array(list(keyword_embeddings.values()))
     keyword_mapping = list(keyword_embeddings.keys())
@@ -223,7 +207,7 @@ def categorize_comments(feedback_data, categories, similarity_threshold, emergin
     for i in range(0, len(comments), batch_size):
         batch = comments[i:i + batch_size]
         comment_embeddings.extend(model.encode(batch, show_progress_bar=False))
-        categorization_progress.progress((i + batch_size) / len(comments))
+        categorization_progress.progress(min((i + batch_size) / len(comments), 1.0))
     comment_matrix = np.array(comment_embeddings)
     similarity_matrix = cosine_similarity(comment_matrix, keyword_matrix)
     max_scores = similarity_matrix.max(axis=1)
