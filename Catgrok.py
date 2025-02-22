@@ -1,27 +1,8 @@
-
-Comments preprocessed.
-Summarization model and tokenizer retrieved from cache.
-Separated comments into categories: 28 very short, 4 short, 0 long comments.
-28 very short comments directly added to summaries.
-Summarizing short comments: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 4/4 [00:12<00:00,  3.10s/it] 
-Summarizing long comments: 0it [00:00, ?it/s]
-Preprocessing and summarization completed.
-C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py:246: FutureWarning: A value is trying to be set on a copy of a DataFrame or Series through chained assignment using an inplace method.
-The behavior will change in pandas 3.0. This inplace method will never work because the intermediate object on which we are setting values always behaves as a copy.
-
-For example, when doing 'df[col].method(value, inplace=True)', try using 'df.method({col: value}, inplace=True)' or df[col] = df[col].method(value) instead, to perform the operation inplace on the original object.
-
-
-  feedback_data['summarized_comments'].fillna(feedback_data['preprocessed_comments'], inplace=True)
-C:\Python311\Lib\site-packages\sklearn\cluster\_kmeans.py:1416: FutureWarning: The default value of `n_init` will change from 10 to 'auto' in 1.4. Set the value of `n_init` explicitly to suppress the warning
-  super()._check_params_vs_input(X, default_n_init=10)
-
 import os
 
 # Set the environment variable to control tokenizers parallelism
 os.environ["TOKENIZERS_PARALLELISM"] = "true"  # or "false" to enable or disable parallelism
 
-# Now you can import the rest of the modules
 import torch
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -30,7 +11,7 @@ import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.cluster import KMeans  # <-- for Emerging Issue clustering
+from sklearn.cluster import DBSCAN  # <-- DBSCAN for Emerging Issue clustering
 import datetime
 import numpy as np
 import xlsxwriter
@@ -70,19 +51,16 @@ class SummarizationDataset(Dataset):
         )
         return tokens['input_ids'].squeeze(), tokens['attention_mask'].squeeze()
 
-# Initialize BERT model
 @st.cache_resource
 def initialize_bert_model():
     start_time = time.time()
     print("Initializing BERT model...")
     end_time = time.time()
-    print(f"BERT model initialized. Time taken: {end_time - start_time} seconds.")
+    print(f"BERT model initialized. Time taken: {end_time - start_time:.2f} seconds.")
     return SentenceTransformer('all-mpnet-base-v2', device="cpu")
 
-# Initialize a variable to store the previous state of the categories
 previous_categories = None
 
-# Function to compute keyword embeddings
 @st.cache_data(persist="disk")
 def compute_keyword_embeddings(categories):
     start_time = time.time()
@@ -91,49 +69,39 @@ def compute_keyword_embeddings(categories):
     for category, subcategories in categories.items():
         for subcategory, keywords in subcategories.items():
             for keyword in keywords:
-                if (category, subcategory, keyword) not in keyword_embeddings:
-                    keyword_embeddings[(category, subcategory, keyword)] = model.encode([keyword])[0]
+                key = (category, subcategory, keyword)
+                if key not in keyword_embeddings:
+                    keyword_embeddings[key] = model.encode([keyword])[0]
     end_time = time.time()
-    print(f"Keyword embeddings computed. Time taken: {end_time - start_time} seconds.")
+    print(f"Keyword embeddings computed. Time taken: {end_time - start_time:.2f} seconds.")
     return keyword_embeddings
 
-# Function to preprocess the text
 def preprocess_text(text):
     if isinstance(text, float):
         text = str(text)
     text = text.encode('ascii', 'ignore').decode(encoding)
     text = re.sub(r'[^\w\s]', '', text)
-    # Remove HTML tags
     text = re.sub(r'<.*?>', '', text)
-    # Remove page breaks
     text = text.replace('\n', ' ').replace('\r', '')
-    # Remove non-breaking spaces
     text = text.replace('&nbsp;', ' ')
-    # Remove multiple spaces
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
-# Function to perform sentiment analysis
 def perform_sentiment_analysis(text):
     analyzer = SentimentIntensityAnalyzer()
-    sentiment_scores = analyzer.polarity_scores(text)
-    compound_score = sentiment_scores['compound']
-    return compound_score
+    scores = analyzer.polarity_scores(text)
+    return scores['compound']
 
-# Function to compute the token count of a text
 def get_token_count(text, tokenizer):
     return len(tokenizer.encode(text)) - 2
 
-# Function to split comments into chunks
 def split_comments_into_chunks(comments, tokenizer, max_tokens):
     sorted_comments = sorted(comments, key=lambda x: x[1], reverse=True)
     chunks = []
     current_chunk = []
     current_chunk_tokens = 0
-
     for comment, tokens in sorted_comments:
         if tokens > max_tokens:
-            # If a single comment exceeds max_tokens, split it
             parts = textwrap.wrap(comment, width=max_tokens)
             for part in parts:
                 part_tokens = get_token_count(part, tokenizer)
@@ -152,14 +120,11 @@ def split_comments_into_chunks(comments, tokenizer, max_tokens):
             else:
                 current_chunk.append(comment)
                 current_chunk_tokens += tokens
-
     if current_chunk:
         chunks.append(" ".join(current_chunk))
-
     print(f"Total number of chunks created: {len(chunks)}")
     for i, chunk in enumerate(chunks):
         print(f"Chunk {i+1} token count: {get_token_count(chunk, tokenizer)}")
-
     return chunks
 
 @st.cache_resource
@@ -186,47 +151,34 @@ def preprocess_comments_and_summarize(
     very_short_limit=30
 ):
     print("Starting preprocessing and summarization...")
-
-    # 1. Preprocess the comments
     feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
     print("Comments preprocessed.")
-
-    # 2. Get the cached model and tokenizer
     model_summ, tokenizer_summ, device = get_summarization_model_and_tokenizer()
     print("Summarization model and tokenizer retrieved from cache.")
 
-    # 3. Separate comments into categories by token length
     all_comments = feedback_data['preprocessed_comments'].tolist()
     very_short_comments = [c for c in all_comments if get_token_count(c, tokenizer_summ) <= very_short_limit]
     short_comments = [c for c in all_comments if very_short_limit < get_token_count(c, tokenizer_summ) <= max_tokens]
     long_comments = [c for c in all_comments if get_token_count(c, tokenizer_summ) > max_tokens]
     print(f"Separated comments into categories: {len(very_short_comments)} very short, {len(short_comments)} short, {len(long_comments)} long comments.")
 
-    # 4. Summaries dict: store final summaries
     summaries_dict = {c: c for c in very_short_comments}
     print(f"{len(very_short_comments)} very short comments directly added to summaries.")
 
-    # 5. Summarize short comments in batches
     pbar = tqdm(total=len(short_comments), desc="Summarizing short comments")
     for i in range(0, len(short_comments), batch_size):
-        batch = short_comments[i : i + batch_size]
+        batch = short_comments[i:i+batch_size]
         summaries = [summarize_text(c, tokenizer_summ, model_summ, device, max_length, min_length) for c in batch]
         for original_comment, summary in zip(batch, summaries):
             summaries_dict[original_comment] = summary
         pbar.update(len(batch))
     pbar.close()
 
-    # 6. Summarize long comments
     pbar = tqdm(total=len(long_comments), desc="Summarizing long comments")
     for comment in long_comments:
         chunks = split_comments_into_chunks([(comment, get_token_count(comment, tokenizer_summ))], tokenizer_summ, max_tokens)
-        chunk_summaries = [
-            summarize_text(chunk, tokenizer_summ, model_summ, device, max_length, min_length)
-            for chunk in chunks
-        ]
+        chunk_summaries = [summarize_text(chunk, tokenizer_summ, model_summ, device, max_length, min_length) for chunk in chunks]
         full_summary = " ".join(chunk_summaries)
-
-        # Possibly re-summarize if still too long
         resummarization_count = 0
         while get_token_count(full_summary, tokenizer_summ) > max_length:
             resummarization_count += 1
@@ -237,7 +189,6 @@ def preprocess_comments_and_summarize(
         summaries_dict[comment] = full_summary
         pbar.update(1)
     pbar.close()
-
     print("Preprocessing and summarization completed.")
     return summaries_dict
 
@@ -247,8 +198,6 @@ def compute_semantic_similarity(comment_embedding, keyword_embedding):
 @st.cache_data(persist="disk")
 def process_feedback_data(feedback_data, comment_column, date_column, categories, similarity_threshold):
     global previous_categories
-
-    # 1. Retrieve or compute keyword embeddings
     keyword_embeddings = compute_keyword_embeddings(categories)
     if previous_categories != categories:
         keyword_embeddings = compute_keyword_embeddings(categories)
@@ -257,13 +206,11 @@ def process_feedback_data(feedback_data, comment_column, date_column, categories
         if not keyword_embeddings:
             keyword_embeddings = compute_keyword_embeddings(categories)
 
-    # 2. Preprocess and Summarize
     summaries_dict = preprocess_comments_and_summarize(feedback_data, comment_column)
     feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
     feedback_data['summarized_comments'] = feedback_data['preprocessed_comments'].map(summaries_dict)
-    feedback_data['summarized_comments'].fillna(feedback_data['preprocessed_comments'], inplace=True)
+    feedback_data['summarized_comments'] = feedback_data['summarized_comments'].fillna(feedback_data['preprocessed_comments'])
 
-    # 3. Compute embeddings
     batch_size = 1024
     comment_embeddings = []
     for i in range(0, len(feedback_data), batch_size):
@@ -272,10 +219,8 @@ def process_feedback_data(feedback_data, comment_column, date_column, categories
         comment_embeddings.extend(emb)
     feedback_data['comment_embeddings'] = comment_embeddings
 
-    # 4. Sentiment
     feedback_data['sentiment_scores'] = feedback_data['preprocessed_comments'].apply(perform_sentiment_analysis)
 
-    # 5. Assign categories
     categories_list = [''] * len(feedback_data)
     sub_categories_list = [''] * len(feedback_data)
     keyphrases_list = [''] * len(feedback_data)
@@ -284,6 +229,7 @@ def process_feedback_data(feedback_data, comment_column, date_column, categories
     kw_keys = list(keyword_embeddings.keys())
     kw_vals = list(keyword_embeddings.values())
 
+    # 1) Assign best categories first by threshold
     for i in range(0, len(feedback_data), batch_size):
         embs_batch = feedback_data['comment_embeddings'][i : i + batch_size].tolist()
         for j, emb in enumerate(embs_batch):
@@ -304,39 +250,55 @@ def process_feedback_data(feedback_data, comment_column, date_column, categories
             keyphrases_list[idx] = best_kw
             similarity_scores[idx] = best_score
 
-    # 6. Emerging Issue Clustering if needed
+    # 2) If below threshold => 'No Match', then DBSCAN cluster them
     if emerging_issue_mode and similarity_threshold is not None:
         no_match_indices = [ix for ix, sc in enumerate(similarity_scores) if sc < similarity_threshold]
         if len(no_match_indices) > 1:
-            no_match_embs = np.array([feedback_data.iloc[ix]['comment_embeddings'] for ix in no_match_indices])
-            num_clusters = min(10, len(no_match_indices))
-            kmeans = KMeans(n_clusters=num_clusters, random_state=42)
-            clusters = kmeans.fit_predict(no_match_embs)
+            # DBSCAN with metric='cosine'
+            from sklearn.cluster import DBSCAN
 
-            # Summarize centroid for each cluster
+            no_match_embs = np.array([feedback_data.iloc[ix]['comment_embeddings'] for ix in no_match_indices])
+            # example hyperparams: eps=0.7, min_samples=3, metric='cosine'
+            dbscan = DBSCAN(eps=0.7, min_samples=3, metric='cosine')
+            clusters = dbscan.fit_predict(no_match_embs)
+
             model_sum, tokenizer_sum, device_sum = get_summarization_model_and_tokenizer()
             cluster_labels = {}
-            for c_id in range(num_clusters):
-                cluster_idx = [no_match_indices[z] for z, cval in enumerate(clusters) if cval == c_id]
-                if not cluster_idx:
-                    continue
-                cluster_array = np.array([feedback_data.iloc[ii]['comment_embeddings'] for ii in cluster_idx])
-                centroid = kmeans.cluster_centers_[c_id]
-                dists = cosine_similarity([centroid], cluster_array)[0]
-                best_idx = cluster_idx[np.argmax(dists)]
+
+            # group points by cluster label
+            cluster_map = defaultdict(list)
+            for local_idx, c_id in enumerate(clusters):
+                global_idx = no_match_indices[local_idx]
+                cluster_map[c_id].append(global_idx)
+
+            # Summarize each cluster c_id != -1
+            for c_id, idx_list in cluster_map.items():
+                if c_id == -1:
+                    continue  # noise => skip
+                cluster_vectors = np.array([feedback_data.iloc[ii]['comment_embeddings'] for ii in idx_list])
+                centroid = cluster_vectors.mean(axis=0)
+                dists = cosine_similarity([centroid], cluster_vectors)[0]
+                best_local = np.argmax(dists)
+                best_idx = idx_list[best_local]
                 centroid_comment = feedback_data.iloc[best_idx]['summarized_comments']
                 cluster_summary = summarize_text(centroid_comment, tokenizer_sum, model_sum, device_sum, 75, 30)
                 cluster_labels[c_id] = cluster_summary
 
-            # Instead of 'No Match', assign an 'Emerging Issues' category
-            for i_n, c_val in zip(no_match_indices, clusters):
-                categories_list[i_n] = "Emerging Issues"
-                sub_categories_list[i_n] = f"Cluster: {cluster_labels[c_val]}"
-                keyphrases_list[i_n] = "Cluster"
+            # Now assign
+            for local_idx, c_id in enumerate(clusters):
+                global_idx = no_match_indices[local_idx]
+                if c_id == -1:
+                    # noise => remain No Match
+                    categories_list[global_idx] = "No Match"
+                    sub_categories_list[global_idx] = "No Match"
+                    keyphrases_list[global_idx] = "No Match"
+                else:
+                    categories_list[global_idx] = "Emerging Issues"
+                    sub_categories_list[global_idx] = f"DBSCAN Cluster: {cluster_labels[c_id]}"
+                    keyphrases_list[global_idx] = "DBSCAN"
 
     feedback_data.drop(columns=['comment_embeddings'], inplace=True)
 
-    # 7. Build final DataFrame
     rows_extended = []
     for idx in range(len(feedback_data)):
         row = feedback_data.iloc[idx]
@@ -380,7 +342,6 @@ def process_feedback_data(feedback_data, comment_column, date_column, categories
     trends = trends.loc[:, ~trends.columns.duplicated()]
     return trends
 
-# Main Streamlit flow
 if __name__ == "__main__":
     st.title("👨‍💻 Transcript Categorization")
     model = initialize_bert_model()
@@ -411,7 +372,6 @@ if __name__ == "__main__":
 
         uploaded_file.seek(0)
         total_rows = sum(1 for _ in uploaded_file) - 1
-
         chunksize = 32
         estimated_total_chunks = math.ceil(total_rows / chunksize)
 
@@ -427,7 +387,6 @@ if __name__ == "__main__":
         grouping_option = st.radio("Select how to group the dates", ["Date", "Week", "Month", "Quarter", "Hour"])
         process_button = st.button("Process Feedback")
 
-        # UI placeholders
         progress_bar = st.progress(0)
         processed_chunks_count = 0
         trends_dataframe_placeholder = st.empty()
@@ -447,22 +406,20 @@ if __name__ == "__main__":
 
         if process_button and comment_column and date_column and grouping_option:
             chunk_iter = pd.read_csv(BytesIO(csv_data), encoding=encoding, chunksize=chunksize)
-
             processed_chunks = []
+
             for feedback_data in chunk_iter:
                 processed_chunk = process_feedback_data(feedback_data, comment_column, date_column, default_categories, similarity_threshold)
                 processed_chunks.append(processed_chunk)
 
-                # Concatenate
                 trends_data = pd.concat(processed_chunks, ignore_index=True)
                 trends_dataframe_placeholder.dataframe(trends_data)
                 processed_chunks_count += 1
                 progress_bar.progress(processed_chunks_count / estimated_total_chunks)
 
                 if trends_data is not None:
-                    # Convert date
                     trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce')
-                    # Build pivot
+
                     if grouping_option == 'Date':
                         pivot = trends_data.pivot_table(
                             index=['Category', 'Sub-Category'],
@@ -518,7 +475,6 @@ if __name__ == "__main__":
                     if 'Category' in pivot_reset.columns:
                         pivot_reset = pivot_reset.drop(columns=['Category'], errors='ignore')
 
-                    # Top 5 chart
                     top_5_trends = pivot_reset.head(5).T
                     line_chart_placeholder.line_chart(top_5_trends)
                     pivot_table_placeholder.dataframe(pivot)
@@ -548,7 +504,6 @@ if __name__ == "__main__":
                         top_comments['Parsed Date'] = top_comments['Parsed Date'].dt.date.astype(str)
                         table_placeholder.table(top_comments)
 
-                    # Convert date to str
                     trends_data['Parsed Date'] = trends_data['Parsed Date'].dt.strftime('%Y-%m-%d').fillna('')
                     pivot = trends_data.pivot_table(
                         index=['Category', 'Sub-Category'],
@@ -560,7 +515,6 @@ if __name__ == "__main__":
                     pivot = pivot.loc[pivot.sum(axis=1).sort_values(ascending=False).index]
                     pivot = pivot[sorted(pivot.columns, reverse=True)]
 
-                # Build final Excel
                 excel_file = BytesIO()
                 with pd.ExcelWriter(excel_file, engine='xlsxwriter', mode='xlsx') as excel_writer:
                     trends_data.to_excel(excel_writer, sheet_name='Feedback Trends and Insights', index=False)
