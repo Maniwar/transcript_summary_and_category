@@ -27,6 +27,7 @@ import re
 import math
 from collections import defaultdict
 from bertopic import BERTopic  # Import BERTopic for emerging issues
+from umap import UMAP  # Needed for custom n_neighbors in BERTopic
 
 ################################
 #    Summarization Dataset     #
@@ -324,103 +325,117 @@ def summarize_to_short_label(
     return final_label
 
 ###################################################################
-#    Final BERTopic Pass on Leftover 'No Match' for Emergent      #
-#   Now we refine the label using the top 5 docs, summarize them  #
+#   cluster_emerging_issues_bertopic with Keyphrase Prompting     #
 ###################################################################
-def cluster_emerging_issues_bertopic(trends_data, min_topic_size=5):
+def cluster_emerging_issues_bertopic(trends_data, min_topic_size=5, progress=None):
     """
-    Uses BERTopic to cluster 'No Match' comments and assign emerging categories.
-    
-    Changes:
-    - We now incorporate the final keyphrase into the prompt for summary-based subcategory labels.
+    Single-pass approach with a keyphrase hint in the summarization prompt.
+
+    1. Identify 'No Match' rows.
+    2. Fit & transform with BERTopic.
+    3. For each topic:
+       - build a keyphrase from top words
+       - incorporate that into a summarization prompt
+       - produce a final subcategory label
+    4. Store everything in the DataFrame in one pass.
     """
+    # 1) Check if we have any 'No Match' docs
     no_match_mask = (trends_data['Category'] == 'No Match')
     if not no_match_mask.any():
         print("No 'No Match' items found. Skipping BERTopic pass.")
         return trends_data
 
+    # Optionally update the Streamlit progress bar
+    if progress:
+        progress.progress(5)
+
+    # Subset to just the 'No Match' rows
     df_no_match = trends_data.loc[no_match_mask].copy()
+    # If there's a Summarized Text column, we use that; else we use preprocessed
     text_col = 'Summarized Text' if 'Summarized Text' in df_no_match.columns else 'preprocessed_comments'
     no_match_texts = df_no_match[text_col].fillna('').tolist()
 
+    # If fewer than 3 docs, skip clustering
+    if len(no_match_texts) < 3:
+        print("Not enough 'No Match' docs to cluster. Skipping BERTopic pass.")
+        return trends_data
+
+    # If fewer than 15 docs, reduce n_neighbors for UMAP
+    n_neighbors = max(2, min(15, len(no_match_texts) - 1))
+    print(f"Using n_neighbors={n_neighbors} for {len(no_match_texts)} 'No Match' docs.")
+
+    # 2) Fit a BERTopic model
     topic_model = BERTopic(
+        umap_model=UMAP(n_neighbors=n_neighbors, n_components=2, metric="cosine"),
         language="english",
         min_topic_size=min_topic_size,
         embedding_model="all-mpnet-base-v2",
         verbose=True
     )
 
+    if progress:
+        progress.progress(10)
+
+    # Actually cluster
     topics, _ = topic_model.fit_transform(no_match_texts)
-    topic_info = topic_model.get_topic_info()
 
-    # Summarization model for generating subcategory labels
+    if progress:
+        progress.progress(60)
+
+    # 3) Summarization for each topic
     model_summ, tokenizer_summ, device = get_summarization_model_and_tokenizer()
-
-    # Use NLTK stopwords to filter top words
     STOPWORDS = set(stopwords.words('english'))
 
-    # 1) FIRST PASS: Build a dictionary of keyphrases for each topic
-    topic_to_keyphrase = {}
-    for i, topic in enumerate(topics):
-        if topic == -1:  # Noise
-            df_no_match.iloc[i, df_no_match.columns.get_loc('Category')] = 'No Match'
-            df_no_match.iloc[i, df_no_match.columns.get_loc('Sub-Category')] = 'No Match'
-            df_no_match.iloc[i, df_no_match.columns.get_loc('Keyphrase')] = 'No Match'
+    unique_topics = set(topics)
+    for topic_id in unique_topics:
+        # Indices of docs in this topic
+        idxs = [i for i, t in enumerate(topics) if t == topic_id]
+
+        if topic_id == -1:
+            # Mark as truly no match
+            df_no_match.iloc[idxs, df_no_match.columns.get_loc('Category')] = 'No Match'
+            df_no_match.iloc[idxs, df_no_match.columns.get_loc('Sub-Category')] = 'No Match'
+            df_no_match.iloc[idxs, df_no_match.columns.get_loc('Keyphrase')] = 'No Match'
         else:
-            # Extract top words for this topic
-            top_words = topic_model.get_topic(topic)  # list of (word, score)
-            filtered = [w for (w, _) in top_words if w.lower() not in STOPWORDS and len(w) > 2]
+            # Mark category as Emerging Issues
+            df_no_match.iloc[idxs, df_no_match.columns.get_loc('Category')] = 'Emerging Issues'
+
+            # a) Build keyphrase from top words
+            top_words = topic_model.get_topic(topic_id)  # list of (word, score)
+            filtered = [w for w, _ in top_words if w.lower() not in STOPWORDS and len(w) > 2]
             keyphrase = ", ".join(filtered[:3]) if filtered else "No Keyphrase"
+            df_no_match.iloc[idxs, df_no_match.columns.get_loc('Keyphrase')] = keyphrase
 
-            df_no_match.iloc[i, df_no_match.columns.get_loc('Category')] = 'Emerging Issues'
-            df_no_match.iloc[i, df_no_match.columns.get_loc('Keyphrase')] = keyphrase
+            # b) Summarize up to 5 docs to produce Sub-Category
+            chosen_idxs = idxs[:5]
+            chosen_docs = [no_match_texts[i] for i in chosen_idxs]
 
-    # Build an index of docs for each topic, ignoring noise
-    topic_to_indices = defaultdict(list)
-    for idx, t in enumerate(topics):
-        if t != -1:
-            topic_to_indices[t].append(idx)
+            # Prepend a line with the keyphrase
+            if keyphrase != "No Keyphrase":
+                prompt_line = f"Topic words: {keyphrase}"
+                docs_for_label = [prompt_line] + chosen_docs
+            else:
+                docs_for_label = chosen_docs
 
-    # 2) SECOND PASS: Summarize each topic's top docs to form the final subcategory label
-    #    But include the previously generated keyphrase in the prompt.
-    for topic_id, idx_list in topic_to_indices.items():
-        # pick up to 5 docs from that topic
-        limited_indices = idx_list[:5]
-        chosen_docs = [no_match_texts[i] for i in limited_indices]
+            subcat_label = summarize_to_short_label(
+                docs_for_label,
+                model_summ,
+                tokenizer_summ,
+                device,
+                step1_max_length=50,
+                step1_min_length=15,
+                final_max_length=25,  # up to 25 tokens
+                final_min_length=3
+            )
 
-        # get the keyphrase from the first row or so:
-        # any row in idx_list has the same keyphrase since it's the same cluster
-        # but let's just grab it from the first
-        first_row_idx = idx_list[0]
-        existing_keyphrase = df_no_match.iloc[first_row_idx, df_no_match.columns.get_loc('Keyphrase')]
+            df_no_match.iloc[idxs, df_no_match.columns.get_loc('Sub-Category')] = subcat_label
 
-        # incorporate it into the docs for the summarization prompt
-        # We'll prepend a small text that includes the keyphrase
-        # so the summarizer knows these are important terms
-        if existing_keyphrase and existing_keyphrase != "No Keyphrase":
-            prompt_line = f"Topic words: {existing_keyphrase}"
-            docs_for_label = [prompt_line] + chosen_docs
-        else:
-            docs_for_label = chosen_docs
-
-        # Summarize them to get a short label
-        subcat_label = summarize_to_short_label(
-            docs_for_label,
-            model_summ,
-            tokenizer_summ,
-            device,
-            step1_max_length=50,
-            step1_min_length=15,
-            final_max_length=10,
-            final_min_length=3
-        )
-
-        # assign that label to all rows in this topic
-        for i_ in limited_indices:
-            df_no_match.iloc[i_, df_no_match.columns.get_loc('Sub-Category')] = subcat_label
-
-    # Finally, update the original dataframe
+    # 4) Update the original dataframe with our emergent categories
     trends_data.update(df_no_match)
+
+    if progress:
+        progress.progress(100)
+
     return trends_data
 
 
@@ -582,7 +597,6 @@ if uploaded_file is not None:
                     title_placeholder.subheader(f"[CHUNK {i+1}] {subcat}")
                     filtered_data = partial_data[partial_data['Sub-Category'] == subcat].copy()
                     filtered_data['Parsed Date'] = pd.to_datetime(filtered_data['Parsed Date'], errors='coerce')
-                    # Instead of nlargest, use sort_values:
                     top_comments = (
                         filtered_data
                         .dropna(subset=["Parsed Date"])
@@ -605,8 +619,17 @@ if uploaded_file is not None:
 
         trends_data = pd.concat(processed_chunks, ignore_index=True)
 
+        # The final pass with a mini progress bar:
         if emerging_issue_mode:
-            trends_data = cluster_emerging_issues_bertopic(trends_data, min_topic_size=min_topic_size)
+            st.write("Performing BERTopic clustering on No Match items...")
+            final_pass_bar = st.progress(0)
+            # pass final_pass_bar into cluster_emerging_issues_bertopic
+            trends_data = cluster_emerging_issues_bertopic(
+                trends_data,
+                min_topic_size=min_topic_size,
+                progress=final_pass_bar
+            )
+            final_pass_bar.progress(100)
 
         if not trends_data.empty:
             trends_dataframe_placeholder.dataframe(trends_data)
@@ -685,7 +708,7 @@ if uploaded_file is not None:
                 title_placeholder.subheader(f"FINAL {subcat}")
                 filtered_data = trends_data[trends_data['Sub-Category'] == subcat].copy()
                 filtered_data['Parsed Date'] = pd.to_datetime(filtered_data['Parsed Date'], errors='coerce')
-                # Instead of nlargest, use sort_values:
+
                 top_comments = (
                     filtered_data
                     .dropna(subset=["Parsed Date"])
@@ -703,6 +726,7 @@ if uploaded_file is not None:
                 top_comments['Parsed Date'] = top_comments['Parsed Date'].dt.date.astype(str)
                 table_placeholder.table(top_comments)
 
+            # Convert dates to strings for final pivot
             trends_data['Parsed Date'] = trends_data['Parsed Date'].dt.strftime('%Y-%m-%d').fillna('')
             pivot = trends_data.pivot_table(
                 index=['Category', 'Sub-Category'],
@@ -721,9 +745,10 @@ if uploaded_file is not None:
             pivot1.to_excel(writer, sheet_name='Categories', merge_cells=False)
             pivot2.to_excel(writer, sheet_name='Subcategories', merge_cells=False)
             example_comments_sheet = writer.book.add_worksheet('Example Comments')
-            for subcat in top_subcategories:
+
+            # Unique enumerated merges
+            for idx, subcat in enumerate(top_subcategories):
                 filtered_data = trends_data[trends_data['Sub-Category'] == subcat]
-                # Instead of nlargest, use sort_values:
                 filtered_data['Parsed Date'] = pd.to_datetime(filtered_data['Parsed Date'], errors='coerce')
                 ex_top_comments = (
                     filtered_data
@@ -732,7 +757,7 @@ if uploaded_file is not None:
                     .head(10)
                     [["Parsed Date", comment_column]]
                 )
-                start_row = (top_subcategories.index(subcat) * 8) + 1
+                start_row = (idx * 8) + 1
                 example_comments_sheet.merge_range(start_row, 0, start_row, 1, subcat)
                 example_comments_sheet.write(start_row + 1, 0, 'Date')
                 example_comments_sheet.write(start_row + 1, 1, comment_column)
@@ -742,7 +767,10 @@ if uploaded_file is not None:
 
         excel_file.seek(0)
         b64 = base64.b64encode(excel_file.read()).decode()
-        download_link_placeholder.markdown(f'<a href="data:application/octet-stream;base64,{b64}" download="feedback_trends.xlsx">Download Excel File</a>', unsafe_allow_html=True)
+        download_link_placeholder.markdown(
+            f'<a href="data:application/octet-stream;base64,{b64}" download="feedback_trends.xlsx">Download Excel File</a>',
+            unsafe_allow_html=True
+        )
 
 if __name__ == "__main__":
     st.write("Transcript Categorization App")
