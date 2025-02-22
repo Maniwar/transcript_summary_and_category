@@ -1,3 +1,43 @@
+2025-02-21 19:48:24.590267: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING:tensorflow:From C:\Python311\Lib\site-packages\keras\src\losses.py:2976: The name tf.losses.sparse_softmax_cross_entropy is deprecated. Please use tf.compat.v1.losses.sparse_softmax_cross_entropy instead.
+
+WARNING:tensorflow:From C:\Python311\Lib\site-packages\keras\src\backend.py:277: The name tf.reset_default_graph is deprecated. Please use tf.compat.v1.reset_default_graph instead.
+
+C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py:356: FutureWarning: Styler.applymap has been deprecated. Use Styler.map instead.
+  styled_trends_data = trends_data.style.applymap(color_sentiment, subset=['Sentiment'])
+C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py:356: FutureWarning: Styler.applymap has been deprecated. Use Styler.map instead.
+  styled_trends_data = trends_data.style.applymap(color_sentiment, subset=['Sentiment'])
+C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py:356: FutureWarning: Styler.applymap has been deprecated. Use Styler.map instead.
+  styled_trends_data = trends_data.style.applymap(color_sentiment, subset=['Sentiment'])
+2025-02-21 19:49:08.685 Uncaught app exception
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 584, in _run_script
+    exec(code, module.__dict__)
+  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 477, in <module>
+    main()
+  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 435, in main
+    selected_cluster = st.selectbox(
+                       ^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\streamlit\runtime\metrics_util.py", line 397, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 198, in selectbox
+    return self._selectbox(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 281, in _selectbox
+    widget_state = register_widget(
+                   ^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\streamlit\runtime\state\widgets.py", line 164, in register_widget
+    return register_widget_from_metadata(metadata, ctx, widget_func_name, element_type)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\streamlit\runtime\state\widgets.py", line 197, in register_widget_from_metadata
+    raise DuplicateWidgetID(
+streamlit.errors.DuplicateWidgetID: There are multiple widgets with the same `key='emerging_issue_cluster_select_unique'`.
+
+To fix this, please make sure that the `key` argument is unique for each
+widget you create.
+
+
 import os
 import time
 import math
