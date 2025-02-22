@@ -1,17 +1,3 @@
-
-DuplicateWidgetID: There are multiple identical st.selectbox widgets with the same generated key.
-
-When a widget is created, it's assigned an internal key based on its structure. Multiple widgets with an identical structure will result in the same internal key, which causes this error.
-
-To fix this error, please pass a unique key argument to st.selectbox.
-
-Traceback:
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 475, in <module>
-    main()
-File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 436, in main
-    selected_cluster = st.selectbox("Select an Emerging Issue Cluster", cluster_names)
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-                       
 import os
 import time
 import math
@@ -396,15 +382,14 @@ def main():
                             st.subheader("📈 Top 5 Sub-Category Trends by Hour")
                             st.line_chart(pivot_trends_top)
 
-                    # --- New: Sentiment Distribution Plot ---
+                    # --- Sentiment Distribution Plot ---
                     with sentiment_dist_placeholder:
                         st.subheader("📊 Sentiment Distribution")
-                        # Bin sentiment scores into categories
                         sentiment_bins = pd.cut(trends_data['Sentiment'], bins=[-1, -0.5, 0.5, 1], labels=['Negative', 'Neutral', 'Positive'])
                         sentiment_dist = sentiment_bins.value_counts().sort_index()
                         st.bar_chart(sentiment_dist)
                     
-                    # --- New: Keyword Frequency Plot ---
+                    # --- Keyword Frequency Plot ---
                     with keyword_freq_placeholder:
                         st.subheader("🔑 Top 10 Keywords by Frequency")
                         keyword_counts = trends_data['Keyphrase'].value_counts().head(10)
@@ -413,13 +398,13 @@ def main():
                         else:
                             st.warning("No keyword data available.")
 
-                    # --- New: Average Sentiment per Category DataFrame ---
+                    # --- Average Sentiment per Category DataFrame ---
                     with category_sentiment_df_placeholder:
                         st.subheader("📊 Average Sentiment per Category")
                         avg_sentiment_category = trends_data.groupby('Category')['Sentiment'].mean().sort_values(ascending=False)
                         st.dataframe(avg_sentiment_category)
 
-                    # --- New: Average Sentiment per Sub-Category DataFrame ---
+                    # --- Average Sentiment per Sub-Category DataFrame ---
                     with subcategory_sentiment_df_placeholder:
                         st.subheader("📊 Average Sentiment per Sub-Category")
                         avg_sentiment_subcategory = trends_data.groupby(['Category', 'Sub-Category'])['Sentiment'].mean().sort_values(ascending=False)
@@ -440,7 +425,7 @@ def main():
                         else:
                             st.write("No sub-category data available.")
 
-                    # --- New: Emerging Issues Widgets (if enabled) ---
+                    # --- Emerging Issues Widgets (if enabled) ---
                     if emerging_issue_mode:
                         with emerging_issues_placeholder:
                             st.subheader("🔍 Emerging Issues")
@@ -464,7 +449,6 @@ def main():
                     trends_data.to_excel(writer, sheet_name='Feedback Trends', index=False)
                     if 'pivot_trends' in locals():
                         pivot_trends.to_excel(writer, sheet_name=f'Trends by {grouping_option}')
-                    # Add example comments for top subcategories
                     if not pivot_subcat_counts.empty:
                         comments_sheet = writer.book.add_worksheet('Example Comments')
                         start_row = 0
