@@ -1,39 +1,3 @@
-Traceback (most recent call last):
-  File "sklearn\metrics\_dist_metrics.pyx", line 420, in sklearn.metrics._dist_metrics.DistanceMetric64.get_metric
-KeyError: 'cosine'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 121, in exec_func_with_error_handling
-    result = func()
-             ^^^^^^
-  File "C:\Python311\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 591, in code_to_exec
-    exec(code, module.__dict__)
-  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 607, in <module>
-    trends_data = cluster_emerging_issues_hdbscan(trends_data, min_cluster_size=3)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 375, in cluster_emerging_issues_hdbscan
-    clusters = clusterer.fit_predict(no_match_embs)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\hdbscan\hdbscan_.py", line 1291, in fit_predict
-    self.fit(X)
-  File "C:\Python311\Lib\site-packages\hdbscan\hdbscan_.py", line 1251, in fit
-    ) = hdbscan(clean_data, **kwargs)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\hdbscan\hdbscan_.py", line 872, in hdbscan
-    (single_linkage_tree, result_min_span_tree) = memory.cache(
-                                                  ^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\joblib\memory.py", line 353, in __call__
-    return self.func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\hdbscan\hdbscan_.py", line 299, in _hdbscan_prims_balltree
-    tree = BallTree(X, metric=metric, leaf_size=leaf_size, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "sklearn\neighbors\_binary_tree.pxi", line 837, in sklearn.neighbors._ball_tree.BinaryTree.__init__
-  File "sklearn\metrics\_dist_metrics.pyx", line 211, in sklearn.metrics._dist_metrics.DistanceMetric.get_metric
-  File "sklearn\metrics\_dist_metrics.pyx", line 422, in sklearn.metrics._dist_metrics.DistanceMetric64.get_metric
-ValueError: Unrecognized metric 'cosine'
 import os
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
@@ -368,16 +332,24 @@ def process_feedback_data_chunk(
 ###################################################################
 #    Final HDBSCAN pass on leftover 'No Match' for Emergent       #
 ###################################################################
-def cluster_emerging_issues_hdbscan(trends_data, min_cluster_size=5):
+def cluster_emerging_issues_hdbscan(trends_data, 
+                                    min_cluster_size=5, 
+                                    min_samples=5, 
+                                    cluster_selection_method='leaf', 
+                                    cluster_selection_epsilon=0.05, 
+                                    allow_single_cluster=False):
     """
-    Refined HDBSCAN pass for "No Match" comments using best practices.
+    Refined HDBSCAN pass for leftover 'No Match' data in feedback categorization.
 
-    - Uses 'cosine' metric for normalized embeddings.
-    - Sets parameters for stable, meaningful clusters.
-    - Generates concise labels via summarization.
-    - Handles noise points explicitly.
+    Parameters:
+    - min_cluster_size: int, minimum size of each cluster. 5 is a good start.
+    - min_samples: int, how conservative the cluster membership is.
+    - cluster_selection_method: 'eom' or 'leaf'; 'leaf' yields more smaller clusters.
+    - cluster_selection_epsilon: helps separate borderline clusters.
+    - allow_single_cluster: if True, can merge everything into a single cluster.
 
-    Adjust parameters based on clustering results.
+    We do normalized embeddings for consistent distance measures. 
+    Adjust these parameters if you get too many/few clusters or too much noise.
     """
     import hdbscan
     no_match_mask = (trends_data['Category'] == 'No Match')
@@ -392,21 +364,21 @@ def cluster_emerging_issues_hdbscan(trends_data, min_cluster_size=5):
     text_col = 'Summarized Text' if 'Summarized Text' in df_no_match.columns else 'preprocessed_comments'
     no_match_texts = df_no_match[text_col].fillna('').tolist()
 
-    # Normalize embeddings for consistent distance measures
+    # Normalize embeddings for consistent distance
     no_match_embs = emb_model.encode(
         no_match_texts,
         show_progress_bar=True,
         normalize_embeddings=True
     )
 
-    # HDBSCAN with best practice parameters
+    # Set up HDBSCAN with recommended parameters
     clusterer = hdbscan.HDBSCAN(
-        min_cluster_size=min_cluster_size,       # Start with 5
-        min_samples=5,                           # Ensures stable membership
-        metric='cosine',                         # Suitable for normalized embeddings
-        cluster_selection_method='eom',          # Excess of Mass for significant clusters
-        cluster_selection_epsilon=0.05,          # Helps separate borderline clusters
-        allow_single_cluster=False               # Disallow single large cluster
+        min_cluster_size=min_cluster_size,
+        min_samples=min_samples,
+        metric='euclidean',   # 'euclidean' if normalized => effectively cosine
+        cluster_selection_method=cluster_selection_method,
+        cluster_selection_epsilon=cluster_selection_epsilon,
+        allow_single_cluster=allow_single_cluster
     )
     clusters = clusterer.fit_predict(no_match_embs)
 
@@ -419,25 +391,25 @@ def cluster_emerging_issues_hdbscan(trends_data, min_cluster_size=5):
     cluster_labels = {}
     for c_id, idx_list in cluster_map.items():
         if c_id == -1:
-            continue  # Noise points
+            continue
         cluster_vectors = np.array([no_match_embs[i] for i in idx_list])
         centroid = cluster_vectors.mean(axis=0)
         dists = cosine_similarity([centroid], cluster_vectors)[0]
         best_local_idx = np.argmax(dists)
         best_global_idx = idx_list[best_local_idx]
         best_comment = no_match_texts[best_global_idx]
-        # Summarize with a shorter max_length for concise labels
+        # Summarize for a short label
         cluster_summary = summarize_text(
             best_comment,
             tokenizer_sum, model_sum, device_sum,
-            max_length=40,  # Shorter labels
+            max_length=40,
             min_length=10
         )
-        # Truncate if still too long
         if len(cluster_summary) > 80:
             cluster_summary = cluster_summary[:80].rstrip() + '...'
         cluster_labels[c_id] = cluster_summary
 
+    # Assign categories in the main df
     for local_idx, c_id in enumerate(clusters):
         if c_id == -1:
             df_no_match.iloc[local_idx, df_no_match.columns.get_loc('Category')] = 'No Match'
@@ -447,8 +419,17 @@ def cluster_emerging_issues_hdbscan(trends_data, min_cluster_size=5):
             label = cluster_labels.get(c_id, "(Unnamed Cluster)")
             df_no_match.iloc[local_idx, df_no_match.columns.get_loc('Sub-Category')] = f"HDBSCAN: {label}"
 
+    # Update the original data
     trends_data.update(df_no_match)
+
+    # Print cluster distribution
+    unique_ids = np.unique(clusters)
+    print(f"HDBSCAN cluster IDs: {unique_ids}")
+    for cid in unique_ids:
+        print(f"Cluster {cid}: {(clusters == cid).sum()} items")
+
     return trends_data
+
 
 
 ###############################################
