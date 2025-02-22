@@ -314,7 +314,7 @@ def main():
     st.title("📊 Transcript Categorization and Analysis Dashboard")
     st.markdown("Analyze feedback data with categorization, sentiment analysis, and summarization.")
 
-    # Sidebar configuration
+    # Sidebar configuration (unchanged)
     st.sidebar.header("⚙️ Configuration")
     uploaded_file = st.sidebar.file_uploader("Upload CSV", type="csv", help="Upload a CSV file with feedback data.")
     similarity_threshold = st.sidebar.slider("Similarity Threshold", 0.0, 1.0, 0.35, help="Threshold for keyword matching.")
@@ -322,7 +322,7 @@ def main():
     chunk_size = st.sidebar.number_input("Chunk Size", min_value=32, value=32, step=32, help="Number of rows to process per batch.")
     max_clusters = st.sidebar.number_input("Maximum Clusters for Emerging Issues", min_value=1, max_value=50, value=10, help="Max clusters for uncategorized comments.")
     
-    # Category editing (unchanged)
+    # Category editing in sidebar (unchanged)
     st.sidebar.header("📋 Edit Categories")
     categories = default_categories.copy()
     new_categories = {}
@@ -364,10 +364,12 @@ def main():
         trends_chart_placeholder = st.empty()
         
         st.subheader("📊 Category vs Sentiment and Quantity")
+        st.markdown("*Average Sentiment ranges from -1 (negative) to +1 (positive).*")
         category_df_placeholder = st.empty()
         category_chart_placeholder = st.empty()
         
         st.subheader("📊 Sub-Category vs Sentiment and Quantity")
+        st.markdown("*Average Sentiment ranges from -1 (negative) to +1 (positive).*")
         subcategory_df_placeholder = st.empty()
         subcategory_chart_placeholder = st.empty()
         
@@ -460,8 +462,9 @@ def main():
                     
                     # Update category vs sentiment and quantity
                     pivot1 = trends_data.groupby('Category')['Sentiment'].agg(['mean', 'count']).sort_values('count', ascending=False)
+                    pivot1.columns = ['Average Sentiment', 'Count']  # Rename 'mean' to 'Average Sentiment'
                     category_df_placeholder.dataframe(pivot1, use_container_width=True)
-                    fig_cat = px.bar(pivot1.sort_values('count', ascending=False), x=pivot1.index, y='count', title="Category Quantity")
+                    fig_cat = px.bar(pivot1.sort_values('Count', ascending=False), x=pivot1.index, y='Count', title="Category Quantity")
                     fig_cat.update_layout(
                         title="Category Quantity",
                         xaxis_title="Category",
@@ -471,10 +474,11 @@ def main():
                     
                     # Update sub-category vs sentiment and quantity
                     pivot2 = trends_data.groupby(['Category', 'Sub-Category'])['Sentiment'].agg(['mean', 'count']).sort_values('count', ascending=False)
+                    pivot2.columns = ['Average Sentiment', 'Count']  # Rename 'mean' to 'Average Sentiment'
                     subcategory_df_placeholder.dataframe(pivot2, use_container_width=True)
-                    fig_subcat = px.bar(pivot2.sort_values('count', ascending=False), 
+                    fig_subcat = px.bar(pivot2.sort_values('Count', ascending=False), 
                                        x=pivot2.index.get_level_values('Sub-Category'), 
-                                       y='count', 
+                                       y='Count', 
                                        color=pivot2.index.get_level_values('Category'), 
                                        title="Sub-Category Quantity")
                     fig_subcat.update_layout(
@@ -495,7 +499,7 @@ def main():
                 else:
                     st.warning("No data processed yet.")
             
-            # After processing, provide Excel download (unchanged)
+            # After processing, provide Excel download
             if trends_data_list:
                 trends_data = pd.concat(trends_data_list, ignore_index=True)
                 excel_file = BytesIO()
@@ -503,6 +507,7 @@ def main():
                     trends_data.to_excel(writer, sheet_name='Feedback Trends', index=False)
                     if not pivot.empty:
                         pivot.to_excel(writer, sheet_name=f'Trends by {grouping_option}')
+                    # Use renamed pivot1 and pivot2 with 'Average Sentiment'
                     pivot1.to_excel(writer, sheet_name='Categories')
                     pivot2.to_excel(writer, sheet_name='Subcategories')
                     
