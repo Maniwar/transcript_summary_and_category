@@ -60,14 +60,12 @@ class SummarizationDataset(Dataset):
 def initialize_bert_model():
     start_time = time.time()
     print("Initializing BERT model...")
-    # You can also do from sentence_transformers import ...
     model_ = SentenceTransformer('all-mpnet-base-v2', device="cpu")
     end_time = time.time()
     print(f"BERT model initialized. Time taken: {end_time - start_time:.2f} seconds.")
     return model_
 
 model = None  # global reference
-
 previous_categories = None
 
 @st.cache_data(persist="disk")
@@ -85,6 +83,7 @@ def compute_keyword_embeddings(categories):
     end_time = time.time()
     print(f"Keyword embeddings computed. Time taken: {end_time - start_time:.2f} seconds.")
     return keyword_embeddings
+
 
 def preprocess_text(text):
     if isinstance(text, float):
@@ -168,10 +167,6 @@ def preprocess_comments_and_summarize(
     max_tokens=1000,
     very_short_limit=30
 ):
-    """
-    Summarizes each chunk's comments, labeling short vs. long, etc.
-    Returns a dictionary of {original_comment: summary}.
-    """
     print("Starting preprocessing and summarization...")
     feedback_data['preprocessed_comments'] = feedback_data[comment_column].apply(preprocess_text)
     print("Comments preprocessed.")
@@ -188,7 +183,6 @@ def preprocess_comments_and_summarize(
     summaries_dict = {c: c for c in very_short_comments}
     print(f"{len(very_short_comments)} very short comments directly added to summaries.")
 
-    # Summarize short comments
     from tqdm import tqdm
     pbar = tqdm(total=len(short_comments), desc="Summarizing short comments")
     for i in range(0, len(short_comments), batch_size):
@@ -199,7 +193,6 @@ def preprocess_comments_and_summarize(
         pbar.update(len(batch))
     pbar.close()
 
-    # Summarize long comments
     pbar = tqdm(total=len(long_comments), desc="Summarizing long comments")
     for comment in long_comments:
         chunks = split_comments_into_chunks([(comment, get_token_count(comment, tokenizer_summ))],
@@ -209,7 +202,6 @@ def preprocess_comments_and_summarize(
             for chunk in chunks
         ]
         full_summary = " ".join(chunk_summaries)
-        # possibly re-summarize if still too big
         resummarization_count = 0
         while get_token_count(full_summary, tokenizer_summ) > max_length:
             resummarization_count += 1
@@ -234,12 +226,6 @@ def process_feedback_data_chunk(
     categories,
     similarity_threshold
 ):
-    """
-    In each chunk:
-     - Summarize
-     - Embeddings
-     - Assign known categories if above threshold, else 'No Match'
-    """
     global previous_categories
 
     # Build or retrieve embeddings for known categories
@@ -340,7 +326,6 @@ def process_feedback_data_chunk(
     ]
     headers = existing_cols + add_cols
     out_df = pd.DataFrame(chunk_rows, columns=headers)
-    # remove duplicates if any
     out_df = out_df.loc[:, ~out_df.columns.duplicated()]
 
     return out_df
@@ -350,10 +335,6 @@ def process_feedback_data_chunk(
 #    Final DBSCAN pass on leftover 'No Match' for Emergent        #
 ###################################################################
 def cluster_emerging_issues_dbscan(trends_data, eps=0.7, min_samples=3):
-    """
-    We do a final pass to cluster leftover 'No Match' items with DBSCAN using 'cosine' metric,
-    labeling them as 'Emerging Issues' if they form a cluster (cluster_id != -1).
-    """
     no_match_mask = (trends_data['Category'] == 'No Match')
     if not no_match_mask.any():
         print("No 'No Match' items found. Skipping final DBSCAN pass.")
@@ -363,11 +344,10 @@ def cluster_emerging_issues_dbscan(trends_data, eps=0.7, min_samples=3):
     emb_model = SentenceTransformer('all-mpnet-base-v2', device='cpu')
 
     df_no_match = trends_data.loc[no_match_mask].copy()
-    # We use the 'Summarized Text' for embeddings
     if 'Summarized Text' in df_no_match.columns:
         text_col = 'Summarized Text'
     else:
-        text_col = 'preprocessed_comments'  # fallback
+        text_col = 'preprocessed_comments'
 
     no_match_texts = df_no_match[text_col].fillna('').tolist()
     no_match_embs = emb_model.encode(no_match_texts, show_progress_bar=True, normalize_embeddings=False)
@@ -381,7 +361,6 @@ def cluster_emerging_issues_dbscan(trends_data, eps=0.7, min_samples=3):
     for i, c_id in enumerate(clusters):
         cluster_map[c_id].append(i)
 
-    # Summarize each cluster c_id >= 0
     cluster_labels = {}
     for c_id, idx_list in cluster_map.items():
         if c_id == -1:
@@ -395,7 +374,6 @@ def cluster_emerging_issues_dbscan(trends_data, eps=0.7, min_samples=3):
         cluster_summary = summarize_text(best_comment, tokenizer_sum, model_sum, device_sum, 75, 30)
         cluster_labels[c_id] = cluster_summary
 
-    # Reassign
     for local_idx, c_id in enumerate(clusters):
         if c_id == -1:
             df_no_match.iloc[local_idx, df_no_match.columns.get_loc('Category')] = 'No Match'
@@ -404,7 +382,6 @@ def cluster_emerging_issues_dbscan(trends_data, eps=0.7, min_samples=3):
             df_no_match.iloc[local_idx, df_no_match.columns.get_loc('Category')] = 'Emerging Issues'
             df_no_match.iloc[local_idx, df_no_match.columns.get_loc('Sub-Category')] = f"DBSCAN Cluster: {cluster_labels[c_id]}"
 
-    # update main df
     trends_data.update(df_no_match)
     return trends_data
 
@@ -415,7 +392,6 @@ def cluster_emerging_issues_dbscan(trends_data, eps=0.7, min_samples=3):
 st.set_page_config(layout="wide")
 st.title("👨‍💻 Transcript Categorization")
 
-# We init once
 model = initialize_bert_model()
 
 emerging_issue_mode = st.sidebar.checkbox("Emerging Issue Mode")
@@ -461,7 +437,6 @@ if uploaded_file is not None:
     grouping_option = st.radio("Select how to group the dates", ["Date", "Week", "Month", "Quarter", "Hour"])
     process_button = st.button("Process Feedback")
 
-    # UI placeholders
     progress_bar = st.progress(0)
     processed_chunks = []
     processed_chunks_count = 0
@@ -489,7 +464,6 @@ if uploaded_file is not None:
 
         # 1) PARTIAL CHUNK-BASED UPDATES
         for i, feedback_data in enumerate(chunk_iter):
-            # Summarize + known-cat assignment
             chunk_result = process_feedback_data_chunk(
                 feedback_data,
                 comment_column,
@@ -500,17 +474,16 @@ if uploaded_file is not None:
             processed_chunks.append(chunk_result)
 
             # Combine so far
-            trends_data = pd.concat(processed_chunks, ignore_index=True)
+            partial_data = pd.concat(processed_chunks, ignore_index=True)
 
-            # Show partial results for each chunk
-            # We'll build partial pivot & UI
-            if not trends_data.empty:
-                # Display partial results
-                trends_dataframe_placeholder.dataframe(trends_data)
+            # Show partial results
+            if not partial_data.empty:
+                trends_dataframe_placeholder.dataframe(partial_data)
 
-                trends_data['Parsed Date'] = pd.to_datetime(trends_data['Parsed Date'], errors='coerce')
+                # Build partial pivot
+                partial_data['Parsed Date'] = pd.to_datetime(partial_data['Parsed Date'], errors='coerce')
                 if grouping_option == 'Date':
-                    pivot = trends_data.pivot_table(
+                    pivot = partial_data.pivot_table(
                         index=['Category', 'Sub-Category'],
                         columns=pd.Grouper(key='Parsed Date', freq='D'),
                         values='Sentiment',
@@ -518,7 +491,7 @@ if uploaded_file is not None:
                         fill_value=0
                     )
                 elif grouping_option == 'Week':
-                    pivot = trends_data.pivot_table(
+                    pivot = partial_data.pivot_table(
                         index=['Category', 'Sub-Category'],
                         columns=pd.Grouper(key='Parsed Date', freq='W-SUN', closed='left', label='left'),
                         values='Sentiment',
@@ -526,7 +499,7 @@ if uploaded_file is not None:
                         fill_value=0
                     )
                 elif grouping_option == 'Month':
-                    pivot = trends_data.pivot_table(
+                    pivot = partial_data.pivot_table(
                         index=['Category', 'Sub-Category'],
                         columns=pd.Grouper(key='Parsed Date', freq='M'),
                         values='Sentiment',
@@ -534,7 +507,7 @@ if uploaded_file is not None:
                         fill_value=0
                     )
                 elif grouping_option == 'Quarter':
-                    pivot = trends_data.pivot_table(
+                    pivot = partial_data.pivot_table(
                         index=['Category', 'Sub-Category'],
                         columns=pd.Grouper(key='Parsed Date', freq='Q'),
                         values='Sentiment',
@@ -542,9 +515,9 @@ if uploaded_file is not None:
                         fill_value=0
                     )
                 elif grouping_option == 'Hour':
-                    if 'Hour' not in trends_data.columns:
-                        trends_data['Hour'] = pd.to_datetime(trends_data[date_column]).dt.hour
-                    pivot = trends_data.pivot_table(
+                    if 'Hour' not in partial_data.columns:
+                        partial_data['Hour'] = pd.to_datetime(partial_data[date_column]).dt.hour
+                    pivot = partial_data.pivot_table(
                         index=['Category', 'Sub-Category'],
                         columns='Hour',
                         values='Sentiment',
@@ -563,19 +536,48 @@ if uploaded_file is not None:
                 if 'Category' in pivot_reset.columns:
                     pivot_reset = pivot_reset.drop(columns=['Category'], errors='ignore')
 
+                # Chart partial top 5
                 top_5_trends = pivot_reset.head(5).T
                 line_chart_placeholder.line_chart(top_5_trends)
                 pivot_table_placeholder.dataframe(pivot)
 
+                # partial pivot2 for subcategories
+                pivot2 = partial_data.groupby(['Category','Sub-Category'])['Sentiment'].agg(['mean','count'])
+                pivot2.columns = ['Average Sentiment','Quantity']
+                pivot2 = pivot2.sort_values('Quantity', ascending=False)
+                pivot2_reset = pivot2.reset_index().set_index('Sub-Category')
+
+                # update partial subcategory placeholders
+                subcategory_sentiment_dataframe_placeholder.dataframe(pivot2_reset)
+                subcategory_sentiment_bar_chart_placeholder.bar_chart(pivot2_reset['Quantity'])
+
+                # partial top subcategories
+                top_subcategories = pivot2_reset.head(10).index.tolist()
+                for idx, subcat in enumerate(top_subcategories[:10]):
+                    title_placeholder, table_placeholder = combined_placeholders[idx]
+                    title_placeholder.subheader(f"[CHUNK {i+1}] {subcat}")
+
+                    # top 10 comments for partial chunk data
+                    filtered_data = partial_data[partial_data['Sub-Category'] == subcat].copy()
+                    # we do nlargest(10,'Parsed Date') but ensure 'Parsed Date' is datetime
+                    filtered_data['Parsed Date'] = pd.to_datetime(filtered_data['Parsed Date'], errors='coerce')
+                    top_comments = filtered_data.nlargest(10, 'Parsed Date')[
+                        ['Parsed Date', comment_column, 'Summarized Text', 'Keyphrase', 'Sentiment', 'Best Match Score']
+                    ]
+                    top_comments['Parsed Date'] = top_comments['Parsed Date'].dt.date.astype(str)
+                    table_placeholder.table(top_comments)
+
             processed_chunks_count += 1
             progress_bar.progress(processed_chunks_count / estimated_total_chunks)
 
-        # 2) AFTER ALL CHUNKS, DO FINAL DBSCAN ON 'No Match'
+        # 2) AFTER ALL CHUNKS, final combined data
         trends_data = pd.concat(processed_chunks, ignore_index=True)
+
+        # 3) DBSCAN on leftover "No Match"
         if emerging_issue_mode:
             trends_data = cluster_emerging_issues_dbscan(trends_data, eps=0.7, min_samples=3)
 
-        # 3) Build final pivot & UI
+        # 4) Now final UI
         if not trends_data.empty:
             trends_dataframe_placeholder.dataframe(trends_data)
 
@@ -655,15 +657,17 @@ if uploaded_file is not None:
             top_subcategories = pivot2_reset.head(10).index.tolist()
             for idx, subcat in enumerate(top_subcategories):
                 title_placeholder, table_placeholder = combined_placeholders[idx]
-                title_placeholder.subheader(subcat)
-                filtered_data = trends_data[trends_data['Sub-Category'] == subcat]
+                # final pass label
+                title_placeholder.subheader(f"FINAL {subcat}")
+                filtered_data = trends_data[trends_data['Sub-Category'] == subcat].copy()
+                filtered_data['Parsed Date'] = pd.to_datetime(filtered_data['Parsed Date'], errors='coerce')
                 top_comments = filtered_data.nlargest(10, 'Parsed Date')[
                     ['Parsed Date', comment_column, 'Summarized Text', 'Keyphrase', 'Sentiment', 'Best Match Score']
                 ]
                 top_comments['Parsed Date'] = top_comments['Parsed Date'].dt.date.astype(str)
                 table_placeholder.table(top_comments)
 
-            # final formatting
+            # final pivot formatting
             trends_data['Parsed Date'] = trends_data['Parsed Date'].dt.strftime('%Y-%m-%d').fillna('')
             pivot = trends_data.pivot_table(
                 index=['Category', 'Sub-Category'],
@@ -675,7 +679,7 @@ if uploaded_file is not None:
             pivot = pivot.loc[pivot.sum(axis=1).sort_values(ascending=False).index]
             pivot = pivot[sorted(pivot.columns, reverse=True)]
 
-        # 4) Excel
+        # 5) Excel
         excel_file = BytesIO()
         with pd.ExcelWriter(excel_file, engine='xlsxwriter', mode='xlsx') as excel_writer:
             trends_data.to_excel(excel_writer, sheet_name='Feedback Trends and Insights', index=False)
