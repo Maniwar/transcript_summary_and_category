@@ -1,3 +1,17 @@
+
+DuplicateWidgetID: There are multiple identical st.selectbox widgets with the same generated key.
+
+When a widget is created, it's assigned an internal key based on its structure. Multiple widgets with an identical structure will result in the same internal key, which causes this error.
+
+To fix this error, please pass a unique key argument to st.selectbox.
+
+Traceback:
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 475, in <module>
+    main()
+File "C:\Users\m.berenji\Desktop\To Move\git\NPS Script\transcript_categories\cluster_test.py", line 436, in main
+    selected_cluster = st.selectbox("Select an Emerging Issue Cluster", cluster_names)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                       
 import os
 import time
 import math
