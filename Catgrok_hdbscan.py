@@ -332,10 +332,16 @@ def process_feedback_data_chunk(
 ###################################################################
 #    Final HDBSCAN pass on leftover 'No Match' for Emergent       #
 ###################################################################
-def cluster_emerging_issues_hdbscan(trends_data, min_cluster_size=3):
+def cluster_emerging_issues_hdbscan(trends_data, min_cluster_size=5):
     """
-    We'll switch from DBSCAN to HDBSCAN for more adaptive clustering.
-    pip install hdbscan is required. We'll use L2-normalized embeddings.
+    Refined HDBSCAN pass for leftover "No Match" data in feedback categorization.
+
+    - We set cluster_selection_method='leaf' to allow smaller subclusters.
+    - We set cluster_selection_epsilon=0.05 to help separate borderline clusters.
+    - We set min_samples=5 to ensure stable membership within clusters.
+    - We do normalized embeddings for consistent distance measures.
+
+    Adjust these parameters if you get too many/few clusters or too much noise.
     """
     import hdbscan
     no_match_mask = (trends_data['Category'] == 'No Match')
@@ -353,10 +359,23 @@ def cluster_emerging_issues_hdbscan(trends_data, min_cluster_size=3):
         text_col = 'preprocessed_comments'
 
     no_match_texts = df_no_match[text_col].fillna('').tolist()
-    # We'll do normalized embeddings to help HDBSCAN find clusters
-    no_match_embs = emb_model.encode(no_match_texts, show_progress_bar=True, normalize_embeddings=True)
 
-    clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, metric='euclidean')
+    # Normalize embeddings for consistent distance measures
+    no_match_embs = emb_model.encode(
+        no_match_texts,
+        show_progress_bar=True,
+        normalize_embeddings=True
+    )
+
+    # HDBSCAN with refined parameters
+    clusterer = hdbscan.HDBSCAN(
+        min_cluster_size=min_cluster_size,       # cluster must have at least 5 items
+        min_samples=5,                           # ensures stable membership
+        metric='euclidean',                      # effectively 'cosine' if normalized
+        cluster_selection_method='leaf',         # produce smaller leaf clusters
+        cluster_selection_epsilon=0.05,          # help separate borderline clusters
+        allow_single_cluster=False               # disallow merging everything into 1
+    )
     clusters = clusterer.fit_predict(no_match_embs)
 
     model_sum, tokenizer_sum, device_sum = get_summarization_model_and_tokenizer()
@@ -368,14 +387,24 @@ def cluster_emerging_issues_hdbscan(trends_data, min_cluster_size=3):
     cluster_labels = {}
     for c_id, idx_list in cluster_map.items():
         if c_id == -1:
-            continue
+            continue  # noise
         cluster_vectors = np.array([no_match_embs[i] for i in idx_list])
         centroid = cluster_vectors.mean(axis=0)
         dists = cosine_similarity([centroid], cluster_vectors)[0]
         best_local_idx = np.argmax(dists)
         best_global_idx = idx_list[best_local_idx]
         best_comment = no_match_texts[best_global_idx]
-        cluster_summary = summarize_text(best_comment, tokenizer_sum, model_sum, device_sum, 75, 30)
+        # Summarize with smaller max_length for a shorter label
+        cluster_summary = summarize_text(
+            best_comment,
+            tokenizer_sum, model_sum, device_sum,
+            max_length=40,  # keep it short
+            min_length=10
+        )
+        # Optionally truncate to ~80 chars if still too long
+        if len(cluster_summary) > 80:
+            cluster_summary = cluster_summary[:80].rstrip() + '...'
+
         cluster_labels[c_id] = cluster_summary
 
     for local_idx, c_id in enumerate(clusters):
@@ -384,10 +413,12 @@ def cluster_emerging_issues_hdbscan(trends_data, min_cluster_size=3):
             df_no_match.iloc[local_idx, df_no_match.columns.get_loc('Sub-Category')] = 'No Match'
         else:
             df_no_match.iloc[local_idx, df_no_match.columns.get_loc('Category')] = 'Emerging Issues'
-            df_no_match.iloc[local_idx, df_no_match.columns.get_loc('Sub-Category')] = f"HDBSCAN: {cluster_labels[c_id]}"
+            label = cluster_labels.get(c_id, "(Unnamed Cluster)")
+            df_no_match.iloc[local_idx, df_no_match.columns.get_loc('Sub-Category')] = f"HDBSCAN: {label}"
 
     trends_data.update(df_no_match)
     return trends_data
+
 
 ###############################################
 #          MAIN STREAMLIT APPLICATION         #
