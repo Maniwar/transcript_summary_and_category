@@ -31,6 +31,16 @@ from collections import defaultdict
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 nltk.download('vader_lexicon', quiet=True)
 
+# --- Device Detection for MPS, CUDA, or CPU ---
+def get_device():
+    """Determine the best available device for computation."""
+    if torch.cuda.is_available():
+        return 'cuda'
+    elif torch.backends.mps.is_available():
+        return 'mps'
+    else:
+        return 'cpu'
+
 # --- Custom Dataset for Summarization ---
 class SummarizationDataset(Dataset):
     def __init__(self, texts, tokenizer, max_length):
@@ -62,9 +72,10 @@ def preprocess_text(text):
 def initialize_bert_model():
     """Initialize and cache the BERT model for embedding generation."""
     start_time = time.time()
-    print("Initializing BERT model...")
-    model = SentenceTransformer('all-mpnet-base-v2', device='cpu')
-    print(f"BERT model initialized. Time taken: {time.time() - start_time} seconds.")
+    st.info("Initializing BERT model...")
+    device = get_device()
+    model = SentenceTransformer('all-mpnet-base-v2', device=device)
+    st.success(f"BERT model initialized on {device}. Time taken: {time.time() - start_time:.2f} seconds.")
     return model
 
 @st.cache_resource
@@ -73,21 +84,21 @@ def get_summarization_model_and_tokenizer():
     model_name = "knkarthick/MEETING_SUMMARY"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = get_device()
     model.to(device)
     return model, tokenizer, device
 
 @st.cache_resource
 def get_sentiment_model():
     """Initialize and cache the sentiment analysis model."""
-    return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english",
-                    device=0 if torch.cuda.is_available() else -1)
+    device = 0 if torch.cuda.is_available() else -1
+    return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english", device=device)
 
 @st.cache_resource
 def get_summarizer():
     """Initialize and cache the summarizer pipeline."""
-    return pipeline("summarization", model="facebook/bart-large-cnn",
-                    device=0 if torch.cuda.is_available() else -1)
+    device = 0 if torch.cuda.is_available() else -1
+    return pipeline("summarization", model="facebook/bart-large-cnn", device=device)
 
 # --- Processing Functions ---
 def perform_sentiment_analysis(text, sentiment_model=None, use_nltk=True):
@@ -299,20 +310,20 @@ def process_feedback_data(feedback_data, comment_column, date_column, categories
 
 # --- Streamlit Application ---
 def main():
-    st.set_page_config(layout="wide")
-    st.title("👨‍💻 Transcript Categorization and Analysis")
+    st.set_page_config(layout="wide", page_title="Transcript Analysis Dashboard")
+    st.title("📊 Transcript Categorization and Analysis Dashboard")
+    st.markdown("Analyze feedback data with categorization, sentiment analysis, and summarization.")
 
     # Sidebar configuration
-    st.sidebar.header("Configuration")
-    uploaded_file = st.sidebar.file_uploader("Upload CSV", type="csv")
-    similarity_threshold = st.sidebar.slider("Similarity Threshold", 0.0, 1.0, 0.35)
-    emerging_issue_mode = st.sidebar.checkbox("Enable Emerging Issue Detection", value=True)
-    st.sidebar.write("Emerging issue mode clusters uncategorized comments and names them with summaries.")
-    chunk_size = st.sidebar.number_input("Chunk Size", min_value=32, value=32, step=32)
-    max_clusters = st.sidebar.number_input("Maximum clusters for emerging issues", min_value=1, max_value=50, value=10)
+    st.sidebar.header("⚙️ Configuration")
+    uploaded_file = st.sidebar.file_uploader("Upload CSV", type="csv", help="Upload a CSV file with feedback data.")
+    similarity_threshold = st.sidebar.slider("Similarity Threshold", 0.0, 1.0, 0.35, help="Threshold for keyword matching.")
+    emerging_issue_mode = st.sidebar.checkbox("Enable Emerging Issue Detection", value=True, help="Cluster uncategorized comments and name them with summaries.")
+    chunk_size = st.sidebar.number_input("Chunk Size", min_value=32, value=32, step=32, help="Number of rows to process per batch.")
+    max_clusters = st.sidebar.number_input("Maximum Clusters for Emerging Issues", min_value=1, max_value=50, value=10, help="Max clusters for uncategorized comments.")
     
     # Category editing in sidebar
-    st.sidebar.header("Edit Categories")
+    st.sidebar.header("📋 Edit Categories")
     categories = default_categories.copy()  # Avoid modifying the original
     new_categories = {}
     for category, subcategories in categories.items():
@@ -321,8 +332,8 @@ def main():
         for subcategory, keywords in subcategories.items():
             subcategory_name = st.sidebar.text_input(f"{subcategory} Subcategory under {category_name}", value=subcategory)
             with st.sidebar.expander(f"Keywords for {subcategory_name}"):
-                category_keywords = st.text_area("Keywords", value="\n".join(keywords))
-            new_subcategories[subcategory_name] = category_keywords.split("\n")
+                category_keywords = st.text_area("Keywords", value="\n".join(keywords), help="Enter one keyword per line.")
+            new_subcategories[subcategory_name] = [kw.strip() for kw in category_keywords.split("\n") if kw.strip()]
         new_categories[category_name] = new_subcategories
     categories = new_categories
 
@@ -341,16 +352,16 @@ def main():
             st.error(f"Error reading CSV: {e}")
             return
         
-        comment_column = st.selectbox("Select comment column", column_names)
-        date_column = st.selectbox("Select date column", column_names)
-        grouping_option = st.radio("Group by", ["Date", "Week", "Month", "Quarter", "Hour"])
+        comment_column = st.selectbox("Select Comment Column", column_names, help="Column containing feedback text.")
+        date_column = st.selectbox("Select Date Column", column_names, help="Column containing date information.")
+        grouping_option = st.radio("Group By", ["Date", "Week", "Month", "Quarter", "Hour"], help="Group trends by time period.")
         
         # Initialize chart placeholders to prevent duplication
         trends_chart_placeholder = st.empty()
         category_chart_placeholder = st.empty()
         subcategory_chart_placeholder = st.empty()
 
-        if st.button("Process Feedback"):
+        if st.button("Process Feedback", help="Start processing the uploaded feedback data."):
             chunk_iter = pd.read_csv(BytesIO(csv_data), encoding=encoding, chunksize=chunk_size)
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -372,14 +383,13 @@ def main():
                     trends_data = pd.concat(trends_data_list, ignore_index=True)
                     
                     # Display processed data
-                    st.subheader("Processed Feedback Data")
-                    st.dataframe(trends_data)
+                    st.subheader("📋 Processed Feedback Data")
+                    st.dataframe(trends_data, use_container_width=True)
                     
                     # All Categories Trends
-                    st.subheader("All Categories Trends")
+                    st.subheader("📈 All Categories Trends")
                     freq_map = {'Date': 'D', 'Week': 'W-SUN', 'Month': 'M', 'Quarter': 'Q', 'Hour': 'H'}
                     if grouping_option != 'Hour':
-                        # Filter out rows with NaT in 'Parsed Date' to avoid grouping issues
                         trends_data_valid = trends_data.dropna(subset=['Parsed Date'])
                         if not trends_data_valid.empty:
                             pivot = trends_data_valid.pivot_table(
@@ -389,8 +399,6 @@ def main():
                                 aggfunc='count',
                                 fill_value=0
                             ).reset_index()
-                            print("Pivot table for trends:")
-                            print(pivot.head())  # Debug pivot table
                         else:
                             st.warning("No valid dates for trend analysis.")
                             pivot = pd.DataFrame()
@@ -402,26 +410,18 @@ def main():
                             aggfunc='count',
                             fill_value=0
                         ).reset_index()
-                        print("Pivot table for hourly trends:")
-                        print(pivot.head())  # Debug pivot table
 
                     if not pivot.empty:
-                        # Melt the pivot table to long format for plotting
                         melted = pd.melt(
                             pivot,
                             id_vars=['Category', 'Sub-Category'],
                             var_name='Date' if grouping_option != 'Hour' else 'Hour',
                             value_name='Sentiment Count'
                         )
-                        print("Melted data for trends:")
-                        print(melted.head())  # Debug melted data
-
-                        # Filter for top 5 sub-categories based on total sentiment count
                         numeric_cols = pivot.select_dtypes(include=[np.number]).columns
                         top_subcats = pivot.groupby('Sub-Category')[numeric_cols].sum().sum(axis=1).nlargest(5).index
                         melted_top = melted[melted['Sub-Category'].isin(top_subcats)]
 
-                        # Plot the line chart
                         if grouping_option != 'Hour':
                             fig_trends = px.line(
                                 melted_top,
@@ -444,28 +444,24 @@ def main():
                             yaxis_title="Sentiment Count",
                             legend_title="Sub-Category"
                         )
-                        trends_chart_placeholder.plotly_chart(fig_trends)
+                        trends_chart_placeholder.plotly_chart(fig_trends, use_container_width=True)
                     
                     # Category vs Sentiment and Quantity
-                    st.subheader("Category vs Sentiment and Quantity")
+                    st.subheader("📊 Category vs Sentiment and Quantity")
                     pivot1 = trends_data.groupby('Category')['Sentiment'].agg(['mean', 'count']).sort_values('count', ascending=False)
-                    print("Pivot table for categories:")
-                    print(pivot1.head())  # Debug pivot table
-                    st.dataframe(pivot1)
+                    st.dataframe(pivot1, use_container_width=True)
                     fig_cat = px.bar(pivot1.sort_values('count', ascending=False), x=pivot1.index, y='count', title="Category Quantity")
                     fig_cat.update_layout(
                         title="Category Quantity",
                         xaxis_title="Category",
                         yaxis_title="Count"
                     )
-                    category_chart_placeholder.plotly_chart(fig_cat)
+                    category_chart_placeholder.plotly_chart(fig_cat, use_container_width=True)
                     
                     # Sub-Category vs Sentiment and Quantity
-                    st.subheader("Sub-Category vs Sentiment and Quantity")
+                    st.subheader("📊 Sub-Category vs Sentiment and Quantity")
                     pivot2 = trends_data.groupby(['Category', 'Sub-Category'])['Sentiment'].agg(['mean', 'count']).sort_values('count', ascending=False)
-                    print("Pivot table for sub-categories:")
-                    print(pivot2.head())  # Debug pivot table
-                    st.dataframe(pivot2)
+                    st.dataframe(pivot2, use_container_width=True)
                     fig_subcat = px.bar(pivot2.sort_values('count', ascending=False), 
                                        x=pivot2.index.get_level_values('Sub-Category'), 
                                        y='count', 
@@ -477,10 +473,10 @@ def main():
                         yaxis_title="Count",
                         legend_title="Category"
                     )
-                    subcategory_chart_placeholder.plotly_chart(fig_subcat)
+                    subcategory_chart_placeholder.plotly_chart(fig_subcat, use_container_width=True)
                     
                     # Top 10 Recent Comments by Sub-Category
-                    st.subheader("Top 10 Recent Comments by Sub-Category")
+                    st.subheader("📝 Top 10 Recent Comments by Sub-Category")
                     top_subcats = pivot2.head(10).index.get_level_values('Sub-Category')
                     for subcat in top_subcats:
                         st.write(f"**{subcat}**")
@@ -513,9 +509,9 @@ def main():
                         start_row += 12
                 
                 excel_file.seek(0)
-                b64 = base64.b64encode(excel_file.read()).decode()
                 st.download_button("Download Excel", data=excel_file, file_name="feedback_trends.xlsx", 
-                                  mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                                  mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                  help="Download the processed data as an Excel file.")
             else:
                 st.error("No valid data processed for export.")
 
