@@ -322,9 +322,9 @@ def main():
     chunk_size = st.sidebar.number_input("Chunk Size", min_value=32, value=32, step=32, help="Number of rows to process per batch.")
     max_clusters = st.sidebar.number_input("Maximum Clusters for Emerging Issues", min_value=1, max_value=50, value=10, help="Max clusters for uncategorized comments.")
     
-    # Category editing in sidebar
+    # Category editing (unchanged)
     st.sidebar.header("📋 Edit Categories")
-    categories = default_categories.copy()  # Avoid modifying the original
+    categories = default_categories.copy()
     new_categories = {}
     for category, subcategories in categories.items():
         category_name = st.sidebar.text_input(f"{category} Category", value=category)
@@ -356,10 +356,23 @@ def main():
         date_column = st.selectbox("Select Date Column", column_names, help="Column containing date information.")
         grouping_option = st.radio("Group By", ["Date", "Week", "Month", "Quarter", "Hour"], help="Group trends by time period.")
         
-        # Define chart placeholders before the processing loop
+        # Define all subheaders and placeholders BEFORE the processing loop
+        st.subheader("📋 Processed Feedback Data")
+        processed_data_placeholder = st.empty()
+        
+        st.subheader("📈 All Categories Trends")
         trends_chart_placeholder = st.empty()
+        
+        st.subheader("📊 Category vs Sentiment and Quantity")
+        category_df_placeholder = st.empty()
         category_chart_placeholder = st.empty()
+        
+        st.subheader("📊 Sub-Category vs Sentiment and Quantity")
+        subcategory_df_placeholder = st.empty()
         subcategory_chart_placeholder = st.empty()
+        
+        st.subheader("📝 Top 10 Recent Comments by Sub-Category")
+        top_comments_placeholder = st.empty()
 
         if st.button("Process Feedback", help="Start processing the uploaded feedback data."):
             chunk_iter = pd.read_csv(BytesIO(csv_data), encoding=encoding, chunksize=chunk_size)
@@ -378,16 +391,14 @@ def main():
                 eta = ((time.time() - start_time) / (i + 1)) * (total_chunks - (i + 1)) if i + 1 < total_chunks else 0
                 status_text.text(f"Chunk {i+1}/{total_chunks} done. ETA: {int(eta)}s")
                 
-                # Concatenate cumulative data for real-time updates
+                # Update UI with cumulative data
                 if trends_data_list:
                     trends_data = pd.concat(trends_data_list, ignore_index=True)
                     
-                    # Display processed data
-                    st.subheader("📋 Processed Feedback Data")
-                    st.dataframe(trends_data, use_container_width=True)
+                    # Update processed data
+                    processed_data_placeholder.dataframe(trends_data, use_container_width=True)
                     
-                    # All Categories Trends
-                    st.subheader("📈 All Categories Trends")
+                    # Update trends chart
                     freq_map = {'Date': 'D', 'Week': 'W-SUN', 'Month': 'M', 'Quarter': 'Q', 'Hour': 'H'}
                     if grouping_option != 'Hour':
                         trends_data_valid = trends_data.dropna(subset=['Parsed Date'])
@@ -400,7 +411,6 @@ def main():
                                 fill_value=0
                             ).reset_index()
                         else:
-                            st.warning("No valid dates for trend analysis.")
                             pivot = pd.DataFrame()
                     else:
                         pivot = trends_data.pivot_table(
@@ -444,26 +454,24 @@ def main():
                             yaxis_title="Sentiment Count",
                             legend_title="Sub-Category"
                         )
-                        # Update the placeholder instead of creating a new chart
                         trends_chart_placeholder.plotly_chart(fig_trends, use_container_width=True)
+                    else:
+                        trends_chart_placeholder.warning("No data available for trends chart.")
                     
-                    # Category vs Sentiment and Quantity
-                    st.subheader("📊 Category vs Sentiment and Quantity")
+                    # Update category vs sentiment and quantity
                     pivot1 = trends_data.groupby('Category')['Sentiment'].agg(['mean', 'count']).sort_values('count', ascending=False)
-                    st.dataframe(pivot1, use_container_width=True)
+                    category_df_placeholder.dataframe(pivot1, use_container_width=True)
                     fig_cat = px.bar(pivot1.sort_values('count', ascending=False), x=pivot1.index, y='count', title="Category Quantity")
                     fig_cat.update_layout(
                         title="Category Quantity",
                         xaxis_title="Category",
                         yaxis_title="Count"
                     )
-                    # Update the placeholder instead of creating a new chart
                     category_chart_placeholder.plotly_chart(fig_cat, use_container_width=True)
                     
-                    # Sub-Category vs Sentiment and Quantity
-                    st.subheader("📊 Sub-Category vs Sentiment and Quantity")
+                    # Update sub-category vs sentiment and quantity
                     pivot2 = trends_data.groupby(['Category', 'Sub-Category'])['Sentiment'].agg(['mean', 'count']).sort_values('count', ascending=False)
-                    st.dataframe(pivot2, use_container_width=True)
+                    subcategory_df_placeholder.dataframe(pivot2, use_container_width=True)
                     fig_subcat = px.bar(pivot2.sort_values('count', ascending=False), 
                                        x=pivot2.index.get_level_values('Sub-Category'), 
                                        y='count', 
@@ -475,20 +483,19 @@ def main():
                         yaxis_title="Count",
                         legend_title="Category"
                     )
-                    # Update the placeholder instead of creating a new chart
                     subcategory_chart_placeholder.plotly_chart(fig_subcat, use_container_width=True)
                     
-                    # Top 10 Recent Comments by Sub-Category
-                    st.subheader("📝 Top 10 Recent Comments by Sub-Category")
-                    top_subcats = pivot2.head(10).index.get_level_values('Sub-Category')
-                    for subcat in top_subcats:
-                        st.write(f"**{subcat}**")
-                        filtered = trends_data[trends_data['Sub-Category'] == subcat].nlargest(10, 'Parsed Date')
-                        st.table(filtered[['Parsed Date', comment_column, 'summarized_comments', 'Sentiment']])
+                    # Update top 10 recent comments
+                    with top_comments_placeholder:
+                        top_subcats = pivot2.head(10).index.get_level_values('Sub-Category')
+                        for subcat in top_subcats:
+                            st.write(f"**{subcat}**")
+                            filtered = trends_data[trends_data['Sub-Category'] == subcat].nlargest(10, 'Parsed Date')
+                            st.table(filtered[['Parsed Date', comment_column, 'summarized_comments', 'Sentiment']])
                 else:
                     st.warning("No data processed yet.")
             
-            # After all chunks are processed, provide Excel download
+            # After processing, provide Excel download (unchanged)
             if trends_data_list:
                 trends_data = pd.concat(trends_data_list, ignore_index=True)
                 excel_file = BytesIO()
